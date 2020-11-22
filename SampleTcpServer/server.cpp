@@ -4,6 +4,11 @@
 #include<WinSock2.h>
 #include<stdio.h>
 
+struct DataPackage
+{
+	int age;
+	char name[32];
+};
 
 int main()
 {
@@ -55,7 +60,7 @@ int main()
 	{
 		printf("accept a invalid client socket\n");
 	}
-	printf("a new client enter, ip:%s \n", inet_ntoa(client_addr.sin_addr));
+	printf("a new client enter, socket: %d,ip:%s \n", (int)_sock, inet_ntoa(client_addr.sin_addr));
 
 	// 5 recive client request and deal
 	char _recv_buf[128] = {};
@@ -68,6 +73,8 @@ int main()
 			printf("error occurs while receive client request and mission finish.\n");
 			break;
 		}
+		printf("server receive request is %s\n", _recv_buf);
+
 		// 5.2 deal client request
 		if (0 == strcmp(_recv_buf, "cmd_get_name"))
 		{
@@ -78,6 +85,11 @@ int main()
 		{
 			char msg_buf[] = "80";
 			send(_sock_client, msg_buf, strlen(msg_buf) + 1, 0);
+		}
+		else if (0 == strcmp(_recv_buf, "cmd_get_info"))
+		{
+			DataPackage dp = { 80,"ÕÅÈý" };
+			send(_sock_client, (const char*)&dp, sizeof(DataPackage), 0);
 		}
 		else
 		{

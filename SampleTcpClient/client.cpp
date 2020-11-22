@@ -2,8 +2,13 @@
 
 #include<Windows.h>
 #include<WinSock2.h>
-
 #include<stdio.h>
+
+struct DataPackage
+{
+	int age;
+	char name[32];
+};
 
 int main()
 {
@@ -51,7 +56,15 @@ int main()
 		int nlen = recv(_sock, buf, 1024, 0);
 		if (nlen > 0)
 		{
-			printf("that received data from server is %s\n", buf);
+			if (0 == strcmp("cmd_get_info", cmd_buf))
+			{
+				DataPackage * dp = (DataPackage*)buf;
+				printf("that received data from server is age=%d,name=%s\n", dp->age,dp->name);
+			}
+			else
+			{
+				printf("that received data from server is %s\n", buf);
+			}
 		}
 
 	}
