@@ -34,8 +34,6 @@ struct Login : public DataHeader
 {
 	Login()
 	{
-		data_length = sizeof(Login);
-		cmd = CMD_LOGIN;
 	}
 
 	char username[32];
@@ -57,8 +55,6 @@ struct Logout : public DataHeader
 {
 	Logout()
 	{
-		data_length = sizeof(Logout);
-		cmd = CMD_LOGOUT;
 	}
 
 	char username[32];
@@ -130,26 +126,28 @@ int main()
 	// 5 recive client request and deal
 	while (true)
 	{
-		DataHeader header = {};
+		char szRecv[1024] = {};
 
 		// 5.1 receive client request
-		int nlen = recv(_sock_client, (char *)&header, sizeof(header), 0);
+		int nlen = recv(_sock_client, szRecv, sizeof(DataHeader), 0);
 		if (nlen <= 0)
 		{
 			printf("error occurs while receive client request and mission finish.\n");
 			break;
 		}
 
+		DataHeader * header = (DataHeader*)szRecv;
+
 		// 5.2 deal client command
-		switch (header.cmd)
+		switch (header->cmd)
 		{
 		case CMD_LOGIN:
 		{
-			Login login = {};
-			recv(_sock_client, (char*)&login + sizeof(DataHeader), sizeof(Login) - sizeof(DataHeader), 0);
+			recv(_sock_client, szRecv + sizeof(DataHeader), header->data_length - sizeof(DataHeader), 0);
+			Login* ret = (Login*)szRecv;
 			// ignore to check user name and password
 			// ...
-			printf("receive command is: CMD_LOGIN , data length: %d, user name: %s, pwd: %s\n", login.data_length, login.username, login.password);
+			printf("receive command is: CMD_LOGIN , data length: %d, user name: %s, pwd: %s\n", header->data_length, ret->username, ret->password);
 
 			LoginResponse loginResponse;
 			send(_sock_client, (char*)&loginResponse, sizeof(LoginResponse), 0);
@@ -158,8 +156,8 @@ int main()
 		case CMD_LOGOUT:
 		{
 			Logout logout = {};
-			recv(_sock_client, (char*)&logout + sizeof(DataHeader), sizeof(logout) - sizeof(DataHeader), 0);
-			printf("receive command is: CMD_LOGOUT , data length: %d, user name: %s\n", logout.data_length, logout.username);
+			recv(_sock_client, (char*)&logout + sizeof(DataHeader), header->data_length - sizeof(DataHeader), 0);
+			printf("receive command is: CMD_LOGOUT , data length: %d, user name: %s\n", header->data_length, logout.username);
 
 			LogoutResponse logoutResponse;
 			send(_sock_client, (char*)&logoutResponse, sizeof(logoutResponse), 0);
@@ -181,6 +179,8 @@ int main()
 
 	// clean windows socket environment
 	WSACleanup();
+
+	printf("server is shutdown\n");
 
 	return 0;
 }

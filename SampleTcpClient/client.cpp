@@ -145,8 +145,5 @@ int main()
 	// clean windows socket environment
 	WSACleanup();
 
-	// exit
-	printf("server is shut down \n");
-
 	return 0;
 }
