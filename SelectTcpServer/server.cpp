@@ -12,6 +12,7 @@ enum CMD
 	CMD_LOGIN_RESPONSE,
 	CMD_LOGOUT,
 	CMD_LOGOUT_RESPONSE,
+	CMD_NEW_USER_JOIN,
 	CMD_UNKNOWN
 };
 
@@ -71,6 +72,17 @@ struct LogoutResponse : public DataHeader
 		result = 1;
 	}
 	int result;
+};
+
+struct NewUserJoin : public DataHeader
+{
+	NewUserJoin()
+	{
+		data_length = sizeof(NewUserJoin);
+		cmd = CMD_NEW_USER_JOIN;
+		sock = 0;
+	}
+	int sock;
 };
 
 std::vector<SOCKET> g_clients;
@@ -191,7 +203,9 @@ int main()
 		//nfds is range of fd_set, not fd_set's count.
 		//nfds is also max value+1 of all the file descriptor(socket).
 		//nfds can be 0 in the windows.
-		int ret = select(_sock + 1/*nfds*/, &fd_read, &fd_write, &fd_exception, NULL);
+		//that timeval was setted null means blocking, not null means nonblocking.
+		timeval t = { 1,0 };
+		int ret = select(_sock + 1/*nfds*/, &fd_read, &fd_write, &fd_exception, &t);
 		if (ret < 0)
 		{
 			printf("error occurs while select and mission finish.\n");
@@ -213,6 +227,13 @@ int main()
 				printf("accept a invalid client socket\n");
 			}
 
+			// boardcast
+			for (int n = (int)g_clients.size() - 1; n >= 0; n--)
+			{
+				NewUserJoin user_join;
+				send(g_clients[n], (const char*)&user_join, sizeof(NewUserJoin), 0);
+			}
+
 			g_clients.push_back(_sock_client);
 
 			printf("a new client enter, socket: %d,ip:%s \n", (int)_sock, inet_ntoa(client_addr.sin_addr));
@@ -229,6 +250,9 @@ int main()
 				}
 			}
 		}
+
+		// select(...) must be select(...,CAN'T BE NULL);
+		printf("process other task while idle.\n");
 	}
 
 	// 6 close socket

@@ -10,6 +10,7 @@ enum CMD
 	CMD_LOGIN_RESPONSE,
 	CMD_LOGOUT,
 	CMD_LOGOUT_RESPONSE,
+	CMD_NEW_USER_JOIN,
 	CMD_UNKNOWN
 };
 
@@ -67,6 +68,17 @@ struct LogoutResponse : public DataHeader
 	{
 	}
 	int result;
+};
+
+struct NewUserJoin : public DataHeader
+{
+	NewUserJoin()
+	{
+		data_length = sizeof(NewUserJoin);
+		cmd = CMD_NEW_USER_JOIN;
+		sock = 0;
+	}
+	int sock;
 };
 
 int main()
