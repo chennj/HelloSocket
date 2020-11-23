@@ -6,7 +6,11 @@
 
 enum CMD
 {
-	CMD_LOGIN, CMD_LOGOUT, CMD_UNKNOWN
+	CMD_LOGIN,
+	CMD_LOGIN_RESPONSE,
+	CMD_LOGOUT,
+	CMD_LOGOUT_RESPONSE,
+	CMD_UNKNOWN
 };
 
 // msg header
@@ -16,28 +20,52 @@ struct DataHeader
 	short cmd;
 };
 
-struct UnknownResponse {
+struct UnknownResponse : public DataHeader
+{
+	UnknownResponse()
+	{
+	}
 	char msg[32];
 };
 
-struct Login
+struct Login : public DataHeader
 {
-	char user_name[32];
-	char pass_word[32];
+public:
+	Login()
+	{
+		data_length = sizeof(Login);
+		cmd = CMD_LOGIN;
+	}
+
+	char username[32];
+	char password[32];
 };
 
-struct LoginResponse
+struct LoginResponse : public DataHeader
 {
+	LoginResponse()
+	{
+	}
 	int result;
 };
 
-struct Logout
+struct Logout : public DataHeader
 {
-	char user_name[32];
+public:
+	Logout()
+	{
+		data_length = sizeof(Logout);
+		cmd = CMD_LOGOUT;
+	}
+
+	char username[32];
 };
 
-struct LogoutResponse
+struct LogoutResponse : public DataHeader
 {
+	LogoutResponse()
+	{
+	}
 	int result;
 };
 
@@ -82,27 +110,22 @@ int main()
 		}
 		else if (0 == strcmp(cmd_buf, "login")) 
 		{
-			Login login = { "cnj","1234" };
-			DataHeader header = { sizeof(login), CMD_LOGIN };
-			send(_sock, (const char*)&header, sizeof(header), 0);
+			Login login;
+			strcpy(login.username, "cnj");
+			strcpy(login.password, "1234");
 			send(_sock, (const char*)&login, sizeof(login), 0);
 
-			DataHeader recv_header = {};
 			LoginResponse loginResponse = {};
-			recv(_sock, (char*)&recv_header, sizeof(recv_header), 0);
 			recv(_sock, (char*)&loginResponse, sizeof(loginResponse), 0);
 			printf("login result is: %d\n", loginResponse.result);
 		}
 		else if (0 == strcmp(cmd_buf, "logout"))
 		{
-			Logout logout = { "cnj" };
-			DataHeader header = { sizeof(logout), CMD_LOGOUT };
-			send(_sock, (const char*)&header, sizeof(header), 0);
+			Logout logout;
+			strcpy(logout.username, "cnj");
 			send(_sock, (const char*)&logout, sizeof(logout), 0);
 
-			DataHeader recv_header = {};
-			LogoutResponse logoutResponse = {};
-			recv(_sock, (char*)&recv_header, sizeof(recv_header), 0);
+			LogoutResponse logoutResponse;
 			recv(_sock, (char*)&logoutResponse, sizeof(logoutResponse), 0);
 			printf("logout result is: %d\n", logoutResponse.result);
 		}

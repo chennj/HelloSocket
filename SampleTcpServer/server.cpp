@@ -6,7 +6,11 @@
 
 enum CMD
 {
-	CMD_LOGIN, CMD_LOGOUT, CMD_UNKNOWN
+	CMD_LOGIN, 
+	CMD_LOGIN_RESPONSE,
+	CMD_LOGOUT, 
+	CMD_LOGOUT_RESPONSE,
+	CMD_UNKNOWN
 };
 
 // msg header
@@ -16,28 +20,58 @@ struct DataHeader
 	short cmd;
 };
 
-struct UnknownResponse {
-	char msg[32];
+struct UnknownResponse : public DataHeader
+{
+	UnknownResponse()
+	{
+		data_length = sizeof(UnknownResponse);
+		cmd = CMD_UNKNOWN;
+	}
+	char msg[32] = {"unknown command"};
 };
 
-struct Login
+struct Login : public DataHeader
 {
-	char user_name[32];
-	char pass_word[32];
+	Login()
+	{
+		data_length = sizeof(Login);
+		cmd = CMD_LOGIN;
+	}
+
+	char username[32];
+	char password[32];
 };
 
-struct LoginResponse
+struct LoginResponse : public DataHeader
 {
+	LoginResponse()
+	{
+		data_length = sizeof(LoginResponse);
+		cmd = CMD_LOGIN_RESPONSE;
+		result = 1;
+	}
 	int result;
 };
 
-struct Logout
+struct Logout : public DataHeader
 {
-	char user_name[32];
+	Logout()
+	{
+		data_length = sizeof(Logout);
+		cmd = CMD_LOGOUT;
+	}
+
+	char username[32];
 };
 
-struct LogoutResponse
+struct LogoutResponse : public DataHeader
 {
+	LogoutResponse()
+	{
+		data_length = sizeof(LogoutResponse);
+		cmd = CMD_LOGOUT_RESPONSE;
+		result = 1;
+	}
 	int result;
 };
 
@@ -105,7 +139,6 @@ int main()
 			printf("error occurs while receive client request and mission finish.\n");
 			break;
 		}
-		printf("receive command is: %d, data length:%d\n", header.cmd, header.data_length);
 
 		// 5.2 deal client command
 		switch (header.cmd)
@@ -113,28 +146,28 @@ int main()
 		case CMD_LOGIN:
 		{
 			Login login = {};
-			nlen = recv(_sock_client, (char*)&login, sizeof(Login), 0);
+			recv(_sock_client, (char*)&login + sizeof(DataHeader), sizeof(Login) - sizeof(DataHeader), 0);
 			// ignore to check user name and password
 			// ...
-			LoginResponse loginResponse = {0};
-			send(_sock_client, (char*)&header, sizeof(DataHeader), 0);
+			printf("receive command is: CMD_LOGIN , data length: %d, user name: %s, pwd: %s\n", login.data_length, login.username, login.password);
+
+			LoginResponse loginResponse;
 			send(_sock_client, (char*)&loginResponse, sizeof(LoginResponse), 0);
 		}
 		break;
 		case CMD_LOGOUT:
 		{
 			Logout logout = {};
-			nlen = recv(_sock_client, (char*)&logout, sizeof(logout), 0);
+			recv(_sock_client, (char*)&logout + sizeof(DataHeader), sizeof(logout) - sizeof(DataHeader), 0);
+			printf("receive command is: CMD_LOGOUT , data length: %d, user name: %s\n", logout.data_length, logout.username);
 
-			LogoutResponse logoutResponse = { 1 };
-			send(_sock_client, (char*)&header, sizeof(DataHeader), 0);
+			LogoutResponse logoutResponse;
 			send(_sock_client, (char*)&logoutResponse, sizeof(logoutResponse), 0);
 		}
 		break;
 		default:
 		{
-			header = { CMD_UNKNOWN, 0 };
-			UnknownResponse unknownResponse = { "unknown command." };
+			UnknownResponse unknownResponse;
 			send(_sock_client, (char*)&header, sizeof(header), 0);
 			send(_sock_client, (char*)&unknownResponse, sizeof(unknownResponse), 0);
 		}
