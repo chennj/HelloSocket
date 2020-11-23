@@ -4,10 +4,41 @@
 #include<WinSock2.h>
 #include<stdio.h>
 
-struct DataPackage
+enum CMD
 {
-	int age;
-	char name[32];
+	CMD_LOGIN, CMD_LOGOUT, CMD_UNKNOWN
+};
+
+// msg header
+struct DataHeader
+{
+	short data_length;
+	short cmd;
+};
+
+struct UnknownResponse {
+	char msg[32];
+};
+
+struct Login
+{
+	char user_name[32];
+	char pass_word[32];
+};
+
+struct LoginResponse
+{
+	int result;
+};
+
+struct Logout
+{
+	char user_name[32];
+};
+
+struct LogoutResponse
+{
+	int result;
 };
 
 int main()
@@ -63,38 +94,51 @@ int main()
 	printf("a new client enter, socket: %d,ip:%s \n", (int)_sock, inet_ntoa(client_addr.sin_addr));
 
 	// 5 recive client request and deal
-	char _recv_buf[128] = {};
 	while (true)
 	{
+		DataHeader header = {};
+
 		// 5.1 receive client request
-		int nlen = recv(_sock_client, _recv_buf, 128, 0);
+		int nlen = recv(_sock_client, (char *)&header, sizeof(header), 0);
 		if (nlen <= 0)
 		{
 			printf("error occurs while receive client request and mission finish.\n");
 			break;
 		}
-		printf("server receive request is %s\n", _recv_buf);
+		printf("receive command is: %d, data length:%d\n", header.cmd, header.data_length);
 
-		// 5.2 deal client request
-		if (0 == strcmp(_recv_buf, "cmd_get_name"))
+		// 5.2 deal client command
+		switch (header.cmd)
 		{
-			char msg_buf[] = "nobody";
-			send(_sock_client, msg_buf, strlen(msg_buf) + 1, 0);
+		case CMD_LOGIN:
+		{
+			Login login = {};
+			nlen = recv(_sock_client, (char*)&login, sizeof(Login), 0);
+			// ignore to check user name and password
+			// ...
+			LoginResponse loginResponse = {0};
+			send(_sock_client, (char*)&header, sizeof(DataHeader), 0);
+			send(_sock_client, (char*)&loginResponse, sizeof(LoginResponse), 0);
 		}
-		else if (0 == strcmp(_recv_buf, "cmd_get_age"))
+		break;
+		case CMD_LOGOUT:
 		{
-			char msg_buf[] = "80";
-			send(_sock_client, msg_buf, strlen(msg_buf) + 1, 0);
+			Logout logout = {};
+			nlen = recv(_sock_client, (char*)&logout, sizeof(logout), 0);
+
+			LogoutResponse logoutResponse = { 1 };
+			send(_sock_client, (char*)&header, sizeof(DataHeader), 0);
+			send(_sock_client, (char*)&logoutResponse, sizeof(logoutResponse), 0);
 		}
-		else if (0 == strcmp(_recv_buf, "cmd_get_info"))
+		break;
+		default:
 		{
-			DataPackage dp = { 80,"ÕÅÈý" };
-			send(_sock_client, (const char*)&dp, sizeof(DataPackage), 0);
+			header = { CMD_UNKNOWN, 0 };
+			UnknownResponse unknownResponse = { "unknown command." };
+			send(_sock_client, (char*)&header, sizeof(header), 0);
+			send(_sock_client, (char*)&unknownResponse, sizeof(unknownResponse), 0);
 		}
-		else
-		{
-			char msg_buf[] = "???.";
-			send(_sock_client, msg_buf, strlen(msg_buf) + 1, 0);
+		break;
 		}
 
 	}

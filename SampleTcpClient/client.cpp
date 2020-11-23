@@ -4,10 +4,41 @@
 #include<WinSock2.h>
 #include<stdio.h>
 
-struct DataPackage
+enum CMD
 {
-	int age;
-	char name[32];
+	CMD_LOGIN, CMD_LOGOUT, CMD_UNKNOWN
+};
+
+// msg header
+struct DataHeader
+{
+	short data_length;
+	short cmd;
+};
+
+struct UnknownResponse {
+	char msg[32];
+};
+
+struct Login
+{
+	char user_name[32];
+	char pass_word[32];
+};
+
+struct LoginResponse
+{
+	int result;
+};
+
+struct Logout
+{
+	char user_name[32];
+};
+
+struct LogoutResponse
+{
+	int result;
 };
 
 int main()
@@ -46,25 +77,39 @@ int main()
 		scanf("%s", cmd_buf);
 		if (0 == strcmp(cmd_buf, "exit"))
 		{
+			printf("bye\n");
 			break;
 		}
-		else {
-			send(_sock, cmd_buf, strlen(cmd_buf) + 1, 0);
-		}
-
-		char buf[1024] = { 0 };
-		int nlen = recv(_sock, buf, 1024, 0);
-		if (nlen > 0)
+		else if (0 == strcmp(cmd_buf, "login")) 
 		{
-			if (0 == strcmp("cmd_get_info", cmd_buf))
-			{
-				DataPackage * dp = (DataPackage*)buf;
-				printf("that received data from server is age=%d,name=%s\n", dp->age,dp->name);
-			}
-			else
-			{
-				printf("that received data from server is %s\n", buf);
-			}
+			Login login = { "cnj","1234" };
+			DataHeader header = { sizeof(login), CMD_LOGIN };
+			send(_sock, (const char*)&header, sizeof(header), 0);
+			send(_sock, (const char*)&login, sizeof(login), 0);
+
+			DataHeader recv_header = {};
+			LoginResponse loginResponse = {};
+			recv(_sock, (char*)&recv_header, sizeof(recv_header), 0);
+			recv(_sock, (char*)&loginResponse, sizeof(loginResponse), 0);
+			printf("login result is: %d\n", loginResponse.result);
+		}
+		else if (0 == strcmp(cmd_buf, "logout"))
+		{
+			Logout logout = { "cnj" };
+			DataHeader header = { sizeof(logout), CMD_LOGOUT };
+			send(_sock, (const char*)&header, sizeof(header), 0);
+			send(_sock, (const char*)&logout, sizeof(logout), 0);
+
+			DataHeader recv_header = {};
+			LogoutResponse logoutResponse = {};
+			recv(_sock, (char*)&recv_header, sizeof(recv_header), 0);
+			recv(_sock, (char*)&logoutResponse, sizeof(logoutResponse), 0);
+			printf("logout result is: %d\n", logoutResponse.result);
+		}
+		else
+		{
+			printf("this command was not supported.\n");
+			continue;
 		}
 
 	}
