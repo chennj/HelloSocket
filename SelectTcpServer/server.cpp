@@ -130,7 +130,6 @@ int proc(SOCKET sock_client)
 	default:
 	{
 		UnknownResponse unknownResponse;
-		send(sock_client, (char*)&header, sizeof(header), 0);
 		send(sock_client, (char*)&unknownResponse, sizeof(unknownResponse), 0);
 	}
 	break;
@@ -204,7 +203,7 @@ int main()
 		//nfds is also max value+1 of all the file descriptor(socket).
 		//nfds can be 0 in the windows.
 		//that timeval was setted null means blocking, not null means nonblocking.
-		timeval t = { 1,0 };
+		timeval t = { 0,100 };
 		int ret = select(_sock + 1/*nfds*/, &fd_read, &fd_write, &fd_exception, &t);
 		if (ret < 0)
 		{

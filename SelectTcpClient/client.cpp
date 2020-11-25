@@ -81,6 +81,55 @@ struct NewUserJoin : public DataHeader
 	int sock;
 };
 
+int proc(SOCKET sock_local)
+{
+
+	char szRecv[1024] = {};
+
+	// 5.1 receive client request
+	int nlen = recv(sock_local, szRecv, sizeof(DataHeader), 0);
+	if (nlen <= 0)
+	{
+		printf("disconnected to server.\n");
+		return -1;
+	}
+
+	DataHeader * header = (DataHeader*)szRecv;
+
+	// 5.2 deal client command
+	switch (header->cmd)
+	{
+	case CMD_LOGIN_RESPONSE:
+	{
+		recv(sock_local, szRecv + sizeof(DataHeader), header->data_length - sizeof(DataHeader), 0);
+		LoginResponse* ret = (LoginResponse*)szRecv;
+		printf("receive server msg: CMD_LOGIN_RESPONSE, data length: %d, result: %d\n", header->data_length, ret->result);
+	}
+	break;
+	case CMD_LOGOUT_RESPONSE:
+	{
+		LogoutResponse logoutResponse = {};
+		recv(sock_local, (char*)&logoutResponse + sizeof(DataHeader), header->data_length - sizeof(DataHeader), 0);
+		printf("receive server msg: CMD_LOGOUT_RESPONSE, data length: %d, result: %d\n", header->data_length, logoutResponse.result);
+	}
+	break;
+	case CMD_NEW_USER_JOIN:
+	{
+		recv(sock_local, szRecv + sizeof(DataHeader), header->data_length - sizeof(DataHeader), 0);
+		NewUserJoin* ret = (NewUserJoin*)szRecv;
+		printf("receive server msg: CMD_NEW_USER_JOIN, data length: %d, result: %d\n", header->data_length, ret->sock);
+	}
+	break;
+	default:
+	{
+		recv(sock_local, szRecv + sizeof(DataHeader), header->data_length - sizeof(DataHeader), 0);
+		printf("receive server msg: UNKNOWN, data length: %d, data: %s\n", header->data_length, szRecv);
+	}
+	break;
+	}
+	return 0;
+}
+
 int main()
 {
 	WORD ver = MAKEWORD(2, 2);
@@ -113,40 +162,35 @@ int main()
 	// 3 send request to server and receive resposne from server
 	while (true)
 	{
-		char cmd_buf[128] = {};
-		scanf("%s", cmd_buf);
-		if (0 == strcmp(cmd_buf, "exit"))
+		FD_SET fdReads;
+		FD_ZERO(&fdReads);
+		FD_SET(_sock, &fdReads);
+
+		timeval t = { 1,0 };
+		int ret = select(_sock, &fdReads, 0, 0, &t);
+		if (ret < 0)
 		{
-			printf("bye\n");
+			printf("error occurs while listen server\n");
 			break;
 		}
-		else if (0 == strcmp(cmd_buf, "login"))
-		{
-			Login login;
-			strcpy(login.username, "cnj");
-			strcpy(login.password, "1234");
-			send(_sock, (const char*)&login, sizeof(login), 0);
 
-			LoginResponse loginResponse = {};
-			recv(_sock, (char*)&loginResponse, sizeof(loginResponse), 0);
-			printf("login result is: %d\n", loginResponse.result);
-		}
-		else if (0 == strcmp(cmd_buf, "logout"))
+		if (FD_ISSET(_sock, &fdReads))
 		{
-			Logout logout;
-			strcpy(logout.username, "cnj");
-			send(_sock, (const char*)&logout, sizeof(logout), 0);
+			FD_CLR(_sock, &fdReads);
 
-			LogoutResponse logoutResponse;
-			recv(_sock, (char*)&logoutResponse, sizeof(logoutResponse), 0);
-			printf("logout result is: %d\n", logoutResponse.result);
-		}
-		else
-		{
-			printf("this command was not supported.\n");
-			continue;
+			int ret = proc(_sock);
+			if (-1 == ret)
+			{
+				break;
+			}
 		}
 
+		printf("process other task while idle time.\n");
+		Login login;
+		strcpy(login.username, "cnj");
+		strcpy(login.password, "cnj123");
+		send(_sock, (const char*)&login, login.data_length, 0);
+		Sleep(1000);
 	}
 
 	printf("client is exit\n");
