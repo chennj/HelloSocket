@@ -3,6 +3,7 @@
 #include<Windows.h>
 #include<WinSock2.h>
 #include<stdio.h>
+#include<thread>
 
 enum CMD
 {
@@ -130,6 +131,41 @@ int proc(SOCKET sock_local)
 	return 0;
 }
 
+bool g_bRun = true;
+
+void cmd_thread(SOCKET _sock)
+{
+	while (true)
+	{
+		char cmd_buf[128] = {};
+		scanf("%s", cmd_buf);
+		if (0 == strcmp(cmd_buf, "exit"))
+		{
+			printf("bye\n");
+			break;
+		}
+		else if (0 == strcmp(cmd_buf, "login"))
+		{
+			Login login;
+			strcpy(login.username, "cnj");
+			strcpy(login.password, "cnj123");
+			send(_sock, (const char*)&login, sizeof(login), 0);
+		}
+		else if (0 == strcmp(cmd_buf, "logout"))
+		{
+			Logout logout;
+			strcpy(logout.username, "cnj");
+			send(_sock, (const char*)&logout, sizeof(logout), 0);
+		}
+		else
+		{
+			printf("this command was not supported.\n");
+		}
+	}
+
+	g_bRun = false;
+	
+}
 int main()
 {
 	WORD ver = MAKEWORD(2, 2);
@@ -160,7 +196,11 @@ int main()
 	printf("connect server success.\n");
 
 	// 3 send request to server and receive resposne from server
-	while (true)
+	// start up cmd thread
+	std::thread t1(cmd_thread, _sock);
+	t1.detach();
+
+	while (g_bRun)
 	{
 		FD_SET fdReads;
 		FD_ZERO(&fdReads);
@@ -185,12 +225,6 @@ int main()
 			}
 		}
 
-		printf("process other task while idle time.\n");
-		Login login;
-		strcpy(login.username, "cnj");
-		strcpy(login.password, "cnj123");
-		send(_sock, (const char*)&login, login.data_length, 0);
-		Sleep(1000);
 	}
 
 	printf("client is exit\n");
