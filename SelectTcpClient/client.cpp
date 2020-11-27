@@ -1,7 +1,21 @@
+// linux compile command
+// g++ client.cpp -std=c++11 -pthread -o client
+// ----------------------------------
 #define WIN32_LEAN_AND_MEAN	//try import small def loog ago
 
+#ifdef _WIN32
 #include<Windows.h>
 #include<WinSock2.h>
+#else
+#include<unistd.h>
+#include<arpa/inet.h>
+#include<sys/types.h>
+#include <string.h>
+
+#define SOCKET int
+#define INVALIDE_SOCKET (SOCKET)(~0)
+#define SOCKET_ERROR			(-1)
+#endif
 #include<stdio.h>
 #include<thread>
 
@@ -109,7 +123,7 @@ int proc(SOCKET sock_local)
 	break;
 	case CMD_LOGOUT_RESPONSE:
 	{
-		LogoutResponse logoutResponse = {};
+		LogoutResponse logoutResponse;
 		recv(sock_local, (char*)&logoutResponse + sizeof(DataHeader), header->data_length - sizeof(DataHeader), 0);
 		printf("receive server msg: CMD_LOGOUT_RESPONSE, data length: %d, result: %d\n", header->data_length, logoutResponse.result);
 	}
@@ -164,14 +178,15 @@ void cmd_thread(SOCKET _sock)
 	}
 
 	g_bRun = false;
-	
+
 }
 int main()
 {
+#ifdef _WIN32
 	WORD ver = MAKEWORD(2, 2);
 	WSADATA data;
 	WSAStartup(ver, &data);
-
+#endif
 	//---------
 	//-- create sample tcp client use socket api
 	// 1 create socket
@@ -187,7 +202,11 @@ int main()
 	sockaddr_in _sin = {};
 	_sin.sin_family = AF_INET;
 	_sin.sin_port = htons(12345);
-	_sin.sin_addr.S_un.S_addr = inet_addr("127.0.0.1");
+#ifdef _WIN32
+	_sin.sin_addr.S_un.S_addr = inet_addr("192.168.137.1");
+#else
+	_sin.sin_addr.s_addr = inet_addr("192.168.137.1");
+#endif
 	if (SOCKET_ERROR == connect(_sock, (sockaddr*)&_sin, sizeof(sockaddr_in)))
 	{
 		printf("connect server failure.\n");
@@ -197,17 +216,22 @@ int main()
 
 	// 3 send request to server and receive resposne from server
 	// start up cmd thread
+
 	std::thread t1(cmd_thread, _sock);
 	t1.detach();
 
 	while (g_bRun)
 	{
+#ifdef _WIN32
 		FD_SET fdReads;
+#else
+		fd_set fdReads;
+#endif
 		FD_ZERO(&fdReads);
 		FD_SET(_sock, &fdReads);
 
 		timeval t = { 1,0 };
-		int ret = select(_sock, &fdReads, 0, 0, &t);
+		int ret = select(_sock + 1, &fdReads, 0, 0, &t);
 		if (ret < 0)
 		{
 			printf("error occurs while listen server\n");
@@ -229,11 +253,14 @@ int main()
 
 	printf("client is exit\n");
 
+#ifdef _WIN32
 	// 4 close socket
 	closesocket(_sock);
 
 	// clean windows socket environment
 	WSACleanup();
-
+#else
+	close(_sock);
+#endif
 	return 0;
 }

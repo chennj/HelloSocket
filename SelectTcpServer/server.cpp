@@ -251,7 +251,7 @@ int main()
 		}
 
 		// select(...) must be select(...,CAN'T BE NULL);
-		printf("process other task while idle.\n");
+		//printf("process other task while idle.\n");
 	}
 
 	// 6 close socket
