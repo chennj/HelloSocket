@@ -1,9 +1,22 @@
+// linux compile command
+// g++ server.cpp -std=c++11 -pthread -o server
+// ----------------------------------
+#ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN	//try import small def loog ago
-
 #include<Windows.h>
 #include<WinSock2.h>
-#include<stdio.h>
+#else
+#include<unistd.h>
+#include<arpa/inet.h>
+#include<sys/types.h>
+#include<string.h>
 
+#define SOCKET int
+#define INVALID_SOCKET  (SOCKET)(~0)
+#define SOCKET_ERROR		    (-1)
+#endif
+
+#include<stdio.h>
 #include<vector>
 
 enum CMD
@@ -29,8 +42,9 @@ struct UnknownResponse : public DataHeader
 	{
 		data_length = sizeof(UnknownResponse);
 		cmd = CMD_UNKNOWN;
+		strcpy(msg, "unknown command");
 	}
-	char msg[32] = { "unknown command" };
+	char msg[32];
 };
 
 struct Login : public DataHeader
@@ -96,7 +110,7 @@ int proc(SOCKET sock_client)
 	int nlen = recv(sock_client, szRecv, sizeof(DataHeader), 0);
 	if (nlen <= 0)
 	{
-		printf("client socket %d offline\n",sock_client);
+		printf("client socket %d offline\n", sock_client);
 		return -1;
 	}
 
@@ -119,7 +133,7 @@ int proc(SOCKET sock_client)
 	break;
 	case CMD_LOGOUT:
 	{
-		Logout logout = {};
+		Logout logout;
 		recv(sock_client, (char*)&logout + sizeof(DataHeader), header->data_length - sizeof(DataHeader), 0);
 		printf("receive command is: CMD_LOGOUT , data length: %d, user name: %s\n", header->data_length, logout.username);
 
@@ -139,9 +153,11 @@ int proc(SOCKET sock_client)
 
 int main()
 {
+#ifdef _WIN32
 	WORD ver = MAKEWORD(2, 2);
 	WSADATA data;
 	WSAStartup(ver, &data);
+#endif
 
 	//---------
 	//-- create sample tcp server use socket api
@@ -159,11 +175,19 @@ int main()
 	sockaddr_in _sin = {};
 	_sin.sin_family = AF_INET;
 	_sin.sin_port = htons(12345);
+#ifdef _WIN32
 	_sin.sin_addr.S_un.S_addr = INADDR_ANY;//inet_addr("127.0.0.1");
+#else
+	_sin.sin_addr.s_addr = INADDR_ANY;
+#endif
 	if (bind(_sock, (sockaddr*)&_sin, sizeof(sockaddr_in)) == SOCKET_ERROR)
 	{
 		printf("bind failure because port used by other\n");
+#ifdef _WIN32
 		closesocket(_sock);
+#else
+		close(_sock);
+#endif
 		return 0;
 	}
 	printf("bind net port success.\n");
@@ -172,7 +196,11 @@ int main()
 	if (SOCKET_ERROR == listen(_sock, 5))
 	{
 		printf("listen failure;");
+#ifdef _WIN32
 		closesocket(_sock);
+#else
+		close(_sock);
+#endif
 		return 0;
 	}
 	printf("listenning... \n");
@@ -194,8 +222,10 @@ int main()
 		FD_SET(_sock, &fd_write);
 		FD_SET(_sock, &fd_exception);
 
+		SOCKET max_socket = _sock;
 		for (int n = (int)g_clients.size() - 1; n >= 0; n--)
 		{
+			max_socket = g_clients[n]>max_socket ? g_clients[n] : max_socket;
 			FD_SET(g_clients[n], &fd_read);
 		}
 
@@ -204,7 +234,7 @@ int main()
 		//nfds can be 0 in the windows.
 		//that timeval was setted null means blocking, not null means nonblocking.
 		timeval t = { 0,100 };
-		int ret = select(_sock + 1/*nfds*/, &fd_read, &fd_write, &fd_exception, &t);
+		int ret = select(max_socket + 1/*nfds*/, &fd_read, &fd_write, &fd_exception, &t);
 		if (ret < 0)
 		{
 			printf("error occurs while select and mission finish.\n");
@@ -219,8 +249,11 @@ int main()
 			sockaddr_in client_addr = {};
 			int client_addr_len = sizeof(sockaddr_in);	// note: accept will fall without sizeof(sockaddr_in)
 			SOCKET _sock_client = INVALID_SOCKET;
-
+#ifdef _WIN32
 			_sock_client = accept(_sock, (sockaddr*)&client_addr, &client_addr_len);
+#else
+			_sock_client = accept(_sock, (sockaddr*)&client_addr, (socklen_t*)&client_addr_len);
+#endif
 			if (INVALID_SOCKET == _sock_client)
 			{
 				printf("accept a invalid client socket\n");
@@ -238,6 +271,7 @@ int main()
 			printf("a new client enter, socket: %d,ip:%s \n", (int)_sock, inet_ntoa(client_addr.sin_addr));
 		}
 
+#ifdef _WIN32
 		for (size_t n = 0; n < fd_read.fd_count; n++)
 		{
 			if (-1 == proc(fd_read.fd_array[n]))
@@ -249,19 +283,53 @@ int main()
 				}
 			}
 		}
+#else
+		for (int n = (int)g_clients.size() - 1; n >= 0; n--)
+		{
+			if (FD_ISSET(g_clients[n], &fd_read))
+			{
+				if (-1 == proc(g_clients[n]))
+				{
+					//auto equals std::vector<SOCKET>::iterator
+					//auto iter = g_clients.begin();
+					//while (iter != g_clients.end())
+					//{
+					//	if (iter[n] == g_clients[n])
+					//	{
+					//		g_clients.erase(iter);
+					//		break;
+					//	}
+					//	iter++;
+					//}
+					//ÓÅ»¯
+					auto iter = g_clients.begin() + n;
+					if (iter != g_clients.end())
+					{
+						g_clients.erase(iter);
+					}
+				}
+			}
+		}
+#endif
 
 		// select(...) must be select(...,CAN'T BE NULL);
 		//printf("process other task while idle.\n");
 	}
 
 	// 6 close socket
+#ifdef _WIN32
 	for (size_t n = g_clients.size() - 1; n >= 0; n--)
 	{
 		closesocket(g_clients[n]);
 	}
-
 	// clean windows socket environment
 	WSACleanup();
+#else
+	for (int n = (int)g_clients.size() - 1; n >= 0; n--)
+	{
+		close(g_clients[n]);
+	}
+#endif
 
 	printf("server is shutdown\n");
 
