@@ -110,7 +110,7 @@ int proc(SOCKET sock_client)
 	int nlen = recv(sock_client, szRecv, sizeof(DataHeader), 0);
 	if (nlen <= 0)
 	{
-		printf("client socket %d offline\n", sock_client);
+		printf("client socket <%d> offline\n", sock_client);
 		return -1;
 	}
 
@@ -125,7 +125,7 @@ int proc(SOCKET sock_client)
 		Login* ret = (Login*)szRecv;
 		// ignore to check user name and password
 		// ...
-		printf("receive command is: CMD_LOGIN , data length: %d, user name: %s, pwd: %s\n", header->data_length, ret->username, ret->password);
+		printf("receive socket<%d> msg: CMD_LOGIN , data length: %d, user name: %s, pwd: %s\n", sock_client, header->data_length, ret->username, ret->password);
 
 		LoginResponse loginResponse;
 		send(sock_client, (char*)&loginResponse, sizeof(LoginResponse), 0);
@@ -135,7 +135,7 @@ int proc(SOCKET sock_client)
 	{
 		Logout logout;
 		recv(sock_client, (char*)&logout + sizeof(DataHeader), header->data_length - sizeof(DataHeader), 0);
-		printf("receive command is: CMD_LOGOUT , data length: %d, user name: %s\n", header->data_length, logout.username);
+		printf("receive socket<%d> msg:: CMD_LOGOUT , data length: %d, user name: %s\n", sock_client, header->data_length, logout.username);
 
 		LogoutResponse logoutResponse;
 		send(sock_client, (char*)&logoutResponse, sizeof(logoutResponse), 0);
@@ -268,7 +268,7 @@ int main()
 
 			g_clients.push_back(_sock_client);
 
-			printf("a new client enter, socket: %d,ip:%s \n", (int)_sock, inet_ntoa(client_addr.sin_addr));
+			printf("a new client enter, socket<%d>,ip:%s \n", (int)_sock_client, inet_ntoa(client_addr.sin_addr));
 		}
 
 #ifdef _WIN32
