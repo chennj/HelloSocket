@@ -37,33 +37,46 @@ void cmd_thread(EasyTcpClient* pclient)
 
 int main()
 {
-	EasyTcpClient client1;
-	client1.Connect("127.0.0.1", 12345);
+	//EasyTcpClient client1;
+	//client1.Connect("127.0.0.1", 12345);
 
-	std::thread t1(cmd_thread, &client1);
-	t1.detach();
+	//std::thread t1(cmd_thread, &client1);
+	//t1.detach();
 
-	EasyTcpClient client2;
-	client2.Connect("127.0.0.1", 12346);
+	//EasyTcpClient client2;
+	//client2.Connect("127.0.0.1", 12346);
 
-	std::thread t2(cmd_thread, &client2);
-	t2.detach();
+	//std::thread t2(cmd_thread, &client2);
+	//t2.detach();
 
-	EasyTcpClient client3;
-	client3.Connect("127.0.0.1", 12347);
+	//EasyTcpClient client3;
+	//client3.Connect("127.0.0.1", 12347);
 
-	std::thread t3(cmd_thread, &client3);
-	t3.detach();
-	while (client1.IsRunning() || client2.IsRunning() || client3.IsRunning())
+	//std::thread t3(cmd_thread, &client3);
+	//t3.detach();
+	//while (client1.IsRunning() || client2.IsRunning() || client3.IsRunning())
+	//{
+	//	client1.OnRun();
+	//	client2.OnRun();
+	//	client3.OnRun();
+	//}
+
+	//client1.Close();
+	//client2.Close();
+	//client3.Close();
+
+	EasyTcpClient client;
+	client.Connect("192.168.137.129", 12345);
+	//client.Connect("127.0.0.1", 12345);
+
+	std::thread t(cmd_thread, &client);
+	t.detach();
+
+	while (client.IsRunning())
 	{
-		client1.OnRun();
-		client2.OnRun();
-		client3.OnRun();
+		client.OnRun();
 	}
-
-	client1.Close();
-	client2.Close();
-	client3.Close();
+	client.Close();
 
 	return 0;
 }

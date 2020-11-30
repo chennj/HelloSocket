@@ -40,7 +40,7 @@ public:
 	{
 		if (INVALID_SOCKET != _sock)
 		{
-			printf("close previous connection<socket=%d>\n",_sock);
+			printf("close previous connection<socket=%d>\n", (int)_sock);
 			Close();
 		}
 
