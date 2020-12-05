@@ -35,6 +35,26 @@ void cmd_thread(EasyTcpClient* pclient)
 	pclient->Close();
 }
 
+bool g_run = true;
+void cmd_thread2()
+{
+	while (true)
+	{
+		char cmd_buf[128] = {};
+		scanf("%s", cmd_buf);
+		if (0 == strcmp(cmd_buf, "exit"))
+		{
+			printf("bye\n");
+			g_run = false;
+			break;
+		}
+		else
+		{
+			printf("this command was not supported.\n");
+		}
+	}
+}
+
 int main()
 {
 	//EasyTcpClient client1;
@@ -65,18 +85,50 @@ int main()
 	//client2.Close();
 	//client3.Close();
 
-	EasyTcpClient client;
+	//EasyTcpClient client;
 	//client.Connect("192.168.137.129", 12345);
-	client.Connect("127.0.0.1", 12345);
+	//client.Connect("127.0.0.1", 12345);
 
-	std::thread t(cmd_thread, &client);
+	//std::thread t(cmd_thread, &client);
+	//t.detach();
+
+	const int cCount = 4;
+
+	//下面这种定义方式很不好，如果nCount过大，会造成栈溢出
+	//EasyTcpClient clients[cCount];
+
+	EasyTcpClient* pclients[cCount];
+	
+	for (int n = 0; n < cCount; n++)
+	{
+		pclients[n] = new EasyTcpClient;
+	}
+
+	for (int n = 0; n < cCount; n++)
+	{
+		pclients[n]->Connect("127.0.0.1", 12345);
+	}
+
+	// start ui thread
+	std::thread t(cmd_thread2);
 	t.detach();
 
-	while (client.IsRunning())
+	Login login;
+	strcpy(login.username, "cnj");
+	strcpy(login.password, "cnj123");
+	while (g_run)
 	{
-		client.OnRun();
+		for (int n = 0; n < cCount; n++)
+		{
+			pclients[n]->OnRun();
+			pclients[n]->SendData(&login);
+		}
 	}
-	client.Close();
+
+	for (int n = 0; n < cCount; n++)
+	{
+		pclients[n]->Close();
+	}
 
 	return 0;
 }

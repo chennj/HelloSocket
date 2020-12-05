@@ -326,10 +326,10 @@ public:
 		}
 
 		// copy receive buffer data to message buffer
-		memcpy(pclient->msgBuf() + pclient->GetLastPos, _szRecvBuffer, nLen);
+		memcpy(pclient->msgBuf() + pclient->GetLastPos(), _szRecvBuffer, nLen);
 
 		// update end position of message buffer
-		pclient->SetLastPos(pclient->GetLastPos + nLen);
+		pclient->SetLastPos(pclient->GetLastPos() + nLen);
 
 		// whether message buffer size greater than message header(DataHeader)'s size,
 		// if yes, converting message buffer to struct DataHeader and clear message buffer
@@ -372,7 +372,7 @@ public:
 		case CMD_LOGIN:
 		{
 			Login* ret = (Login*)pheader;
-			printf("socket<%d> receive client socket<%d> message: CMD_LOGIN , data length<%d>, user name<%s>, pwd<%s>\n", (int)_sock, (int)sock_client, pheader->data_length, ret->username, ret->password);
+			//printf("socket<%d> receive client socket<%d> message: CMD_LOGIN , data length<%d>, user name<%s>, pwd<%s>\n", (int)_sock, (int)sock_client, pheader->data_length, ret->username, ret->password);
 
 			LoginResponse loginResponse;
 			SendData(sock_client, &loginResponse);
@@ -381,7 +381,7 @@ public:
 		case CMD_LOGOUT:
 		{
 			Logout* ret = (Logout*)pheader;
-			printf("socket<%d> receive client socket<%d> message: CMD_LOGOUT , data length<%d>, user name<%s>\n", (int)_sock, (int)sock_client, pheader->data_length, ret->username);
+			//printf("socket<%d> receive client socket<%d> message: CMD_LOGOUT , data length<%d>, user name<%s>\n", (int)_sock, (int)sock_client, pheader->data_length, ret->username);
 
 			LogoutResponse logoutResponse;
 			SendData(sock_client, &logoutResponse);
@@ -390,8 +390,8 @@ public:
 		default:
 		{
 			printf("socket<%d> receive client socket<%d> message: CMD_UNKNOWN , data length<%d>\n", (int)_sock, (int)sock_client, pheader->data_length);
-			UnknownResponse unknown;
-			SendData(sock_client, &unknown);
+			//UnknownResponse unknown;
+			//SendData(sock_client, &unknown);
 		}
 		break;
 		}
@@ -403,7 +403,7 @@ public:
 		if (IsRunning() && pheader)
 		{
 			int ret = send(sock_client, (const char*)pheader, pheader->data_length, 0);
-			printf("socket<%d> send client socket<%d> response: dataLen<%d>, sendResult<%d>\n", (int)_sock, (int)sock_client, pheader->data_length, ret);
+			//printf("socket<%d> send client socket<%d> response: dataLen<%d>, sendResult<%d>\n", (int)_sock, (int)sock_client, pheader->data_length, ret);
 			return ret;
 
 		}
