@@ -2,6 +2,7 @@
 #define _EASYTCPSERVER_HPP_
 
 #ifdef _WIN32
+#define FD_SETSIZE      1024			//windows default FD_SETSIZE equals 64, too small
 #define WIN32_LEAN_AND_MEAN
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
 #define _CRT_SECURE_NO_WARNINGS
@@ -21,6 +22,7 @@
 #include<stdio.h>
 #include<vector>
 #include"MessageHeader.hpp"
+#include"CellTimestamp.hpp"
 
 #ifndef RECV_BUFFER_SIZE
 #define RECV_BUFFER_SIZE 1024*10
@@ -80,11 +82,15 @@ private:
 	std::vector<ClientSocket*> _clients;
 	// receive buffer
 	char _szRecvBuffer[RECV_BUFFER_SIZE] = {};
-
+	// high resolution timers
+	CellTimestamp _tTime;
+	// counter
+	int _recvCount;
 public:
 	EasyTcpServer()
 	{
 		_sock = INVALID_SOCKET;
+		_recvCount = 0;
 	}
 
 	virtual ~EasyTcpServer()
@@ -326,10 +332,10 @@ public:
 		}
 
 		// copy receive buffer data to message buffer
-		memcpy(pclient->msgBuf() + pclient->GetLastPos, _szRecvBuffer, nLen);
+		memcpy(pclient->msgBuf() + pclient->GetLastPos(), _szRecvBuffer, nLen);
 
 		// update end position of message buffer
-		pclient->SetLastPos(pclient->GetLastPos + nLen);
+		pclient->SetLastPos(pclient->GetLastPos() + nLen);
 
 		// whether message buffer size greater than message header(DataHeader)'s size,
 		// if yes, converting message buffer to struct DataHeader and clear message buffer
@@ -367,6 +373,16 @@ public:
 	// response net message
 	virtual void OnNetMessage(DataHeader* pheader, SOCKET sock_client)
 	{
+		// speed of server receiving client data packet
+		_recvCount++;
+		auto t1 = _tTime.getElapsedSecond();
+		if (t1 >= 1.0)
+		{
+			printf("time<%lf>,socket<%d> clients<%d>,packet count<%d>\n", t1, (int)_sock, _clients.size(), _recvCount);
+			_recvCount = 0;
+			_tTime.update();
+		}
+
 		switch (pheader->cmd)
 		{
 		case CMD_LOGIN:
