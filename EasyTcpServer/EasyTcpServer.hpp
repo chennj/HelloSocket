@@ -2,7 +2,9 @@
 #define _EASYTCPSERVER_HPP_
 
 #ifdef _WIN32
+#ifndef FD_SETSIZE
 #define FD_SETSIZE      1024			//windows default FD_SETSIZE equals 64, too small
+#endif
 #define WIN32_LEAN_AND_MEAN
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
 #define _CRT_SECURE_NO_WARNINGS

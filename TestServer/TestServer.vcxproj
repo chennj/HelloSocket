@@ -150,6 +150,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="CellTimestamp.hpp" />
     <ClInclude Include="EasyTcpServer.hpp" />
     <ClInclude Include="MessageHeader.hpp" />
   </ItemGroup>

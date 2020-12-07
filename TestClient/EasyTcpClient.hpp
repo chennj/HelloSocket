@@ -60,7 +60,7 @@ public:
 			printf("create socket failure.\n");
 			return -1;
 		}
-		printf("create socket success.\n");
+		//printf("create socket success.\n");
 		return 0;
 	}
 
@@ -85,7 +85,7 @@ public:
 		{
 			printf("connect server failure...\n");
 		}
-		printf("connect server success...\n");
+		//printf("connect server success...\n");
 		return ret;
 	}
 

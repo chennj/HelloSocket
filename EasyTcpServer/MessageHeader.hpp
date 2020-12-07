@@ -40,6 +40,7 @@ public:
 
 	char username[32];
 	char password[32];
+	char data[1000 - 68];
 };
 
 struct LoginResponse : public DataHeader
@@ -51,6 +52,7 @@ struct LoginResponse : public DataHeader
 		result = 1;
 	}
 	int result;
+	char data[1000 - 8];
 };
 
 struct Logout : public DataHeader
@@ -86,6 +88,5 @@ struct NewUserJoin : public DataHeader
 	}
 	int sock;
 };
-
 
 #endif

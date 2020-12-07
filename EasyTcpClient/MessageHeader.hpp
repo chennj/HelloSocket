@@ -22,6 +22,9 @@ struct UnknownResponse : public DataHeader
 {
 	UnknownResponse()
 	{
+		data_length = sizeof(UnknownResponse);
+		cmd = CMD_UNKNOWN;
+		strcpy(msg, "error command.");
 	}
 	char msg[32];
 };
@@ -37,14 +40,19 @@ public:
 
 	char username[32];
 	char password[32];
+	char data[1000 - 68];
 };
 
 struct LoginResponse : public DataHeader
 {
 	LoginResponse()
 	{
+		data_length = sizeof(LoginResponse);
+		cmd = CMD_LOGIN_RESPONSE;
+		result = 1;
 	}
 	int result;
+	char data[1000 - 8];
 };
 
 struct Logout : public DataHeader
@@ -63,6 +71,9 @@ struct LogoutResponse : public DataHeader
 {
 	LogoutResponse()
 	{
+		data_length = sizeof(LogoutResponse);
+		cmd = CMD_LOGOUT_RESPONSE;
+		result = 1;
 	}
 	int result;
 };
@@ -77,6 +88,5 @@ struct NewUserJoin : public DataHeader
 	}
 	int sock;
 };
-
 
 #endif

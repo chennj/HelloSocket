@@ -2,6 +2,9 @@
 #define _EASYTCPSERVER_HPP_
 
 #ifdef _WIN32
+#ifndef FD_SETSIZE
+#define FD_SETSIZE      1024			//windows default FD_SETSIZE equals 64, too small
+#endif
 #define WIN32_LEAN_AND_MEAN
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
 #define _CRT_SECURE_NO_WARNINGS
@@ -21,6 +24,7 @@
 #include<stdio.h>
 #include<vector>
 #include"MessageHeader.hpp"
+#include"CellTimestamp.hpp"
 
 #ifndef RECV_BUFFER_SIZE
 #define RECV_BUFFER_SIZE 1024*10
@@ -80,6 +84,10 @@ private:
 	std::vector<ClientSocket*> _clients;
 	// receive buffer
 	char _szRecvBuffer[RECV_BUFFER_SIZE] = {};
+	// high resolution timers
+	CellTimestamp _tTime;
+	// counter
+	int _recvCount;
 
 public:
 	EasyTcpServer()
@@ -192,12 +200,12 @@ public:
 		}
 
 		// boardcast
-		NewUserJoin user_join;
-		SendDataToAll(&user_join);
+		//NewUserJoin user_join;
+		//SendDataToAll(&user_join);
 
 		_clients.push_back(new ClientSocket(sock_client));
 
-		printf("socket<%d>a new client enter: socket<%d>,ip<%s> \n", (int)_sock, (int)sock_client, inet_ntoa(client_addr.sin_addr));
+		//printf("socket<%d>a new client enter: socket<%d>,ip<%s> \n", (int)_sock, (int)sock_client, inet_ntoa(client_addr.sin_addr));
 
 		return sock_client;
 	}
@@ -367,24 +375,34 @@ public:
 	// response net message
 	virtual void OnNetMessage(DataHeader* pheader, SOCKET sock_client)
 	{
+		// speed of server receiving client data packet
+		_recvCount++;
+		auto t1 = _tTime.getElapsedSecond();
+		if (t1 >= 1.0)
+		{
+			printf("time<%lf>,socket<%d> clients<%d>,packet count<%d>\n", t1, (int)_sock, _clients.size(), _recvCount);
+			_recvCount = 0;
+			_tTime.update();
+		}
+
 		switch (pheader->cmd)
 		{
 		case CMD_LOGIN:
 		{
-			Login* ret = (Login*)pheader;
+			//Login* ret = (Login*)pheader;
 			//printf("socket<%d> receive client socket<%d> message: CMD_LOGIN , data length<%d>, user name<%s>, pwd<%s>\n", (int)_sock, (int)sock_client, pheader->data_length, ret->username, ret->password);
 
-			LoginResponse loginResponse;
-			SendData(sock_client, &loginResponse);
+			//LoginResponse loginResponse;
+			//SendData(sock_client, &loginResponse);
 		}
 		break;
 		case CMD_LOGOUT:
 		{
-			Logout* ret = (Logout*)pheader;
+			//Logout* ret = (Logout*)pheader;
 			//printf("socket<%d> receive client socket<%d> message: CMD_LOGOUT , data length<%d>, user name<%s>\n", (int)_sock, (int)sock_client, pheader->data_length, ret->username);
 
-			LogoutResponse logoutResponse;
-			SendData(sock_client, &logoutResponse);
+			//LogoutResponse logoutResponse;
+			//SendData(sock_client, &logoutResponse);
 		}
 		break;
 		default:

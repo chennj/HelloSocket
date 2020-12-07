@@ -4,7 +4,7 @@
 
 bool g_run = true;
 
-void cmd_thread()
+void cmdThread()
 {
 	while (true)
 	{
@@ -26,25 +26,7 @@ void cmd_thread()
 
 int main()
 {
-	//EasyTcpServer server;
-	//server.InitSocket();
-	//server.Bind(nullptr, 12345);
-	//server.Listen(5);
-
-	//EasyTcpServer server2;
-	//server2.InitSocket();
-	//server2.Bind(nullptr, 12346);
-	//server2.Listen(5);
-
-	//while (server.IsRunning() || server2.IsRunning())
-	//{
-	//	server.OnRun();
-	//	server2.OnRun();
-	//}
-	//server.Close();
-	//server2.Close();
-
-	std::thread t(cmd_thread);
+	std::thread t(cmdThread);
 	t.detach();
 
 	EasyTcpServer server;
