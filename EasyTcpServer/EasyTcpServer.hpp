@@ -21,13 +21,23 @@
 #define INVALID_SOCKET	(SOCKET)(~0)
 #define SOCKET_ERROR			(-1)
 #endif
+
 #include<stdio.h>
 #include<vector>
+#include<thread>
+#include<mutex>
+
 #include"MessageHeader.hpp"
 #include"CellTimestamp.hpp"
 
+// minimum buffer size
 #ifndef RECV_BUFFER_SIZE
 #define RECV_BUFFER_SIZE 1024*10
+#endif
+
+// CellServer thread count
+#ifndef CELLSERVER_THREAD_COUNT
+#define CELLSERVER_THREAD_COUNT 4
 #endif
 
 class ClientSocket
@@ -42,7 +52,7 @@ public:
 
 	virtual ~ClientSocket()
 	{
-		delete[] _szMsgBuffer;
+		delete[] (void*)_szMsgBuffer;
 	}
 
 public:
@@ -75,6 +85,278 @@ private:
 	int _lastPos;
 };
 
+/**
+*	resposible for processing client message
+*/
+class CellServer
+{
+private:
+	// local socket
+	SOCKET _sock;
+	// client sockets
+	std::vector<ClientSocket*> _clients;
+	// client socket buffer
+	std::vector<ClientSocket*> _clientsBuf;
+	// receive buffer
+	char _szRecvBuffer[RECV_BUFFER_SIZE] = {};
+	// lock
+	std::mutex _mutex;
+	// thread handle
+	std::thread* _pThread;
+public:
+	CellServer(SOCKET sock = INVALID_SOCKET)
+	{
+		_sock = sock;
+		_pThread = NULL;
+	}
+	~CellServer()
+	{
+		Close();
+	}
+
+public:
+	void addClient(ClientSocket* pClientSocket)
+	{
+		// self unlocking
+		std::lock_guard<std::mutex> lockGuard(_mutex);
+		//_mutex.lock();
+		_clientsBuf.push_back(pClientSocket);
+		//_mutex.unlock();
+	}
+
+	size_t getClientCount()
+	{
+		return _clients.size() + _clientsBuf.size();
+	}
+
+public:
+	// if is running
+	bool IsRunning()
+	{
+		return _sock != INVALID_SOCKET;
+	}
+
+	// process net message
+	int OnRun()
+	{
+		int ret = -1;
+
+		while (true)
+		{
+			if (!IsRunning())
+			{
+				return -1;
+			}
+
+			if (_clientsBuf.size() > 0)
+			{
+				std::lock_guard<std::mutex> lockGuard(_mutex);
+				for (auto pClient : _clientsBuf)
+				{
+					_clients.push_back(pClient);
+				}
+				_clientsBuf.clear();
+			}
+
+			if (_clients.size() == 0)
+			{
+				continue;
+			}
+
+			fd_set fd_read;
+			fd_set fd_write;
+			fd_set fd_exception;
+
+			FD_ZERO(&fd_read);
+			FD_ZERO(&fd_write);
+			FD_ZERO(&fd_exception);
+
+			// put server's socket in all the fd_set
+			FD_SET(_sock, &fd_read);
+			FD_SET(_sock, &fd_write);
+			FD_SET(_sock, &fd_exception);
+
+			SOCKET max_socket = _clients[0]->sockfd();
+			for (int n = (int)_clients.size() - 1; n >= 0; n--)
+			{
+				max_socket = _clients[n]->sockfd() > max_socket ? _clients[n]->sockfd() : max_socket;
+				FD_SET(_clients[n]->sockfd(), &fd_read);
+			}
+
+			//nfds is range of fd_set, not fd_set's count.
+			//nfds is also max value+1 of all the file descriptor(socket).
+			//nfds can be 0 in the windows.
+			//that timeval was setted null means blocking, not null means nonblocking.
+			timeval t = { 0,10 };
+			ret = select(max_socket + 1/*nfds*/, &fd_read, &fd_write, &fd_exception, &t);
+			if (ret < 0)
+			{
+				printf("socket<%d> error occurs while select and mission finish.\n", (int)_sock);
+				Close();
+				return ret;
+			}
+
+			for (int n = (int)_clients.size() - 1; n >= 0; n--)
+			{
+				if (FD_ISSET(_clients[n]->sockfd(), &fd_read))
+				{
+					if (-1 == RecvData(_clients[n]))
+					{
+						//auto equals std::vector<SOCKET>::iterator
+						//auto iter = _clients.begin();
+						//while (iter != _clients.end())
+						//{
+						//	if (iter[n] == _clients[n])
+						//	{
+						//		_clients.erase(iter);
+						//		break;
+						//	}
+						//	iter++;
+						//}
+						//优化
+						auto iter = _clients.begin() + n;
+						if (iter != _clients.end())
+						{
+							_clients.erase(iter);
+						}
+					}
+				}
+			}
+		}
+
+		return ret;
+	}
+
+	// start self
+	void Start()
+	{
+		_pThread = new std::thread(std::mem_fun(&CellServer::OnRun), this);
+	}
+
+	// receive data, deal sticking package and splitting package
+	int RecvData(ClientSocket* pclient)
+	{
+		//receive client data
+		int nLen = recv(pclient->sockfd(), _szRecvBuffer, RECV_BUFFER_SIZE, 0);
+		if (nLen <= 0)
+		{
+			printf("server socket<%d> client socket <%d> offline\n", (int)_sock, (int)pclient->sockfd());
+			return -1;
+		}
+
+		// copy receive buffer data to message buffer
+		memcpy(pclient->msgBuf() + pclient->GetLastPos(), _szRecvBuffer, nLen);
+
+		// update end position of message buffer
+		pclient->SetLastPos(pclient->GetLastPos() + nLen);
+
+		// whether message buffer size greater than message header(DataHeader)'s size,
+		// if yes, converting message buffer to struct DataHeader and clear message buffer
+		// had prcessed.
+		while (pclient->GetLastPos() >= sizeof(DataHeader))
+		{
+			// convert message buffer to DataHeader
+			DataHeader * pheader = (DataHeader*)pclient->msgBuf();
+			// whether message buffer size greater than current client message size,
+			if (pclient->GetLastPos() >= pheader->data_length)
+			{
+				// processed message's length
+				int nClientMsgLen = pheader->data_length;
+				// length of message buffer which was untreated
+				int nSize = pclient->GetLastPos() - nClientMsgLen;
+				// process net message
+				OnNetMessage(pheader, pclient->sockfd());
+				// earse processed message buffer
+				memcpy(pclient->msgBuf(), pclient->msgBuf() + nClientMsgLen, nSize);
+				// update end position of message buffer
+				pclient->SetLastPos(nSize);
+			}
+			else
+			{
+				// length of message buffer which was untreated less than 
+				// length of message header(DataHeader)'s size
+				break;
+			}
+
+		}
+
+		return 0;
+	}
+
+	// response net message
+	virtual void OnNetMessage(DataHeader* pheader, SOCKET sock_client)
+	{
+		//// statistics speed of server receiving client data packet
+		//_recvCount++;
+		//auto t1 = _tTime.getElapsedSecond();
+		//if (t1 >= 1.0)
+		//{
+		//	printf("time<%lf>,socket<%d> clients<%d>,packet count<%d>\n", t1, (int)_sock, _clients.size(), _recvCount);
+		//	_recvCount = 0;
+		//	_tTime.update();
+		//}
+
+		switch (pheader->cmd)
+		{
+		case CMD_LOGIN:
+		{
+			//Login* ret = (Login*)pheader;
+			//printf("socket<%d> receive client socket<%d> message: CMD_LOGIN , data length<%d>, user name<%s>, pwd<%s>\n", (int)_sock, (int)sock_client, pheader->data_length, ret->username, ret->password);
+
+			//LoginResponse loginResponse;
+			//SendData(sock_client, &loginResponse);
+		}
+		break;
+		case CMD_LOGOUT:
+		{
+			//Logout* ret = (Logout*)pheader;
+			//printf("socket<%d> receive client socket<%d> message: CMD_LOGOUT , data length<%d>, user name<%s>\n", (int)_sock, (int)sock_client, pheader->data_length, ret->username);
+
+			//LogoutResponse logoutResponse;
+			//SendData(sock_client, &logoutResponse);
+		}
+		break;
+		default:
+		{
+			printf("socket<%d> receive client socket<%d> message: CMD_UNKNOWN , data length<%d>\n", (int)_sock, (int)sock_client, pheader->data_length);
+			//UnknownResponse unknown;
+			//SendData(sock_client, &unknown);
+		}
+		break;
+		}
+	}
+
+	// close socket
+	void Close()
+	{
+		if (_sock == INVALID_SOCKET) return;
+
+#ifdef _WIN32
+		for (size_t n = _clients.size() - 1; n >= 0; n--)
+		{
+			closesocket(_clients[n]->sockfd());
+			delete _clients[n];
+		}
+
+		closesocket(_sock);
+
+		// clean windows socket environment
+		WSACleanup();
+#else
+		for (int n = (int)_clients.size() - 1; n >= 0; n--)
+		{
+			close(_clients[n]->sockfd());
+			delete _clients[n];
+		}
+#endif
+
+		_sock = INVALID_SOCKET;
+
+		printf("cell server is shutdown\n");
+	}
+
+};
+
 class EasyTcpServer
 {
 private:
@@ -82,9 +364,11 @@ private:
 	SOCKET _sock;
 	// client sockets
 	std::vector<ClientSocket*> _clients;
+	// CellServers
+	std::vector<CellServer*> _cellServers;
 	// receive buffer
-	char _szRecvBuffer[RECV_BUFFER_SIZE] = {};
-	// high resolution timers
+	//char _szRecvBuffer[RECV_BUFFER_SIZE] = {};
+	//// high resolution timers
 	CellTimestamp _tTime;
 	// counter
 	int _recvCount;
@@ -200,14 +484,39 @@ public:
 		}
 
 		// boardcast
-		NewUserJoin user_join;
-		SendDataToAll(&user_join);
+		//NewUserJoin user_join;
+		//SendDataToAll(&user_join);
 
-		_clients.push_back(new ClientSocket(sock_client));
+		addClient2CellServer(new ClientSocket(sock_client));
 
-		printf("socket<%d>a new client enter: socket<%d>,ip<%s> \n", (int)_sock, (int)sock_client, inet_ntoa(client_addr.sin_addr));
+		//printf("socket<%d>a new client enter: socket<%d>,ip<%s> \n", (int)_sock, (int)sock_client, inet_ntoa(client_addr.sin_addr));
 
 		return sock_client;
+	}
+
+	// start CellServer
+	void Start()
+	{
+		for (int n = 0; n < CELLSERVER_THREAD_COUNT; n++)
+		{
+			auto pCellServer = new CellServer(_sock);
+			_cellServers.push_back(pCellServer);
+			pCellServer->Start();
+		}
+	}
+
+	// select CellServer which queue is smallest add client message to it
+	void addClient2CellServer(ClientSocket* pClientSocket)
+	{
+		_clients.push_back(pClientSocket);
+		auto pMinCellServer = _cellServers[0];
+		for (auto pCellServer : _cellServers)
+		{
+			if (pMinCellServer->getClientCount() > pCellServer->getClientCount()) {
+				pMinCellServer = pCellServer;
+			}
+		}
+		pMinCellServer->addClient(pClientSocket);
 	}
 
 	// close socket
@@ -219,8 +528,10 @@ public:
 		for (size_t n = _clients.size() - 1; n >= 0; n--)
 		{
 			closesocket(_clients[n]->sockfd());
-			delete _clients[n];
+			//delete _clients[n];
 		}
+
+		_clients.clear();
 
 		closesocket(_sock);
 
@@ -239,7 +550,7 @@ public:
 		printf("server is shutdown\n");
 	}
 
-	// deal net message
+	// only process accept request
 	int OnRun()
 	{
 		if (!IsRunning())
@@ -260,19 +571,12 @@ public:
 		FD_SET(_sock, &fd_write);
 		FD_SET(_sock, &fd_exception);
 
-		SOCKET max_socket = _sock;
-		for (int n = (int)_clients.size() - 1; n >= 0; n--)
-		{
-			max_socket = _clients[n]->sockfd()>max_socket ? _clients[n]->sockfd() : max_socket;
-			FD_SET(_clients[n]->sockfd(), &fd_read);
-		}
-
 		//nfds is range of fd_set, not fd_set's count.
 		//nfds is also max value+1 of all the file descriptor(socket).
 		//nfds can be 0 in the windows.
 		//that timeval was setted null means blocking, not null means nonblocking.
 		timeval t = { 0,10 };
-		int ret = select(max_socket + 1/*nfds*/, &fd_read, &fd_write, &fd_exception, &t);
+		int ret = select(_sock + 1/*nfds*/, &fd_read, &fd_write, &fd_exception, &t);
 		if (ret < 0)
 		{
 			printf("socket<%d> error occurs while select and mission finish.\n", (int)_sock);
@@ -287,89 +591,13 @@ public:
 			Accept();
 		}
 
-
-		for (int n = (int)_clients.size() - 1; n >= 0; n--)
-		{
-			if (FD_ISSET(_clients[n]->sockfd(), &fd_read))
-			{
-				if (-1 == RecvData(_clients[n]))
-				{
-					//auto equals std::vector<SOCKET>::iterator
-					//auto iter = _clients.begin();
-					//while (iter != _clients.end())
-					//{
-					//	if (iter[n] == _clients[n])
-					//	{
-					//		_clients.erase(iter);
-					//		break;
-					//	}
-					//	iter++;
-					//}
-					//优化
-					auto iter = _clients.begin() + n;
-					if (iter != _clients.end())
-					{
-						_clients.erase(iter);
-					}
-				}
-			}
-		}
+		return ret;
 	}
 
 	// if is running
 	bool IsRunning()
 	{
 		return _sock != INVALID_SOCKET;
-	}
-
-	// receive data, deal sticking package and splitting package
-	int RecvData(ClientSocket* pclient)
-	{
-		//receive client data
-		int nLen = recv(pclient->sockfd(), _szRecvBuffer, RECV_BUFFER_SIZE, 0);
-		if (nLen <= 0)
-		{
-			printf("server socket<%d> client socket <%d> offline\n", (int)_sock, (int)pclient->sockfd());
-			return -1;
-		}
-
-		// copy receive buffer data to message buffer
-		memcpy(pclient->msgBuf() + pclient->GetLastPos(), _szRecvBuffer, nLen);
-
-		// update end position of message buffer
-		pclient->SetLastPos(pclient->GetLastPos() + nLen);
-
-		// whether message buffer size greater than message header(DataHeader)'s size,
-		// if yes, converting message buffer to struct DataHeader and clear message buffer
-		// had prcessed.
-		while (pclient->GetLastPos() >= sizeof(DataHeader))
-		{
-			// convert message buffer to DataHeader
-			DataHeader * pheader = (DataHeader*)pclient->msgBuf();
-			// whether message buffer size greater than current client message size,
-			if (pclient->GetLastPos() >= pheader->data_length)
-			{
-				// processed message's length
-				int nClientMsgLen = pheader->data_length;
-				// length of message buffer which was untreated
-				int nSize = pclient->GetLastPos() - nClientMsgLen;
-				// process net message
-				OnNetMessage(pheader, pclient->sockfd());
-				// earse processed message buffer
-				memcpy(pclient->msgBuf(), pclient->msgBuf() + nClientMsgLen, nSize);
-				// update end position of message buffer
-				pclient->SetLastPos(nSize);
-			}
-			else
-			{
-				// length of message buffer which was untreated less than 
-				// length of message header(DataHeader)'s size
-				break;
-			}
-			
-		}
-
-		return 0;
 	}
 
 	// response net message
