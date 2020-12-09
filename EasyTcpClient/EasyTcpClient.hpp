@@ -84,8 +84,9 @@ public:
 		if (SOCKET_ERROR == ret)
 		{
 			printf("connect server failure...\n");
+			return ret;
 		}
-		printf("connect server success...\n");
+		//printf("connect server success...\n");
 		return ret;
 	}
 
@@ -196,11 +197,11 @@ public:
 		return 0;
 	}
 
-	int SendData(DataHeader * header)
+	int SendData(DataHeader * header, int nLen)
 	{
 		if (IsRunning() && header)
 		{
-			return send(_sock, (const char*)header, header->data_length, 0);
+			return send(_sock, (const char*)header, nLen, 0);
 		}
 		return SOCKET_ERROR;
 	}

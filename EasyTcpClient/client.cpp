@@ -1,12 +1,13 @@
 #include "EasyTcpClient.hpp"
 
 #include <thread>
+#include <chrono>
 
 bool g_run = true;
 // sending thread amount
 const int tCount = 4;
 // client amount
-const int nCount = 1000;
+const int nCount = 10000;
 // client object
 EasyTcpClient* pclients[nCount];
 
@@ -48,17 +49,25 @@ void sendThread(int id) //1~4
 		pclients[n]->Connect("127.0.0.1", 12345);
 	}
 
-	Login login;
-	strcpy(login.username, "cnj");
-	strcpy(login.password, "cnj123");
+	std::chrono::milliseconds t(5000);
+	std::this_thread::sleep_for(t);
+
+	Login login[10];
+	for (int n = 0; n < 10; n++)
+	{
+		strcpy(login[n].username, "cnj");
+		strcpy(login[n].password, "cnj123");
+	}
+	const int nLen = sizeof(login);
+
 	while (g_run)
 	{
 		for (int n = begin; n < end; n++)
 		{
 			if (pclients[n]->IsRunning())
 			{
-				pclients[n]->SendData(&login);
-				pclients[n]->OnRun();
+				pclients[n]->SendData(login, nLen);
+				//pclients[n]->OnRun();
 			}
 		}
 	}
