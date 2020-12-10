@@ -27,7 +27,6 @@
 #include<thread>
 #include<mutex>
 #include<atomic>
-
 #include"MessageHeader.hpp"
 #include"CellTimestamp.hpp"
 
@@ -41,6 +40,9 @@
 #define CELLSERVER_THREAD_COUNT 4
 #endif
 
+/**
+*	client object with socket
+*/
 class ClientSocket
 {
 public:
@@ -87,22 +89,21 @@ private:
 };
 
 /**
-*	event
+*	net event interface
 */
 class INetEvent
 {
 public:
 	/**
-	*	while client leaves
+	*	event while client leaves
 	*/
 	virtual void OnLeave(ClientSocket* pClientSocket) = 0;
 
 	/**
-	*	while client's message comes
+	*	event while client's message comes
 	*/
 	virtual void OnMessage(DataHeader* pheader, SOCKET sock_client) = 0;
 };
-
 
 /**
 *	resposible for processing client message
@@ -124,21 +125,18 @@ private:
 	std::thread* _pThread;
 	// register event
 	INetEvent* _pNetEvent;
-public:
-	// atomic integer
-	std::atomic_int _RECV_COUNT;
 
 public:
 	CellServer(SOCKET sock = INVALID_SOCKET)
 	{
 		_sock = sock;
 		_pThread = nullptr;
-		_RECV_COUNT = 0;
 		_pNetEvent = nullptr;
 
 	}
 	~CellServer()
 	{
+		delete _pThread;
 		Close();
 	}
 
@@ -256,7 +254,7 @@ public:
 	// start self
 	void Start()
 	{
-		_pThread = new std::thread(std::mem_fun(&CellServer::OnRun), this);
+		_pThread = new std::thread(std::mem_fn(&CellServer::OnRun), this);
 	}
 
 	// receive data, deal sticking package and splitting package
@@ -266,7 +264,7 @@ public:
 		int nLen = recv(pclient->sockfd(), _szRecvBuffer, RECV_BUFFER_SIZE, 0);
 		if (nLen <= 0)
 		{
-			printf("server socket<%d> client socket <%d> offline\n", (int)_sock, (int)pclient->sockfd());
+			//printf("server socket<%d> client socket <%d> offline\n", (int)_sock, (int)pclient->sockfd());
 			return -1;
 		}
 
@@ -313,7 +311,6 @@ public:
 	virtual void OnNetMessage(DataHeader* pheader, SOCKET sock_client)
 	{
 		// statistics speed of server receiving client data packet
-		_RECV_COUNT++;
 		_pNetEvent->OnMessage(pheader, sock_client);
 
 		switch (pheader->cmd)
@@ -358,21 +355,17 @@ public:
 			delete _clients[n];
 		}
 
-		//closesocket(_sock);
-
-		// clean windows socket environment
-		WSACleanup();
 #else
 		for (int n = (int)_clients.size() - 1; n >= 0; n--)
 		{
 			close(_clients[n]->sockfd());
 			delete _clients[n];
 		}
-		//close(_sock);
+
 #endif
 		_clients.clear();
 
-		//_sock = INVALID_SOCKET;
+		_sock = INVALID_SOCKET;
 
 
 		printf("cell server is shutdown\n");
@@ -385,13 +378,14 @@ public:
 	}
 };
 
+/**
+*	main server which manage CellServer
+*/
 class EasyTcpServer : public INetEvent
 {
 private:
 	// local socket
 	SOCKET _sock;
-	// client sockets
-	std::vector<ClientSocket*> _clients;
 	// CellServers
 	std::vector<CellServer*> _cellServers;
 	//// receive buffer
@@ -400,10 +394,16 @@ private:
 	std::mutex _mutex;
 	// high resolution timers
 	CellTimestamp _tTime;
+	// count while client message comes
+	std::atomic_int _recvCount;
+	// count while client join or offline
+	std::atomic_int _clientCount;
 public:
 	EasyTcpServer()
 	{
 		_sock = INVALID_SOCKET;
+		_recvCount = 0;
+		_clientCount = 0;
 	}
 
 	virtual ~EasyTcpServer()
@@ -510,13 +510,12 @@ public:
 			return sock_client;
 		}
 
-		// boardcast
+		//// boardcast
 		//NewUserJoin user_join;
 		//SendDataToAll(&user_join);
-
 		addClient2CellServer(new ClientSocket(sock_client));
-
-		//printf("socket<%d>a new client enter: socket<%d>,ip<%s> \n", (int)_sock, (int)sock_client, inet_ntoa(client_addr.sin_addr));
+		//// get client ip address
+		//inet_ntoa(client_addr.sin_addr)
 
 		return sock_client;
 	}
@@ -536,7 +535,6 @@ public:
 	// select CellServer which queue is smallest add client message to it
 	void addClient2CellServer(ClientSocket* pClientSocket)
 	{
-		_clients.push_back(pClientSocket);
 		auto pMinCellServer = _cellServers[0];
 		for (auto pCellServer : _cellServers)
 		{
@@ -545,6 +543,7 @@ public:
 			}
 		}
 		pMinCellServer->addClient(pClientSocket);
+		_clientCount++;
 	}
 
 	// close socket
@@ -553,32 +552,14 @@ public:
 		if (_sock == INVALID_SOCKET) return;
 
 #ifdef _WIN32
-		for (int n = (int)_clients.size() - 1; n >= 0; n--)
-		{
-			closesocket(_clients[n]->sockfd());
-			delete _clients[n];
-		}
-
-		_clients.clear();
-
 		closesocket(_sock);
-
 		// clean windows socket environment
 		WSACleanup();
 #else
-		for (int n = (int)_clients.size() - 1; n >= 0; n--)
-		{
-			close(_clients[n]->sockfd());
-			delete _clients[n];
-		}
-
-		_clients.clear();
-
 		close(_sock);
 #endif
 
 		_sock = INVALID_SOCKET;
-
 		printf("server is shutdown\n");
 	}
 
@@ -641,13 +622,8 @@ public:
 		auto t1 = _tTime.getElapsedSecond();
 		if (t1 >= 1.0)
 		{
-			int recvCount = 0;
-			for (auto pCellServer : _cellServers)
-			{
-				recvCount += pCellServer->_RECV_COUNT;
-				pCellServer->_RECV_COUNT = 0;
-			}
-			printf("threads<%d>,time<%lf>,socket<%d> clients<%zd>,packet count<%d>\n", _cellServers.size(), t1, (int)_sock, _clients.size(), (int)(recvCount / t1));
+			printf("threads<%d>,time<%lf>,socket<%d> clients<%zd>,packet count<%d>\n", _cellServers.size(), t1, (int)_sock, _clientCount, (int)(_recvCount / t1));
+			_recvCount = 0;
 			_tTime.update();
 		}
 	}
@@ -665,37 +641,16 @@ public:
 		return SOCKET_ERROR;
 	}
 
-	// boardcast
-	void SendDataToAll(DataHeader * pheader)
-	{
-		for (int n = (int)_clients.size() - 1; n >= 0; n--)
-		{
-			SendData(_clients[n]->sockfd(), pheader);
-		}
-	}
-
 	// inherit INetEvent
 public:
 	virtual void OnLeave(ClientSocket* pClientSocket)
 	{
-		std::lock_guard<std::mutex> lock(_mutex);
-
-		for (int n = (int)_clients.size() - 1; n >= 0; n--)
-		{
-			if (_clients[n] == pClientSocket)
-			{
-				auto iter = _clients.begin() + n;
-				if (iter != _clients.end())
-				{
-					_clients.erase(iter);
-					break;
-				}
-			}
-		}
+		_clientCount--;
 	}
 
 	virtual void OnMessage(DataHeader* pheader, SOCKET sock_client)
 	{
+		_recvCount++;
 	}
 };
 
