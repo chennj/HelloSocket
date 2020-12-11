@@ -35,11 +35,6 @@
 #define RECV_BUFFER_SIZE 1024*10
 #endif
 
-// CellServer thread count
-#ifndef CELLSERVER_THREAD_COUNT
-#define CELLSERVER_THREAD_COUNT 4
-#endif
-
 /**
 *	client object with socket
 */
@@ -79,11 +74,25 @@ public:
 		_lastPos = lastPos;
 	}
 
+public:
+	// send data
+	int SendData(DataHeader * pheader)
+	{
+		if (pheader)
+		{
+			int ret = send(_sockfd/*client socket*/, (const char*)pheader, pheader->data_length, 0);
+			//printf("socket<%d> send client socket<%d> response: dataLen<%d>, sendResult<%d>\n", (int)_sock, (int)sock_client, pheader->data_length, ret);
+			return ret;
+
+		}
+		return SOCKET_ERROR;
+	}
+
 private:
 	// fd_set file descriptor
 	SOCKET _sockfd;
 	// message buffer
-	char _szMsgBuffer[RECV_BUFFER_SIZE * 10];
+	char _szMsgBuffer[RECV_BUFFER_SIZE * 5];
 	// message buffer position
 	int _lastPos;
 };
@@ -95,6 +104,11 @@ class INetEvent
 {
 public:
 	/**
+	*	event while client join
+	*/
+	virtual void OnJoin(ClientSocket* pClientSocket) = 0;
+
+	/**
 	*	event while client leaves
 	*/
 	virtual void OnLeave(ClientSocket* pClientSocket) = 0;
@@ -102,7 +116,7 @@ public:
 	/**
 	*	event while client's message comes
 	*/
-	virtual void OnMessage(DataHeader* pheader, SOCKET sock_client) = 0;
+	virtual void OnMessage(ClientSocket* pClientSocket, DataHeader* pheader) = 0;
 };
 
 /**
@@ -289,7 +303,7 @@ public:
 				// length of message buffer which was untreated
 				int nSize = pclient->GetLastPos() - nClientMsgLen;
 				// process net message
-				OnNetMessage(pheader, pclient->sockfd());
+				OnNetMessage(pclient, pheader);
 				// earse processed message buffer
 				memcpy(pclient->msgBuf(), pclient->msgBuf() + nClientMsgLen, nSize);
 				// update end position of message buffer
@@ -308,36 +322,36 @@ public:
 	}
 
 	// response net message
-	virtual void OnNetMessage(DataHeader* pheader, SOCKET sock_client)
+	virtual void OnNetMessage(ClientSocket* pClientSocket, DataHeader* pheader)
 	{
 		// statistics speed of server receiving client data packet
-		_pNetEvent->OnMessage(pheader, sock_client);
+		_pNetEvent->OnMessage(pClientSocket, pheader);
 
 		switch (pheader->cmd)
 		{
 		case CMD_LOGIN:
 		{
-			//Login* ret = (Login*)pheader;
-			//printf("socket<%d> receive client socket<%d> message: CMD_LOGIN , data length<%d>, user name<%s>, pwd<%s>\n", (int)_sock, (int)sock_client, pheader->data_length, ret->username, ret->password);
+			Login* login = (Login*)pheader;
+			//printf("socket<%d> receive client socket<%d> message: CMD_LOGIN , data length<%d>, user name<%s>, pwd<%s>\n", (int)_sock, (int)sock_client, pheader->data_length, login->username, login->password);
 
-			//LoginResponse loginResponse;
-			//SendData(sock_client, &loginResponse);
+			LoginResponse ret;
+			pClientSocket->SendData(&ret);
 		}
 		break;
 		case CMD_LOGOUT:
 		{
-			//Logout* ret = (Logout*)pheader;
-			//printf("socket<%d> receive client socket<%d> message: CMD_LOGOUT , data length<%d>, user name<%s>\n", (int)_sock, (int)sock_client, pheader->data_length, ret->username);
+			Logout* logout = (Logout*)pheader;
+			//printf("socket<%d> receive client socket<%d> message: CMD_LOGOUT , data length<%d>, user name<%s>\n", (int)_sock, (int)sock_client, pheader->data_length, logout->username);
 
-			//LogoutResponse logoutResponse;
-			//SendData(sock_client, &logoutResponse);
+			LogoutResponse ret;
+			pClientSocket->SendData(&ret);
 		}
 		break;
 		default:
 		{
-			printf("socket<%d> receive client socket<%d> message: CMD_UNKNOWN , data length<%d>\n", (int)_sock, (int)sock_client, pheader->data_length);
-			//UnknownResponse unknown;
-			//SendData(sock_client, &unknown);
+			printf("socket<%d> receive client socket<%d> message: CMD_UNKNOWN , data length<%d>\n", (int)_sock, (int)pClientSocket->sockfd(), pheader->data_length);
+			UnknownResponse ret;
+			pClientSocket->SendData(&ret);
 		}
 		break;
 		}
@@ -510,9 +524,7 @@ public:
 			return sock_client;
 		}
 
-		//// boardcast
-		//NewUserJoin user_join;
-		//SendDataToAll(&user_join);
+		// assign comed client to CellServer with the least number of client
 		addClient2CellServer(new ClientSocket(sock_client));
 		//// get client ip address
 		//inet_ntoa(client_addr.sin_addr)
@@ -521,9 +533,9 @@ public:
 	}
 
 	// start CellServer
-	void Start()
+	void Start(int nCellServer)
 	{
-		for (int n = 0; n < CELLSERVER_THREAD_COUNT; n++)
+		for (int n = 0; n < nCellServer; n++)
 		{
 			auto pCellServer = new CellServer(_sock);
 			_cellServers.push_back(pCellServer);
@@ -543,7 +555,7 @@ public:
 			}
 		}
 		pMinCellServer->addClient(pClientSocket);
-		_clientCount++;
+		OnJoin(pClientSocket);
 	}
 
 	// close socket
@@ -628,29 +640,24 @@ public:
 		}
 	}
 
-	// send data
-	int SendData(SOCKET sock_client, DataHeader * pheader)
-	{
-		if (IsRunning() && pheader)
-		{
-			int ret = send(sock_client, (const char*)pheader, pheader->data_length, 0);
-			printf("socket<%d> send client socket<%d> response: dataLen<%d>, sendResult<%d>\n", (int)_sock, (int)sock_client, pheader->data_length, ret);
-			return ret;
-
-		}
-		return SOCKET_ERROR;
-	}
-
 	// inherit INetEvent
 public:
+	// it would only be triggered by one thread, safe
 	virtual void OnLeave(ClientSocket* pClientSocket)
 	{
 		_clientCount--;
 	}
 
-	virtual void OnMessage(DataHeader* pheader, SOCKET sock_client)
+	// multiple thread triggering, nosafe
+	virtual void OnMessage(ClientSocket* pClientSocket, DataHeader* pheader)
 	{
 		_recvCount++;
+	}
+
+	// multiple thread triggering, nosafe
+	virtual void OnJoin(ClientSocket* pClientSocket)
+	{
+		_clientCount++;
 	}
 };
 

@@ -75,6 +75,7 @@ void sendThread(int id) //1~4
 	for (int n = begin; n < end; n++)
 	{
 		pclients[n]->Close();
+		delete pclients[n];
 	}
 }
 

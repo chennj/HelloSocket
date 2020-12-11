@@ -241,7 +241,7 @@ private:
 	// receive buffer
 	char _szRecvBuffer[RECV_BUFFER_SIZE] = {};
 	// message buffer
-	char _szMsgBuffer[RECV_BUFFER_SIZE * 10] = {};
+	char _szMsgBuffer[RECV_BUFFER_SIZE * 5] = {};
 	// message buffer position
 	int _lastPos = 0;
 };

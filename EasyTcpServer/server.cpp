@@ -33,7 +33,7 @@ int main()
 	server.InitSocket();
 	server.Bind(nullptr, 12345);
 	server.Listen(5);
-	server.Start();
+	server.Start(4);
 
 	while (server.IsRunning() && g_run)
 	{
