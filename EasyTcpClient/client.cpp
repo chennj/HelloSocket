@@ -67,7 +67,7 @@ void sendThread(int id) //1~4
 			if (pclients[n]->IsRunning())
 			{
 				pclients[n]->SendData(login, nLen);
-				//pclients[n]->OnRun();
+				pclients[n]->OnRun();
 			}
 		}
 	}

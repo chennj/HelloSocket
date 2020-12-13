@@ -27,10 +27,22 @@
 
 class EasyTcpClient
 {
+private:
+	SOCKET _sock;
+	// receive buffer
+	char _szRecvBuffer[RECV_BUFFER_SIZE] = {};
+	// message buffer
+	char _szMsgBuffer[RECV_BUFFER_SIZE * 5] = {};
+	// message buffer position
+	int _lastPos = 0;
+	//
+	bool _isConnected;
+
 public:
 	EasyTcpClient()
 	{
 		_sock = INVALID_SOCKET;
+		_isConnected = false;
 	}
 
 	virtual ~EasyTcpClient()
@@ -86,7 +98,9 @@ public:
 			printf("connect server failure...\n");
 			return ret;
 		}
+		
 		//printf("connect server success...\n");
+		_isConnected = true;
 		return ret;
 	}
 
@@ -102,6 +116,7 @@ public:
 		close(_sock);
 #endif
 		_sock = INVALID_SOCKET;
+		_isConnected = false;
 	}
 
 	//deal net message
@@ -117,7 +132,7 @@ public:
 		FD_ZERO(&fdReads);
 		FD_SET(_sock, &fdReads);
 
-		timeval t = { 1,0 };
+		timeval t = { 0,0 };
 		int ret = select(_sock + 1, &fdReads, 0, 0, &t);
 		if (ret < 0)
 		{
@@ -143,7 +158,7 @@ public:
 
 	bool IsRunning()
 	{
-		return INVALID_SOCKET != _sock;
+		return INVALID_SOCKET != _sock && _isConnected;
 	}
 
 	/*
@@ -199,11 +214,16 @@ public:
 
 	int SendData(DataHeader * header, int nLen)
 	{
+		int ret = SOCKET_ERROR;
 		if (IsRunning() && header)
 		{
-			return send(_sock, (const char*)header, nLen, 0);
+			ret = send(_sock, (const char*)header, nLen, 0);
+			if (SOCKET_ERROR == ret)
+			{
+				Close();
+			}
 		}
-		return SOCKET_ERROR;
+		return ret;
 	}
 
 	void OnNetMessage(DataHeader* header)
@@ -213,20 +233,20 @@ public:
 		{
 		case CMD_LOGIN_RESPONSE:
 		{
-			LoginResponse* ret = (LoginResponse*)header;
-			printf("receive server msg: CMD_LOGIN_RESPONSE, data length: %d, result: %d\n", header->data_length, ret->result);
+			//LoginResponse* ret = (LoginResponse*)header;
+			//printf("receive server msg: CMD_LOGIN_RESPONSE, data length: %d, result: %d\n", header->data_length, ret->result);
 		}
 		break;
 		case CMD_LOGOUT_RESPONSE:
 		{
-			LogoutResponse* ret = (LogoutResponse*)header;
-			printf("receive server msg: CMD_LOGOUT_RESPONSE, data length: %d, result: %d\n", header->data_length, ret->result);
+			//LogoutResponse* ret = (LogoutResponse*)header;
+			//printf("receive server msg: CMD_LOGOUT_RESPONSE, data length: %d, result: %d\n", header->data_length, ret->result);
 		}
 		break;
 		case CMD_NEW_USER_JOIN:
 		{
-			NewUserJoin* ret = (NewUserJoin*)header;
-			printf("receive server msg: CMD_NEW_USER_JOIN, data length: %d, result: %d\n", header->data_length, ret->sock);
+			//NewUserJoin* ret = (NewUserJoin*)header;
+			//printf("receive server msg: CMD_NEW_USER_JOIN, data length: %d, result: %d\n", header->data_length, ret->sock);
 		}
 		break;
 		default:
@@ -236,14 +256,6 @@ public:
 		break;
 		}
 	}
-private:
-	SOCKET _sock;
-	// receive buffer
-	char _szRecvBuffer[RECV_BUFFER_SIZE] = {};
-	// message buffer
-	char _szMsgBuffer[RECV_BUFFER_SIZE * 5] = {};
-	// message buffer position
-	int _lastPos = 0;
 };
 
 #endif

@@ -634,7 +634,7 @@ public:
 		auto t1 = _tTime.getElapsedSecond();
 		if (t1 >= 1.0)
 		{
-			printf("threads<%d>,time<%lf>,socket<%d> clients<%zd>,packet count<%d>\n", _cellServers.size(), t1, (int)_sock, _clientCount, (int)(_recvCount / t1));
+			printf("threads<%d>,time<%lf>,socket<%d> clients<%d>,packet count<%d>\n", _cellServers.size(), t1, (int)_sock, _clientCount.load(), (int)(_recvCount / t1));
 			_recvCount = 0;
 			_tTime.update();
 		}
