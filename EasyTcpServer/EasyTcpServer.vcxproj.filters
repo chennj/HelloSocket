@@ -29,5 +29,8 @@
     <ClInclude Include="CellTimestamp.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="MyServer.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

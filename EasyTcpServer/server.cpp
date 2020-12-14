@@ -1,4 +1,4 @@
-#include "EasyTcpServer.hpp"
+#include "MyServer.hpp"
 
 #include <thread>
 
@@ -29,7 +29,7 @@ int main()
 	std::thread t(cmdThread);
 	t.detach();
 
-	EasyTcpServer server;
+	MyServer server;
 	server.InitSocket();
 	server.Bind(nullptr, 12345);
 	server.Listen(5);
@@ -40,5 +40,7 @@ int main()
 		server.OnRun();
 	}
 	server.Close();
+
+	system("PAUSE");
 	return 0;
 }

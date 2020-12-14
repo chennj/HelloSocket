@@ -23,6 +23,7 @@
 #endif
 
 #include<stdio.h>
+#include<map>
 #include<vector>
 #include<thread>
 #include<mutex>
@@ -116,7 +117,7 @@ public:
 	/**
 	*	event while client's message comes
 	*/
-	virtual void OnMessage(ClientSocket* pClientSocket, DataHeader* pheader) = 0;
+	virtual void OnNetMessage(ClientSocket* pClientSocket, DataHeader* pheader) = 0;
 };
 
 /**
@@ -128,7 +129,8 @@ private:
 	// local socket
 	SOCKET _sock;
 	// client sockets
-	std::vector<ClientSocket*> _clients;
+	//std::vector<ClientSocket*> _clients;
+	std::map<SOCKET,ClientSocket*> _clients;
 	// client socket buffer
 	std::vector<ClientSocket*> _clientsBuf;
 	// receive buffer
@@ -140,6 +142,12 @@ private:
 	// register event
 	INetEvent* _pNetEvent;
 
+	// fd backup
+	fd_set _fd_read_bak;
+	bool _clients_change;
+
+	// max socket descriptor
+	SOCKET _max_socket;
 public:
 	CellServer(SOCKET sock = INVALID_SOCKET)
 	{
@@ -150,6 +158,7 @@ public:
 	}
 	~CellServer()
 	{
+		printf("CellServer destory.\n");
 		delete _pThread;
 		Close();
 	}
@@ -181,6 +190,10 @@ public:
 	{
 		int ret = 1;
 
+		printf("CellServer thread start...\n");
+
+		_clients_change = true;
+
 		while (IsRunning())
 		{
 
@@ -189,9 +202,11 @@ public:
 				std::lock_guard<std::mutex> lockGuard(_mutex);
 				for (auto pClient : _clientsBuf)
 				{
-					_clients.push_back(pClient);
+					//_clients.push_back(pClient);
+					_clients[pClient->sockfd()] = pClient;
 				}
 				_clientsBuf.clear();
+				_clients_change = true;
 			}
 
 			if (_clients.empty())
@@ -209,59 +224,92 @@ public:
 			FD_ZERO(&fd_write);
 			FD_ZERO(&fd_exception);
 
-			SOCKET max_socket = _clients[0]->sockfd();
-			for (int n = (int)_clients.size() - 1; n >= 0; n--)
+			if (_clients_change)
 			{
-				max_socket = _clients[n]->sockfd() > max_socket ? _clients[n]->sockfd() : max_socket;
-				FD_SET(_clients[n]->sockfd(), &fd_read);
+				_clients_change = false;
+
+				_max_socket = _clients.begin()->first;
+				for(auto iter : _clients)
+				{
+					_max_socket = iter.first > _max_socket ? iter.first : _max_socket;
+					// the following statement needs to be optimized,
+					// because it takes up a lot of CPU
+					FD_SET(iter.first, &fd_read);
+				}
+				memcpy(&_fd_read_bak, &fd_read, sizeof(fd_set));
+			}
+			else
+			{
+				memcpy(&fd_read, &_fd_read_bak, sizeof(fd_set));
 			}
 
 			//nfds is range of fd_set, not fd_set's count.
 			//nfds is also max value+1 of all the file descriptor(socket).
 			//nfds can be 0 in the windows.
 			//that timeval was setted null means blocking, not null means nonblocking.
-			//timeval t = { 0,1 };
-			ret = select(max_socket + 1/*nfds*/, &fd_read, &fd_write, &fd_exception, nullptr/*&t*/);
+			timeval t = { 0,0 };
+			ret = select(_max_socket + 1/*nfds*/, &fd_read, &fd_write, &fd_exception, &t);
 			if (ret < 0)
 			{
 				printf("socket<%d> error occurs while select and mission finish.\n", (int)_sock);
 				Close();
 				break;
 			}
-
-			for (int n = (int)_clients.size() - 1; n >= 0; n--)
+			else if (0 == ret)
 			{
-				if (FD_ISSET(_clients[n]->sockfd(), &fd_read))
+				continue;
+			}
+
+#ifdef _WIN32
+			for (int n = 0; n < fd_read.fd_count; n++)
+			{
+				auto iter = _clients.find(fd_read.fd_array[n]);
+				if (iter != _clients.end())
 				{
-					if (-1 == RecvData(_clients[n]))
+					if (-1 == RecvData(iter->second))
 					{
-						//auto equals std::vector<SOCKET>::iterator
-						//auto iter = _clients.begin();
-						//while (iter != _clients.end())
-						//{
-						//	if (iter[n] == _clients[n])
-						//	{
-						//		_clients.erase(iter);
-						//		break;
-						//	}
-						//	iter++;
-						//}
-						//ÓÅ»¯
-						auto iter = _clients.begin() + n;
-						if (iter != _clients.end())
+						_clients_change = true;
+						if (_pNetEvent)
 						{
-							if (_pNetEvent)
-							{
-								_pNetEvent->OnLeave(_clients[n]);
-							}
-							delete _clients[n];
-							_clients.erase(iter);
+							_pNetEvent->OnLeave(iter->second);
+						}
+						_clients.erase(iter->first);
+					}
+				}
+				else
+				{
+					printf("incredible situation occurs while client offline\n");
+				}
+
+			}
+#else
+			std::vector<ClientSocket*> temp;
+			for (auto iter : _clients)
+			{
+				if (FD_ISSET(iter.first, &fd_read))
+				{
+					if (-1 == RecvData(iter.second))
+					{
+						_clients_change = true;
+						temp.push_back(iter.second);
+
+						if (_pNetEvent)
+						{
+							_pNetEvent->OnLeave(iter.second);
 						}
 					}
 				}
 			}
+
+			for (auto pClient : temp)
+			{
+				_clients.erase(pClient->sockfd());
+				delete pClient;
+			}
+#endif
 		} // while (IsRunning())
 
+		printf("CellServer thread exit...\n");
 		return ret;
 	}
 
@@ -325,33 +373,33 @@ public:
 	virtual void OnNetMessage(ClientSocket* pClientSocket, DataHeader* pheader)
 	{
 		// statistics speed of server receiving client data packet
-		_pNetEvent->OnMessage(pClientSocket, pheader);
+		_pNetEvent->OnNetMessage(pClientSocket, pheader);
 
 		switch (pheader->cmd)
 		{
 		case CMD_LOGIN:
 		{
-			Login* login = (Login*)pheader;
+			//Login* login = (Login*)pheader;
 			//printf("socket<%d> receive client socket<%d> message: CMD_LOGIN , data length<%d>, user name<%s>, pwd<%s>\n", (int)_sock, (int)sock_client, pheader->data_length, login->username, login->password);
 
-			LoginResponse ret;
-			pClientSocket->SendData(&ret);
+			//LoginResponse ret;
+			//pClientSocket->SendData(&ret);
 		}
 		break;
 		case CMD_LOGOUT:
 		{
-			Logout* logout = (Logout*)pheader;
+			//Logout* logout = (Logout*)pheader;
 			//printf("socket<%d> receive client socket<%d> message: CMD_LOGOUT , data length<%d>, user name<%s>\n", (int)_sock, (int)sock_client, pheader->data_length, logout->username);
 
-			LogoutResponse ret;
-			pClientSocket->SendData(&ret);
+			//LogoutResponse ret;
+			//pClientSocket->SendData(&ret);
 		}
 		break;
 		default:
 		{
 			printf("socket<%d> receive client socket<%d> message: CMD_UNKNOWN , data length<%d>\n", (int)_sock, (int)pClientSocket->sockfd(), pheader->data_length);
-			UnknownResponse ret;
-			pClientSocket->SendData(&ret);
+			//UnknownResponse ret;
+			//pClientSocket->SendData(&ret);
 		}
 		break;
 		}
@@ -363,24 +411,22 @@ public:
 		if (_sock == INVALID_SOCKET) return;
 
 #ifdef _WIN32
-		for (int n = (int)_clients.size() - 1; n >= 0; n--)
+		for (auto iter : _clients)
 		{
-			closesocket(_clients[n]->sockfd());
-			delete _clients[n];
+			closesocket(iter.first);
+			delete iter.second;
 		}
 
 #else
-		for (int n = (int)_clients.size() - 1; n >= 0; n--)
+		for (auto iter : _clients)
 		{
-			close(_clients[n]->sockfd());
-			delete _clients[n];
+			close(iter.first);
+			delete iter.second;
 		}
-
 #endif
 		_clients.clear();
 
 		_sock = INVALID_SOCKET;
-
 
 		printf("cell server is shutdown\n");
 	}
@@ -398,8 +444,6 @@ public:
 class EasyTcpServer : public INetEvent
 {
 private:
-	// local socket
-	SOCKET _sock;
 	// CellServers
 	std::vector<CellServer*> _cellServers;
 	//// receive buffer
@@ -408,10 +452,15 @@ private:
 	std::mutex _mutex;
 	// high resolution timers
 	CellTimestamp _tTime;
+
+protected:
+	// local socket
+	SOCKET _sock;
 	// count while client message comes
 	std::atomic_int _recvCount;
 	// count while client join or offline
 	std::atomic_int _clientCount;
+
 public:
 	EasyTcpServer()
 	{
@@ -571,6 +620,12 @@ public:
 		close(_sock);
 #endif
 
+		//for (auto pCellServer : _cellServers)
+		//{
+		//	delete pCellServer;
+		//}
+		//_cellServers.clear();
+
 		_sock = INVALID_SOCKET;
 		printf("server is shutdown\n");
 	}
@@ -649,7 +704,7 @@ public:
 	}
 
 	// multiple thread triggering, nosafe
-	virtual void OnMessage(ClientSocket* pClientSocket, DataHeader* pheader)
+	virtual void OnNetMessage(ClientSocket* pClientSocket, DataHeader* pheader)
 	{
 		_recvCount++;
 	}
