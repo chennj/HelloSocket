@@ -33,7 +33,11 @@
 
 // minimum buffer size
 #ifndef RECV_BUFFER_SIZE
-#define RECV_BUFFER_SIZE 1024*10
+#define RECV_BUFFER_SIZE 1024*10*5
+#endif
+
+#ifndef SEND_BUFFER_SIZE
+#define SEND_BUFFER_SIZE 1024*10*5
 #endif
 
 /**
@@ -45,13 +49,15 @@ public:
 	ClientSocket(SOCKET sockfd = INVALID_SOCKET)
 	{
 		_sockfd = sockfd;
-		memset(_szMsgBuffer, 0, sizeof(_szMsgBuffer));
-		_lastPos = 0;
+		memset(_szRecvBuffer, 0, RECV_BUFFER_SIZE);
+		_lastRecvPos = 0;
+		memset(_szSendBuffer, 0, SEND_BUFFER_SIZE);
+		_lastSendPos = 0;
 	}
 
 	virtual ~ClientSocket()
 	{
-		//delete[] (void*)_szMsgBuffer;
+		//delete[] (void*)_szRecvBuffer;
 	}
 
 public:
@@ -60,42 +66,98 @@ public:
 		return _sockfd;
 	}
 
-	char * msgBuf()
+	char * recvBuf()
 	{
-		return _szMsgBuffer;
+		return _szRecvBuffer;
 	}
 
-	int GetLastPos()
+	int GetLastRecvPos()
 	{
-		return _lastPos;
+		return _lastRecvPos;
 	}
 
-	void SetLastPos(int lastPos)
+	void SetLastRecvPos(int lastRecvPos)
 	{
-		_lastPos = lastPos;
+		_lastRecvPos = lastRecvPos;
 	}
 
+	char * sendBuf()
+	{
+		return _szSendBuffer;
+	}
+
+	int GetLastSendPos()
+	{
+		return _lastSendPos;
+	}
+
+	void SetLastSendPos(int lastSendPos)
+	{
+		_lastSendPos = lastSendPos;
+	}
 public:
 	// send data
 	int SendData(DataHeader * pheader)
 	{
-		if (pheader)
-		{
-			int ret = send(_sockfd/*client socket*/, (const char*)pheader, pheader->data_length, 0);
-			//printf("socket<%d> send client socket<%d> response: dataLen<%d>, sendResult<%d>\n", (int)_sock, (int)sock_client, pheader->data_length, ret);
+		int ret = SOCKET_ERROR;
+		if (!pheader) {
 			return ret;
-
 		}
-		return SOCKET_ERROR;
+		// it's data length that would send
+		int nSendLen = pheader->data_length;
+		// it's data that would send
+		const char* pSendData = (const char*)pheader;
+		// 
+		while (true)
+		{
+			if (_lastSendPos + nSendLen >= SEND_BUFFER_SIZE)
+			{
+				// calculate the length of data that can be copied
+				int nCanCopyLen = SEND_BUFFER_SIZE - _lastSendPos;
+				// copy data to send buffer
+				memcpy(_szSendBuffer + _lastSendPos, pSendData, nCanCopyLen);
+				// position of remaining data
+				pSendData += nCanCopyLen;
+				// length of remaining data
+				nSendLen -= nCanCopyLen;
+				// send data
+				ret = send(_sockfd/*client socket*/, _szSendBuffer, SEND_BUFFER_SIZE, 0);
+				// set _lastSendPos to zero
+				_lastSendPos = 0;
+				// exception occur while send,such as client offline
+				if (SOCKET_ERROR == ret)
+				{
+					return ret;
+				}
+			}
+			else
+			{
+				// copy data to be sent to the end of the send buffer
+				memcpy(_szSendBuffer + _lastSendPos, pSendData, nSendLen);
+				// calculate the tail position of the send buffer
+				_lastSendPos += nSendLen;
+				// set return value
+				ret = 0;
+				// exit while
+				break;
+			}
+		}
+
+		return ret;
 	}
 
 private:
 	// fd_set file descriptor
 	SOCKET _sockfd;
-	// message buffer
-	char _szMsgBuffer[RECV_BUFFER_SIZE * 5];
-	// message buffer position
-	int _lastPos;
+	// recv message buffer
+	char _szRecvBuffer[RECV_BUFFER_SIZE];
+	// recv message buffer position
+	int _lastRecvPos;
+
+	// send message buffer
+	char _szSendBuffer[SEND_BUFFER_SIZE];
+	// send message buffer position
+	int _lastSendPos;
 };
 
 /**
@@ -138,8 +200,6 @@ private:
 	std::map<SOCKET,ClientSocket*> _clients;
 	// client socket buffer
 	std::vector<ClientSocket*> _clientsBuf;
-	// receive buffer
-	char _szRecvBuffer[RECV_BUFFER_SIZE] = {};
 	// lock
 	std::mutex _mutex;
 	// thread handle
@@ -327,10 +387,10 @@ public:
 	// receive data, deal sticking package and splitting package
 	int RecvData(ClientSocket* pclient)
 	{
-		char* szRecv = pclient->msgBuf() + pclient->GetLastPos();
+		char* szRecv = pclient->recvBuf() + pclient->GetLastRecvPos();
 		//receive client data
 		//int nLen = recv(pclient->sockfd(), _szRecvBuffer, RECV_BUFFER_SIZE, 0);
-		int nLen = recv(pclient->sockfd(), szRecv, (RECV_BUFFER_SIZE * 5) - pclient->GetLastPos(), 0);
+		int nLen = recv(pclient->sockfd(), szRecv, RECV_BUFFER_SIZE - pclient->GetLastRecvPos(), 0);
 
 		_pNetEvent->OnNetRecv(pclient);
 
@@ -344,28 +404,28 @@ public:
 		//memcpy(pclient->msgBuf() + pclient->GetLastPos(), _szRecvBuffer, nLen);
 
 		// update end position of message buffer
-		pclient->SetLastPos(pclient->GetLastPos() + nLen);
+		pclient->SetLastRecvPos(pclient->GetLastRecvPos() + nLen);
 
 		// whether message buffer size greater than message header(DataHeader)'s size,
 		// if yes, converting message buffer to struct DataHeader and clear message buffer
 		// had prcessed.
-		while (pclient->GetLastPos() >= sizeof(DataHeader))
+		while (pclient->GetLastRecvPos() >= sizeof(DataHeader))
 		{
 			// convert message buffer to DataHeader
-			DataHeader * pheader = (DataHeader*)pclient->msgBuf();
+			DataHeader * pheader = (DataHeader*)pclient->recvBuf();
 			// whether message buffer size greater than current client message size,
-			if (pclient->GetLastPos() >= pheader->data_length)
+			if (pclient->GetLastRecvPos() >= pheader->data_length)
 			{
 				// processed message's length
 				int nClientMsgLen = pheader->data_length;
 				// length of message buffer which was untreated
-				int nSize = pclient->GetLastPos() - nClientMsgLen;
+				int nSize = pclient->GetLastRecvPos() - nClientMsgLen;
 				// process net message
 				OnNetMessage(pclient, pheader);
 				// earse processed message buffer
-				memcpy(pclient->msgBuf(), pclient->msgBuf() + nClientMsgLen, nSize);
+				memcpy(pclient->recvBuf(), pclient->recvBuf() + nClientMsgLen, nSize);
 				// update end position of message buffer
-				pclient->SetLastPos(nSize);
+				pclient->SetLastRecvPos(nSize);
 			}
 			else
 			{
@@ -457,8 +517,6 @@ class EasyTcpServer : public INetEvent
 private:
 	// CellServers
 	std::vector<CellServer*> _cellServers;
-	//// receive buffer
-	//char _szRecvBuffer[RECV_BUFFER_SIZE] = {};
 	// lock
 	std::mutex _mutex;
 	// high resolution timers

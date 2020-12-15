@@ -19,7 +19,10 @@ public:
 			//printf("socket<%d> receive client socket<%d> message: CMD_LOGIN , data length<%d>, user name<%s>, pwd<%s>\n", (int)_sock, (int)sock_client, pheader->data_length, login->username, login->password);
 
 			LoginResponse ret;
-			pClientSocket->SendData(&ret);
+			if (SOCKET_ERROR == pClientSocket->SendData(&ret))
+			{
+				printf("exception occurs while send client socket<%d>\n", pClientSocket->sockfd());
+			}
 		}
 		break;
 		case CMD_LOGOUT:
