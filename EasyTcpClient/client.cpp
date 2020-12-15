@@ -1,7 +1,9 @@
 #include "EasyTcpClient.hpp"
+#include "CellTimestamp.hpp"
 
 #include <thread>
 #include <chrono>
+#include <atomic>
 
 bool g_run = true;
 // sending thread amount
@@ -10,6 +12,12 @@ const int tCount = 4;
 const int nCount = 10000;
 // client object
 EasyTcpClient* pclients[nCount];
+// client send count
+std::atomic_int sendCount = 0;
+// client parallel ready
+std::atomic_int readyCount = 0;
+// client exit count
+std::atomic_int exitCount = 1;
 
 void cmdThread()
 {
@@ -49,11 +57,16 @@ void sendThread(int id) //1~4
 		pclients[n]->Connect("127.0.0.1", 12345);
 	}
 
-	std::chrono::milliseconds t(5000);
-	std::this_thread::sleep_for(t);
+	readyCount++;
+	while (readyCount < tCount)
+	{
+		// waitting until other thread had readied
+		std::chrono::milliseconds t(10);
+		std::this_thread::sleep_for(t);
+	}
 
-	Login login[10];
-	for (int n = 0; n < 10; n++)
+	Login login[1];
+	for (int n = 0; n < 1; n++)
 	{
 		strcpy(login[n].username, "cnj");
 		strcpy(login[n].password, "cnj123");
@@ -66,8 +79,11 @@ void sendThread(int id) //1~4
 		{
 			if (pclients[n]->IsRunning())
 			{
-				pclients[n]->SendData(login, nLen);
-				//pclients[n]->OnRun();
+				if (SOCKET_ERROR != pclients[n]->SendData(login, nLen))
+				{
+					sendCount++;
+				}
+				pclients[n]->OnRun();
 			}
 		}
 	}
@@ -76,6 +92,10 @@ void sendThread(int id) //1~4
 	{
 		pclients[n]->Close();
 		delete pclients[n];
+		//printf("client exit <%d>\n", exitCount++);
+		exitCount++;
+		//std::chrono::microseconds t(10);
+		//std::this_thread::sleep_for(t);
 	}
 }
 
@@ -92,7 +112,21 @@ int main()
 		t.detach();
 	}
 
+	CellTimestamp tTime;
+
 	while (g_run)
+	{
+		auto t1 = tTime.getElapsedSecond();
+		if (t1 >= 1.0)
+		{
+			printf("threads<%d>,clients<%d>,time<%lf>,send<%d>\n", tCount, nCount, t1, (int)(sendCount / t1));
+			sendCount = 0;
+			tTime.update();
+		}
+		Sleep(1);
+	}
+
+	while (exitCount < nCount)
 	{
 		Sleep(100);
 	}

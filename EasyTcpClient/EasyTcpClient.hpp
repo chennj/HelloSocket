@@ -168,8 +168,10 @@ public:
 	*/
 	int RecvData()
 	{
+		char* szRecv = _szMsgBuffer + _lastPos;
 		// receive data
-		int nLen = recv(_sock, _szRecvBuffer, RECV_BUFFER_SIZE, 0);
+		//int nLen = recv(_sock, _szRecvBuffer, RECV_BUFFER_SIZE, 0);
+		int nLen = recv(_sock, szRecv, (RECV_BUFFER_SIZE * 5) - _lastPos, 0);
 		if (nLen <= 0)
 		{
 			printf("disconnected to server.\n");
@@ -177,7 +179,7 @@ public:
 		}
 
 		// copy receive buffer data to message buffer
-		memcpy(_szMsgBuffer + _lastPos, _szRecvBuffer, nLen);
+		//memcpy(_szMsgBuffer + _lastPos, _szRecvBuffer, nLen);
 
 		// update end position of message buffer
 		_lastPos += nLen;

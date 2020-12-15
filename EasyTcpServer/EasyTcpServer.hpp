@@ -118,6 +118,11 @@ public:
 	*	event while client's message comes
 	*/
 	virtual void OnNetMessage(ClientSocket* pClientSocket, DataHeader* pheader) = 0;
+
+	/**
+	*	event while client's receive message
+	*/
+	virtual void OnNetRecv(ClientSocket* pClientSocket) = 0;
 };
 
 /**
@@ -322,8 +327,13 @@ public:
 	// receive data, deal sticking package and splitting package
 	int RecvData(ClientSocket* pclient)
 	{
+		char* szRecv = pclient->msgBuf() + pclient->GetLastPos();
 		//receive client data
-		int nLen = recv(pclient->sockfd(), _szRecvBuffer, RECV_BUFFER_SIZE, 0);
+		//int nLen = recv(pclient->sockfd(), _szRecvBuffer, RECV_BUFFER_SIZE, 0);
+		int nLen = recv(pclient->sockfd(), szRecv, (RECV_BUFFER_SIZE * 5) - pclient->GetLastPos(), 0);
+
+		_pNetEvent->OnNetRecv(pclient);
+
 		if (nLen <= 0)
 		{
 			//printf("server socket<%d> client socket <%d> offline\n", (int)_sock, (int)pclient->sockfd());
@@ -331,7 +341,7 @@ public:
 		}
 
 		// copy receive buffer data to message buffer
-		memcpy(pclient->msgBuf() + pclient->GetLastPos(), _szRecvBuffer, nLen);
+		//memcpy(pclient->msgBuf() + pclient->GetLastPos(), _szRecvBuffer, nLen);
 
 		// update end position of message buffer
 		pclient->SetLastPos(pclient->GetLastPos() + nLen);
@@ -416,13 +426,14 @@ public:
 			closesocket(iter.first);
 			delete iter.second;
 		}
-
+		closesocket(_sock);
 #else
 		for (auto iter : _clients)
 		{
 			close(iter.first);
 			delete iter.second;
 		}
+		close(_sock);
 #endif
 		_clients.clear();
 
@@ -456,8 +467,10 @@ private:
 protected:
 	// local socket
 	SOCKET _sock;
-	// count while client message comes
+	// count while client receive message
 	std::atomic_int _recvCount;
+	// count while client message comes
+	std::atomic_int _msgCount;
 	// count while client join or offline
 	std::atomic_int _clientCount;
 
@@ -467,6 +480,7 @@ public:
 		_sock = INVALID_SOCKET;
 		_recvCount = 0;
 		_clientCount = 0;
+		_msgCount = 0;
 	}
 
 	virtual ~EasyTcpServer()
@@ -689,8 +703,9 @@ public:
 		auto t1 = _tTime.getElapsedSecond();
 		if (t1 >= 1.0)
 		{
-			printf("threads<%d>,time<%lf>,socket<%d> clients<%d>,packet count<%d>\n", _cellServers.size(), t1, (int)_sock, _clientCount.load(), (int)(_recvCount / t1));
+			printf("threads<%d>,time<%lf>,socket<%d> clients<%d>,recv<%d>,msg<%d>\n", _cellServers.size(), t1, (int)_sock, _clientCount.load(), (int)(_recvCount / t1), (int)(_msgCount / t1));
 			_recvCount = 0;
+			_msgCount = 0;
 			_tTime.update();
 		}
 	}
@@ -703,16 +718,22 @@ public:
 		_clientCount--;
 	}
 
-	// multiple thread triggering, nosafe
+	// multiple thread triggering, not safe
 	virtual void OnNetMessage(ClientSocket* pClientSocket, DataHeader* pheader)
 	{
-		_recvCount++;
+		_msgCount++;
 	}
 
-	// multiple thread triggering, nosafe
+	// multiple thread triggering, not safe
 	virtual void OnJoin(ClientSocket* pClientSocket)
 	{
 		_clientCount++;
+	}
+
+	// multiple thread triggering, not safe
+	virtual void OnNetRecv(ClientSocket* pClientSocket)
+	{
+		_recvCount++;
 	}
 };
 
