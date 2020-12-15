@@ -30,6 +30,7 @@
 #include<atomic>
 #include"MessageHeader.hpp"
 #include"CellTimestamp.hpp"
+#include"Task.hpp"
 
 // minimum buffer size
 #ifndef RECV_BUFFER_SIZE
@@ -39,6 +40,8 @@
 #ifndef SEND_BUFFER_SIZE
 #define SEND_BUFFER_SIZE 1024*10*5
 #endif
+
+class CellServer;
 
 /**
 *	client object with socket
@@ -179,7 +182,7 @@ public:
 	/**
 	*	event while client's message comes
 	*/
-	virtual void OnNetMessage(ClientSocket* pClientSocket, DataHeader* pheader) = 0;
+	virtual void OnNetMessage(CellServer* pCellServer, ClientSocket* pClientSocket, DataHeader* pheader) = 0;
 
 	/**
 	*	event while client's receive message
@@ -188,7 +191,36 @@ public:
 };
 
 /**
-*	resposible for processing client message
+*	resposible for send client message
+*/
+class CellSend2ClientTask : public ITask
+{
+private:
+	ClientSocket* _pClientSocket;
+	DataHeader* _pDataHeader;
+
+public:
+	CellSend2ClientTask(ClientSocket* pClientSocket, DataHeader* pDataHeader)
+	{
+		_pClientSocket = pClientSocket;
+		_pDataHeader = pDataHeader;
+	}
+
+	~CellSend2ClientTask()
+	{
+
+	}
+
+public:
+	void doTask()
+	{
+		_pClientSocket->SendData(_pDataHeader);
+		delete _pDataHeader;
+	}
+};
+
+/**
+*	resposible for process client message
 */
 class CellServer
 {
@@ -206,13 +238,13 @@ private:
 	std::thread* _pThread;
 	// register event
 	INetEvent* _pNetEvent;
-
 	// fd backup
 	fd_set _fd_read_bak;
 	bool _clients_change;
-
 	// max socket descriptor
 	SOCKET _max_socket;
+	// task 
+	TaskServer _taskServer;
 public:
 	CellServer(SOCKET sock = INVALID_SOCKET)
 	{
@@ -228,28 +260,7 @@ public:
 		Close();
 	}
 
-public:
-	void addClient(ClientSocket* pClientSocket)
-	{
-		// self unlocking
-		std::lock_guard<std::mutex> lockGuard(_mutex);
-		//_mutex.lock();
-		_clientsBuf.push_back(pClientSocket);
-		//_mutex.unlock();
-	}
-
-	size_t getClientCount()
-	{
-		return _clients.size() + _clientsBuf.size();
-	}
-
-public:
-	// if is running
-	bool IsRunning()
-	{
-		return _sock != INVALID_SOCKET;
-	}
-
+protected:
 	// process net message
 	int OnRun()
 	{
@@ -294,7 +305,7 @@ public:
 				_clients_change = false;
 
 				_max_socket = _clients.begin()->first;
-				for(auto iter : _clients)
+				for (auto iter : _clients)
 				{
 					_max_socket = iter.first > _max_socket ? iter.first : _max_socket;
 					// the following statement needs to be optimized,
@@ -378,10 +389,33 @@ public:
 		return ret;
 	}
 
+public:
+	void addClient(ClientSocket* pClientSocket)
+	{
+		// self unlocking
+		std::lock_guard<std::mutex> lockGuard(_mutex);
+		//_mutex.lock();
+		_clientsBuf.push_back(pClientSocket);
+		//_mutex.unlock();
+	}
+
+	size_t getClientCount()
+	{
+		return _clients.size() + _clientsBuf.size();
+	}
+
+public:
+	// if is running
+	bool IsRunning()
+	{
+		return _sock != INVALID_SOCKET;
+	}
+
 	// start self
 	void Start()
 	{
 		_pThread = new std::thread(std::mem_fn(&CellServer::OnRun), this);
+		_taskServer.Start();
 	}
 
 	// receive data, deal sticking package and splitting package
@@ -443,7 +477,7 @@ public:
 	virtual void OnNetMessage(ClientSocket* pClientSocket, DataHeader* pheader)
 	{
 		// statistics speed of server receiving client data packet
-		_pNetEvent->OnNetMessage(pClientSocket, pheader);
+		_pNetEvent->OnNetMessage(this, pClientSocket, pheader);
 
 		switch (pheader->cmd)
 		{
@@ -506,6 +540,13 @@ public:
 	void RegisterNetEventListener(INetEvent * pNetEvent)
 	{
 		_pNetEvent = pNetEvent;
+	}
+
+	// for task
+public:
+	void addSendTask(ClientSocket* pClientSocket, DataHeader* pDataHeader)
+	{
+		_taskServer.addTask(new CellSend2ClientTask(pClientSocket, pDataHeader));
 	}
 };
 
@@ -777,7 +818,7 @@ public:
 	}
 
 	// multiple thread triggering, not safe
-	virtual void OnNetMessage(ClientSocket* pClientSocket, DataHeader* pheader)
+	virtual void OnNetMessage(CellServer* pCellServer, ClientSocket* pClientSocket, DataHeader* pheader)
 	{
 		_msgCount++;
 	}

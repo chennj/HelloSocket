@@ -8,9 +8,10 @@ class MyServer : public EasyTcpServer
 	// overwrite parent function
 public:
 	// multiple thread triggering, nosafe
-	virtual void OnNetMessage(ClientSocket* pClientSocket, DataHeader* pheader)
+	virtual void OnNetMessage(CellServer* pCellServer, ClientSocket* pClientSocket, DataHeader* pheader)
 	{
-		_msgCount++;
+		EasyTcpServer::OnNetMessage(pCellServer, pClientSocket, pheader);
+
 		switch (pheader->cmd)
 		{
 		case CMD_LOGIN:
@@ -18,11 +19,8 @@ public:
 			Login* login = (Login*)pheader;
 			//printf("socket<%d> receive client socket<%d> message: CMD_LOGIN , data length<%d>, user name<%s>, pwd<%s>\n", (int)_sock, (int)sock_client, pheader->data_length, login->username, login->password);
 
-			LoginResponse ret;
-			if (SOCKET_ERROR == pClientSocket->SendData(&ret))
-			{
-				printf("exception occurs while send client socket<%d>\n", pClientSocket->sockfd());
-			}
+			//LoginResponse* ret = new LoginResponse;
+			pCellServer->addSendTask(pClientSocket, new LoginResponse);
 		}
 		break;
 		case CMD_LOGOUT:
@@ -47,21 +45,19 @@ public:
 	// it would only be triggered by one thread, safe
 	virtual void OnLeave(ClientSocket* pClientSocket)
 	{
-		_clientCount--;
-		//printf("client socket<%d> leaved\n", pClientSocket->sockfd());
+		EasyTcpServer::OnLeave(pClientSocket);
 	}
 
 	// multiple thread triggering, nosafe
 	virtual void OnJoin(ClientSocket* pClientSocket)
 	{
-		_clientCount++;
-		//printf("client socket<%d> joined\n", pClientSocket->sockfd());
+		EasyTcpServer::OnJoin(pClientSocket);
 	}
 
 	// multiple thread triggering, nosafe
 	virtual void OnNetRecv(ClientSocket* pClientSocket)
 	{
-		_recvCount++;
+		EasyTcpServer::OnNetRecv(pClientSocket);
 	}
 };
 
