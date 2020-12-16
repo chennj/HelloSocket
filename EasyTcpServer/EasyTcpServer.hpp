@@ -245,18 +245,21 @@ private:
 	SOCKET _max_socket;
 	// task 
 	TaskServer _taskServer;
+	// whether stop
+	bool _isStop;
 public:
 	CellServer(SOCKET sock = INVALID_SOCKET)
 	{
 		_sock = sock;
 		_pThread = nullptr;
 		_pNetEvent = nullptr;
+		_isStop = false;
 
 	}
 	~CellServer()
 	{
 		printf("CellServer destory.\n");
-		delete _pThread;
+		//delete _pThread;
 		Close();
 	}
 
@@ -405,10 +408,16 @@ public:
 	}
 
 public:
+	// stop cellserver
+	void Stop()
+	{
+		_isStop = true;
+	}
+
 	// if is running
 	bool IsRunning()
 	{
-		return _sock != INVALID_SOCKET;
+		return _sock != INVALID_SOCKET && !_isStop;
 	}
 
 	// start self
@@ -467,7 +476,6 @@ public:
 				// length of message header(DataHeader)'s size
 				break;
 			}
-
 		}
 
 		return 0;
@@ -584,6 +592,13 @@ public:
 
 	virtual ~EasyTcpServer()
 	{
+		for (auto pCellServer : _cellServers)
+		{
+			pCellServer->Stop();
+			delete pCellServer;
+		}
+		_cellServers.clear();
+
 		Close();
 	}
 

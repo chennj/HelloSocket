@@ -29,14 +29,13 @@ private:
 	std::list<ITask*> _tasks;
 	std::list<ITask*> _tasksBuf;
 	std::mutex _mutex;
+
 public:
 	TaskServer()
 	{
-
 	}
 	~TaskServer()
 	{
-
 	}
 
 public:
@@ -60,7 +59,7 @@ public:
 		while (true)
 		{
 			// take task from task buff to task
-			if (!_tasksBuf.empty())
+			if (_tasksBuf.size()>0)
 			{
 				std::lock_guard<std::mutex> lock(_mutex);
 				for (auto pTask : _tasksBuf)
@@ -88,6 +87,8 @@ public:
 			_tasks.clear();
 
 		}
+
 	}
 };
+
 #endif
