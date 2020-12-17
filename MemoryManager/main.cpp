@@ -1,6 +1,5 @@
 #include<stdlib.h>
-#include"Alloctor.h"
-//#include"MemoryMgr.hpp"
+#include"Allocator.h"
 
 int main()
 {
@@ -10,10 +9,8 @@ int main()
 	char * data2 = new char;
 	delete data2;
 
-	char * data3 = (char*)mem_alloc(64);
-	mem_free(data3);
-
-	//MemoryMgr::destory();
+	char * data3 = new char[64];
+	delete[] data3;
 
 	system("PAUSE");
 	return 0;

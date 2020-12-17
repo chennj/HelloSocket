@@ -1,5 +1,5 @@
-#ifndef _ALLOCTOR_H_
-#define _ALLOCTOR_H_
+#ifndef _ALLOCATOR_H_
+#define _ALLOCATOR_H_
 
 class MemoryMgr;
 extern MemoryMgr g_mem_mgr;

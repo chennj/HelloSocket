@@ -18,15 +18,15 @@
     <ClCompile Include="main.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="Alloctor.cpp">
+    <ClCompile Include="Allocator.cpp">
       <Filter>头文件</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Alloctor.h">
+    <ClInclude Include="MemoryMgr.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="MemoryMgr.hpp">
+    <ClInclude Include="Allocator.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
