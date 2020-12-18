@@ -5,6 +5,13 @@
 #include<mutex>
 #include<assert.h>
 
+#ifdef _DEBUG
+#include<stdio.h>
+	#define xPrintf(...) printf(__VA_ARGS__)
+#else
+	#define xPrintf(...)
+#endif
+
 #define ALLOC_MAX_MEM_SIZE 64
 
 class MemoryAlloc;
@@ -77,7 +84,7 @@ public:
 
 public:
 	// apply for memory
-	void* alloc_mem(size_t size)
+	void* alloc_mem(size_t nSize)
 	{
 		if (!_pBufPool)
 		{
@@ -87,7 +94,7 @@ public:
 		MemoryBlock* pRet = nullptr;
 		if (nullptr == _pHeader)
 		{
-			pRet = (MemoryBlock*)malloc(size + sizeof(MemoryBlock));
+			pRet = (MemoryBlock*)malloc(nSize + sizeof(MemoryBlock));
 			pRet->_bPool = false;
 			pRet->_nID = -1;
 			pRet->_nRef = 1;
@@ -102,7 +109,7 @@ public:
 
 			_pHeader = _pHeader->_pNext;
 		}
-
+		xPrintf("MemoryAlloc\t::alloc_mem:\t%llx, id=%d, size=%d\n", pRet, pRet->_nID, nSize);
 		return ( (char*)pRet + sizeof(MemoryBlock) );
 	}
 
@@ -121,7 +128,7 @@ public:
 		if (pBlock->_bPool)
 		{
 			pBlock->_pNext = _pHeader;
-			_pHeader->_pNext = pBlock;
+			_pHeader = pBlock;
 		}
 		else
 		{
@@ -165,7 +172,7 @@ public:
 			MemoryBlock* pTemp = (MemoryBlock*)( (char*)_pHeader + (n * _nUnitSize) );
 
 			pTemp->_bPool = true;
-			pTemp->_nID = 0;
+			pTemp->_nID = n;
 			pTemp->_nRef = 0;
 			pTemp->_pAlloc = this;
 			pTemp->_pNext = nullptr;
@@ -245,6 +252,7 @@ public:
 			pRet->_nRef = 1;
 			pRet->_pAlloc = nullptr;
 			pRet->_pNext = nullptr;
+			xPrintf("MemoryMgr\t::alloc_mem:\t%llx, id=%d, size=%d\n", pRet, pRet->_nID, nSize);
 			return ((char*)pRet + sizeof(MemoryBlock));
 
 		}
@@ -254,6 +262,7 @@ public:
 	void free_mem(void* pv)
 	{
 		MemoryBlock* pBlock = (MemoryBlock*)((char*)pv - sizeof(MemoryBlock));
+		xPrintf("MemoryMgr\t::free_mem:\t%llx, id=%d\n", pBlock, pBlock->_nID);
 		if (pBlock->_bPool)
 		{
 			pBlock->_pAlloc->free_mem(pv);
