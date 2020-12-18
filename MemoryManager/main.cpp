@@ -15,50 +15,59 @@ int main()
 	delete[] data3;
 
 	printf("---------------test2------------\n");
-	printf("--------------------step1------------\n");
+
 	const int count = 12;
 	char* pc[count];
 
 	for (int i = 0; i < count; i++)
 	{
 		pc[i] = new char[32];
-	}
-
-	for (auto pv : pc)
-	{
-		delete pv;
-	}
-
-	printf("--------------------step2------------\n");
-
-	for (int i = 0; i < count; i++)
-	{
-		pc[i] = new char[32];
-	}
-
-	for (auto pv : pc)
-	{
-		delete pv;
-	}
-
-	printf("--------------------step3------------\n");
-
-	for (int i = 0; i < count; i++)
-	{
-		pc[i] = new char[32];
-	}
-
-	for (auto pv : pc)
-	{
-		delete pv;
+		delete[] pc[i];
 	}
 
 	printf("---------------test3------------\n");
 
 	for (int i = 0; i < count; i++)
 	{
-		pc[i] = new char[32];
+		pc[i] = new char[65];
 		delete[] pc[i];
+	}
+
+	printf("---------------test4------------\n");
+	printf("--------------------step1-------\n");
+
+	for (int i = 0; i < count; i++)
+	{
+		pc[i] = new char[32];
+	}
+
+	for (auto pv : pc)
+	{
+		delete pv;
+	}
+
+	printf("--------------------step2-------\n");
+
+	for (int i = 0; i < count; i++)
+	{
+		pc[i] = new char[32];
+	}
+
+	for (int i = count - 1; i >= 0; i--)
+	{
+		delete[] pc[i];
+	}
+
+	printf("--------------------step3-------\n");
+
+	for (int i = count-1; i >= 0; i--)
+	{
+		pc[i] = new char[32];
+	}
+
+	for (int i = 0; i < count; i++)
+	{
+		delete pc[i];
 	}
 
 	system("PAUSE");

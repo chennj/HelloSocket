@@ -125,6 +125,8 @@ public:
 			return;
 		}
 
+		xPrintf("MemoryAlloc\t::free_mem:\t%llx, id=%d\n", pBlock, pBlock->_nID);
+
 		if (pBlock->_bPool)
 		{
 			pBlock->_pNext = _pHeader;
@@ -262,7 +264,6 @@ public:
 	void free_mem(void* pv)
 	{
 		MemoryBlock* pBlock = (MemoryBlock*)((char*)pv - sizeof(MemoryBlock));
-		xPrintf("MemoryMgr\t::free_mem:\t%llx, id=%d\n", pBlock, pBlock->_nID);
 		if (pBlock->_bPool)
 		{
 			pBlock->_pAlloc->free_mem(pv);
@@ -271,6 +272,7 @@ public:
 		{
 			if (0 == --pBlock->_nRef)
 			{
+				xPrintf("MemoryMgr\t::free_mem:\t%llx, id=%d\n", pBlock, pBlock->_nID);
 				free(pBlock);
 			}
 		}
