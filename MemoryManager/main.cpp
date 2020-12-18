@@ -1,22 +1,53 @@
-#include<stdlib.h>
 #include"Allocator.h"
-#include<stdio.h>
+#include"CellTimestamp.hpp"
+#include<iostream>
+#include<thread>
+#include<mutex>
 
-int main()
+using namespace std;
+
+mutex m;
+const int tCount = 4;
+const int mCount = 1000 * 100;
+const int nCount = mCount / tCount;
+
+void workFun(int index)
 {
-	const int count = 1025;
-	char* pc[count];
+	char* data[nCount];
 
-	for (int i = 0; i < count; i++)
+	for (int i = 0; i < nCount; i++)
 	{
-		pc[i] = new char[1+i];
+		data[i] = new char[1 + rand()%1024];
 	}
 
-	for (auto pv : pc)
+	for (auto pv : data)
 	{
 		delete pv;
 	}
 
+	//for (int n = 0; n < nCount; n++)
+	//{
+	//	lock_guard<mutex> lg(m);
+	//}
+}
+
+int main()
+{
+	thread t[tCount];
+	for (int n = 0; n < tCount; n++)
+	{
+		t[n] = thread(workFun, n);
+	}
+
+	CellTimestamp tTime;
+	for (int n = 0; n < tCount; n++)
+	{
+		t[n].join();
+	}
+
+	cout << "ÏûºÄÊ±¼ä(ºÁÃë)£º\t" << tTime.getElapsedTimeInMilliSec() << endl;
+
 	system("PAUSE");
 	return 0;
+
 }

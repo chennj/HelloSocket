@@ -57,6 +57,8 @@ public:
 */
 class MemoryAlloc
 {
+private:
+	std::mutex _mutex;
 protected:
 	// address of the memory pool
 	char* _pBufPool;
@@ -71,6 +73,8 @@ protected:
 public:
 	MemoryAlloc()
 	{
+		xPrintf("create memory allocator instance\n");
+
 		_pBufPool		= nullptr;
 		_pHeader		= nullptr;
 		_nUnitSize		= 0;
@@ -78,7 +82,7 @@ public:
 	}
 	~MemoryAlloc()
 	{
-		printf("release buffer pool\n");
+		xPrintf("release memory pool\n");
 		if (_pBufPool)
 			free(_pBufPool);
 	}
@@ -87,6 +91,7 @@ public:
 	// apply for memory
 	void* alloc_mem(size_t nSize)
 	{
+		std::lock_guard<std::mutex> lock(_mutex);
 		if (!_pBufPool)
 		{
 			init_pool();
@@ -105,12 +110,12 @@ public:
 		else
 		{
 			pRet = _pHeader;
+			_pHeader = _pHeader->_pNext;
 			assert(0 == pRet->_nRef);
 			pRet->_nRef = 1;
 
-			_pHeader = _pHeader->_pNext;
 		}
-		xPrintf("MemoryAlloc\t::alloc_mem:\t%llx, id=%d, size=%d\n", pRet, pRet->_nID, nSize);
+		//xPrintf("MemoryAlloc\t::alloc_mem:\t%llx, id=%d, size=%d\n", pRet, pRet->_nID, nSize);
 		return ( (char*)pRet + sizeof(MemoryBlock) );
 	}
 
@@ -121,20 +126,26 @@ public:
 
 		assert(1 <= pBlock->_nRef);
 
-		if (0 != --pBlock->_nRef)
-		{
-			return;
-		}
-
-		xPrintf("MemoryAlloc\t::free_mem:\t%llx, id=%d\n", pBlock, pBlock->_nID);
+		//xPrintf("MemoryAlloc\t::free_mem:\t%llx, id=%d\n", pBlock, pBlock->_nID);
 
 		if (pBlock->_bPool)
 		{
+			std::lock_guard<std::mutex> lock(_mutex);
+			if (0 != --pBlock->_nRef)
+			{
+				return;
+			}
+
 			pBlock->_pNext = _pHeader;
 			_pHeader = pBlock;
 		}
 		else
 		{
+			if (0 != --pBlock->_nRef)
+			{
+				return;
+			}
+
 			free(pBlock);
 		}
 	}
@@ -142,6 +153,8 @@ public:
 	// initialize 
 	void init_pool()
 	{
+		xPrintf("initialize memory pool,size of type=%d,unit quantity=%d\n", _nUnitSize - sizeof(MemoryBlock), _nUnitQuantity);
+
 		// assert _pBufPool must be null
 		assert(nullptr == _pBufPool);
 		if (_pBufPool)
@@ -152,6 +165,7 @@ public:
 		*/
 		// calculate pool capacity
 		size_t poolCapacity = _nUnitSize * _nUnitQuantity;
+
 		// allocate memory
 		_pBufPool = (char*)malloc(poolCapacity);
 
@@ -239,10 +253,11 @@ private:
 		init_allocator(129, 256,	&_mem256_allocator);
 		init_allocator(257, 512,	&_mem512_allocator);
 		init_allocator(513, 1024,	&_mem1024_allocator);
+		xPrintf("create memory manager instance\n");
 	}
 	~MemoryMgr()
 	{
-		printf("destory memory manager instance\n");
+		xPrintf("destory memory manager instance\n");
 	}
 
 	MemoryMgr(const MemoryMgr& signal) = delete;
@@ -274,7 +289,7 @@ public:
 			pRet->_nRef = 1;
 			pRet->_pAlloc = nullptr;
 			pRet->_pNext = nullptr;
-			xPrintf("MemoryMgr\t::alloc_mem:\t%llx, id=%d, size=%d\n", pRet, pRet->_nID, nSize);
+			//xPrintf("MemoryMgr\t::alloc_mem:\t%llx, id=%d, size=%d\n", pRet, pRet->_nID, nSize);
 			return ((char*)pRet + sizeof(MemoryBlock));
 
 		}
@@ -292,7 +307,7 @@ public:
 		{
 			if (0 == --pBlock->_nRef)
 			{
-				xPrintf("MemoryMgr\t::free_mem:\t%llx, id=%d\n", pBlock, pBlock->_nID);
+				//xPrintf("MemoryMgr\t::free_mem:\t%llx, id=%d\n", pBlock, pBlock->_nID);
 				free(pBlock);
 			}
 		}
@@ -320,7 +335,6 @@ MemoryMgr& MemoryMgr::instance()
 		std::lock_guard<std::mutex> lock(_mutex);
 		if (nullptr == _instance)
 		{
-			printf("create memory manager instance\n");
 			static MemoryMgr mgr;
 			_instance = &mgr;
 		}

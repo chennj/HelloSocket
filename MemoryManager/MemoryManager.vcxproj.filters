@@ -23,10 +23,13 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="MemoryMgr.hpp">
+    <ClInclude Include="CellTimestamp.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="Allocator.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="MemoryMgr.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
