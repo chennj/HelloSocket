@@ -79,7 +79,7 @@ public:
 	// apply for memory
 	void* alloc_mem(size_t size)
 	{
-		if (nullptr == _pBufPool)
+		if (!_pBufPool)
 		{
 			init_pool();
 		}
@@ -134,7 +134,7 @@ public:
 	{
 		// assert _pBufPool must be null
 		assert(nullptr == _pBufPool);
-		if (!_pBufPool)
+		if (_pBufPool)
 			return;
 
 		/**
@@ -162,7 +162,7 @@ public:
 		MemoryBlock* pCurr = _pHeader;
 		for (size_t n = 1; n < _nUnitQuantity; n++)
 		{
-			MemoryBlock* pTemp = (MemoryBlock*)(_pHeader + (n * _nUnitSize));
+			MemoryBlock* pTemp = (MemoryBlock*)( (char*)_pHeader + (n * _nUnitSize) );
 
 			pTemp->_bPool = true;
 			pTemp->_nID = 0;
