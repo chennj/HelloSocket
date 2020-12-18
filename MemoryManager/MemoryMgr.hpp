@@ -12,7 +12,8 @@
 	#define xPrintf(...)
 #endif
 
-#define ALLOC_MAX_MEM_SIZE 64
+#define ALLOC_MAX_MEM_SIZE 1024
+#define ALLOC_MAX_BLOCK_QUANTITY 100000
 
 class MemoryAlloc;
 
@@ -195,9 +196,18 @@ class MemoryTplOfAlloc : public MemoryAlloc
 public:
 	MemoryTplOfAlloc()
 	{
-		// prevent incoming values from being not a power of 2
+
+		/**
+		*	calculate size per unit
+		*/
+		// n is different value in different system, such as n equal 4 byte in 32 bit system 
+		// and 8 byte in 64 bit system
 		int n = sizeof(void*);
+		// check again to ensure incoming values to being a power of 2,
+		// such as if nUnitSize=63, then as a result _nUnitSize=64 after
+		// calculated from fllowing below sentence.
 		while ((n <<= 1) < nUnitSize);
+		// calculate unit's size
 		_nUnitSize = n + sizeof(MemoryBlock);
 
 		_nUnitQuantity = nUnitQuantity;
@@ -213,12 +223,22 @@ private:
 	static MemoryMgr* _instance;
 	static std::mutex _mutex;
 
-	MemoryTplOfAlloc<64, 10> _mem64_allocator;
+	MemoryTplOfAlloc<64,	ALLOC_MAX_BLOCK_QUANTITY> _mem64_allocator;
+	MemoryTplOfAlloc<128,	ALLOC_MAX_BLOCK_QUANTITY> _mem128_allocator;
+	MemoryTplOfAlloc<256,	ALLOC_MAX_BLOCK_QUANTITY> _mem256_allocator;
+	MemoryTplOfAlloc<512,	ALLOC_MAX_BLOCK_QUANTITY> _mem512_allocator;
+	MemoryTplOfAlloc<1024,	ALLOC_MAX_BLOCK_QUANTITY> _mem1024_allocator;
+
 	MemoryAlloc* _szAlloc[ALLOC_MAX_MEM_SIZE + 1];
+
 private:
 	MemoryMgr()
 	{
-		init(0, 64, &_mem64_allocator);
+		init_allocator(0,	64,		&_mem64_allocator);
+		init_allocator(65,	128,	&_mem128_allocator);
+		init_allocator(129, 256,	&_mem256_allocator);
+		init_allocator(257, 512,	&_mem512_allocator);
+		init_allocator(513, 1024,	&_mem1024_allocator);
 	}
 	~MemoryMgr()
 	{
@@ -230,7 +250,7 @@ private:
 
 private:
 	// initialize buffer pool mapping array
-	void init(int nBegin, int nEnd, MemoryAlloc* pAlloc)
+	void init_allocator(int nBegin, int nEnd, MemoryAlloc* pAlloc)
 	{
 		for (int n = nBegin; n <= nEnd; n++)
 		{
