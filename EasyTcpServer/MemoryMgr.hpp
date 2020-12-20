@@ -12,7 +12,7 @@
 	#define xPrintf(...)
 #endif
 
-#define ALLOC_MAX_MEM_SIZE 1024
+#define ALLOC_MAX_MEM_SIZE 128
 #define ALLOC_MAX_BLOCK_QUANTITY 100000
 
 class MemoryAlloc;
@@ -57,9 +57,8 @@ public:
 */
 class MemoryAlloc
 {
-private:
-	std::mutex _mutex;
 protected:
+	std::mutex _mutex;
 	// address of the memory pool
 	char* _pBufPool;
 	// header address point to MemoryBlock in memory pool
@@ -91,7 +90,7 @@ public:
 	// apply for memory
 	void* alloc_mem(size_t nSize)
 	{
-		std::lock_guard<std::mutex> lock(_mutex);
+		std::lock_guard<std::mutex> lg(_mutex);
 		if (!_pBufPool)
 		{
 			init_pool();
@@ -130,7 +129,7 @@ public:
 
 		if (pBlock->_bPool)
 		{
-			std::lock_guard<std::mutex> lock(_mutex);
+			std::lock_guard<std::mutex> lg(_mutex);
 			if (0 != --pBlock->_nRef)
 			{
 				return;
@@ -237,11 +236,11 @@ private:
 	static MemoryMgr* _instance;
 	static std::mutex _mutex;
 
-	MemoryTplOfAlloc<64,	ALLOC_MAX_BLOCK_QUANTITY> _mem64_allocator;
-	MemoryTplOfAlloc<128,	ALLOC_MAX_BLOCK_QUANTITY> _mem128_allocator;
-	MemoryTplOfAlloc<256,	ALLOC_MAX_BLOCK_QUANTITY> _mem256_allocator;
-	MemoryTplOfAlloc<512,	ALLOC_MAX_BLOCK_QUANTITY> _mem512_allocator;
-	MemoryTplOfAlloc<1024,	ALLOC_MAX_BLOCK_QUANTITY> _mem1024_allocator;
+	MemoryTplOfAlloc<64,	ALLOC_MAX_BLOCK_QUANTITY * 10> _mem64_allocator;
+	MemoryTplOfAlloc<128,	ALLOC_MAX_BLOCK_QUANTITY * 10> _mem128_allocator;
+	//MemoryTplOfAlloc<256,	ALLOC_MAX_BLOCK_QUANTITY> _mem256_allocator;
+	//MemoryTplOfAlloc<512,	ALLOC_MAX_BLOCK_QUANTITY> _mem512_allocator;
+	//MemoryTplOfAlloc<1024,	ALLOC_MAX_BLOCK_QUANTITY> _mem1024_allocator;
 
 	MemoryAlloc* _szAlloc[ALLOC_MAX_MEM_SIZE + 1];
 
@@ -250,9 +249,9 @@ private:
 	{
 		init_allocator(0,	64,		&_mem64_allocator);
 		init_allocator(65,	128,	&_mem128_allocator);
-		init_allocator(129, 256,	&_mem256_allocator);
-		init_allocator(257, 512,	&_mem512_allocator);
-		init_allocator(513, 1024,	&_mem1024_allocator);
+		//init_allocator(129, 256,	&_mem256_allocator);
+		//init_allocator(257, 512,	&_mem512_allocator);
+		//init_allocator(513, 1024,	&_mem1024_allocator);
 		xPrintf("create memory manager instance\n");
 	}
 	~MemoryMgr()

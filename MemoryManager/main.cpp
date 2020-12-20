@@ -1,8 +1,10 @@
 #include"Allocator.h"
 #include"CellTimestamp.hpp"
+#include"AutoPtr.hpp"
 #include<iostream>
 #include<thread>
 #include<mutex>
+#include<memory>
 
 using namespace std;
 
@@ -24,28 +26,71 @@ void workFun(int index)
 	{
 		delete pv;
 	}
+}
 
-	//for (int n = 0; n < nCount; n++)
-	//{
-	//	lock_guard<mutex> lg(m);
-	//}
+class ClassA
+{
+private:
+
+public:
+	ClassA()
+	{
+		printf("ClassA\n");
+	}
+	~ClassA()
+	{
+		printf("~ClassA\n");
+	}
+
+public:
+	int num;
+
+public:
+	void release() {}
+	void clone() {}
+};
+
+void fun1(shared_ptr<ClassA> pa)
+{
+	pa->num++;
+	printf("fun pa->num = %d\n",pa->num);
+}
+
+void fun2(AutoPtr<ClassA> pa)
+{
+	pa->num++;
+	printf("fun pa->num = %d\n", pa->num);
 }
 
 int main()
 {
-	thread t[tCount];
-	for (int n = 0; n < tCount; n++)
+	//thread t[tCount];
+	//for (int n = 0; n < tCount; n++)
+	//{
+	//	t[n] = thread(workFun, n);
+	//}
+	//CellTimestamp tTime;
+	//for (int n = 0; n < tCount; n++)
+	//{
+	//	t[n].join();
+	//}
+	//cout << "消耗时间(毫秒)：\t" << tTime.getElapsedTimeInMilliSec() << endl;
+
+	//shared_ptr<int> b = make_shared<int>();
+	//*b = 100;
+	//printf("b=%d\n", *b);
+
 	{
-		t[n] = thread(workFun, n);
+		shared_ptr<ClassA> cls_a = make_shared<ClassA>();
+		cls_a->num = 100;
+		fun1(cls_a);
 	}
 
-	CellTimestamp tTime;
-	for (int n = 0; n < tCount; n++)
 	{
-		t[n].join();
+		AutoPtr<ClassA> cls_a = new ClassA;
+		cls_a->num = 100;
+		fun2(cls_a);
 	}
-
-	cout << "消耗时间(毫秒)：\t" << tTime.getElapsedTimeInMilliSec() << endl;
 
 	system("PAUSE");
 	return 0;
