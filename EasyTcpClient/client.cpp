@@ -9,7 +9,7 @@ bool g_run = true;
 // sending thread amount
 const int tCount = 4;
 // client amount
-const int nCount = 1000;
+const int nCount = 2000;
 // client object
 EasyTcpClient* pclients[nCount];
 // client send count
@@ -41,7 +41,7 @@ void cmdThread()
 void sendThread(int id) //1~4
 {
 	//4 thread around about 1~4
-	int c = nCount / tCount;
+	const int c = nCount / tCount;
 	int begin = (id - 1)*c;
 	int end = begin + c;
 
@@ -73,19 +73,36 @@ void sendThread(int id) //1~4
 	}
 	const int nLen = sizeof(login);
 
+	CellTimestamp tTime;
+
 	while (g_run)
 	{
 		for (int n = begin; n < end; n++)
 		{
+			////timing send with one per one second
+			//if (tTime.getElapsedSecond() >= 1.0) {
+			//	tTime.update();
+			//	if (pclients[n]->IsRunning())
+			//	{
+			//		if (SOCKET_ERROR != pclients[n]->SendData(login, nLen))
+			//		{
+			//			sendCount++;
+			//		}
+			//	}
+			//}
+
 			if (pclients[n]->IsRunning())
 			{
 				if (SOCKET_ERROR != pclients[n]->SendData(login, nLen))
 				{
 					sendCount++;
 				}
-				pclients[n]->OnRun();
 			}
+
+			pclients[n]->OnRun();
+
 		}
+
 	}
 
 	for (int n = begin; n < end; n++)

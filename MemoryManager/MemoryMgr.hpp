@@ -13,7 +13,7 @@
 #endif
 
 #define ALLOC_MAX_MEM_SIZE 1024
-#define ALLOC_MAX_BLOCK_QUANTITY 100000
+#define ALLOC_MAX_BLOCK_QUANTITY 200000
 
 class MemoryAlloc;
 

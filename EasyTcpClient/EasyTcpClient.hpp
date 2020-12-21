@@ -2,6 +2,9 @@
 #define _EASYTCPCLIENT_TCP_
 
 #ifdef _WIN32
+#ifndef FD_SETSIZE
+#define FD_SETSIZE      2506			//windows default FD_SETSIZE equals 64, too small
+#endif
 #define WIN32_LEAN_AND_MEAN
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
 #define _CRT_SECURE_NO_WARNINGS
@@ -22,7 +25,7 @@
 #include"MessageHeader.hpp"
 
 #ifndef RECV_BUFFER_SIZE
-#define RECV_BUFFER_SIZE 1024*10
+#define RECV_BUFFER_SIZE 1024*10*5
 #endif
 
 class EasyTcpClient
@@ -32,7 +35,7 @@ private:
 	// receive buffer
 	char _szRecvBuffer[RECV_BUFFER_SIZE] = {};
 	// message buffer
-	char _szMsgBuffer[RECV_BUFFER_SIZE * 5] = {};
+	char _szMsgBuffer[RECV_BUFFER_SIZE] = {};
 	// message buffer position
 	int _lastPos = 0;
 	//
@@ -171,7 +174,7 @@ public:
 		char* szRecv = _szMsgBuffer + _lastPos;
 		// receive data
 		//int nLen = recv(_sock, _szRecvBuffer, RECV_BUFFER_SIZE, 0);
-		int nLen = recv(_sock, szRecv, (RECV_BUFFER_SIZE * 5) - _lastPos, 0);
+		int nLen = recv(_sock, szRecv, RECV_BUFFER_SIZE - _lastPos, 0);
 		if (nLen <= 0)
 		{
 			printf("disconnected to server.\n");

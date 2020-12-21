@@ -41,6 +41,9 @@
 #define SEND_BUFFER_SIZE 1024*10*5
 #endif
 
+typedef std::shared_ptr<DataHeader> DataHeaderPtr;
+typedef std::shared_ptr<LoginResponse> LoginResponsePtr;
+
 class CellServer;
 
 /**
@@ -100,7 +103,7 @@ public:
 	}
 public:
 	// send data
-	int SendData(DataHeader * pheader)
+	int SendData(DataHeaderPtr& pheader)
 	{
 		int ret = SOCKET_ERROR;
 		if (!pheader) {
@@ -109,7 +112,7 @@ public:
 		// it's data length that would send
 		int nSendLen = pheader->data_length;
 		// it's data that would send
-		const char* pSendData = (const char*)pheader;
+		const char* pSendData = (const char*)pheader.get();
 		// 
 		while (true)
 		{
@@ -163,6 +166,9 @@ private:
 	int _lastSendPos;
 };
 
+typedef std::shared_ptr<ClientSocket> ClientSocketPtr;
+typedef std::shared_ptr<CellServer> CellServerPtr;
+
 /**
 *	net event interface
 */
@@ -172,22 +178,22 @@ public:
 	/**
 	*	event while client join
 	*/
-	virtual void OnJoin(ClientSocket* pClientSocket) = 0;
+	virtual void OnJoin(ClientSocketPtr& pClientSocket) = 0;
 
 	/**
 	*	event while client leaves
 	*/
-	virtual void OnLeave(ClientSocket* pClientSocket) = 0;
+	virtual void OnLeave(ClientSocketPtr& pClientSocket) = 0;
 
 	/**
 	*	event while client's message comes
 	*/
-	virtual void OnNetMessage(CellServer* pCellServer, ClientSocket* pClientSocket, DataHeader* pheader) = 0;
+	virtual void OnNetMessage(CellServer* pCellServer, ClientSocketPtr& pClientSocket, DataHeader* pheader) = 0;
 
 	/**
 	*	event while client's receive message
 	*/
-	virtual void OnNetRecv(ClientSocket* pClientSocket) = 0;
+	virtual void OnNetRecv(ClientSocketPtr& pClientSocket) = 0;
 };
 
 /**
@@ -196,11 +202,11 @@ public:
 class CellSend2ClientTask : public ITask
 {
 private:
-	ClientSocket* _pClientSocket;
-	DataHeader* _pDataHeader;
+	ClientSocketPtr _pClientSocket;
+	DataHeaderPtr _pDataHeader;
 
 public:
-	CellSend2ClientTask(ClientSocket* pClientSocket, DataHeader* pDataHeader)
+	CellSend2ClientTask(ClientSocketPtr& pClientSocket, DataHeaderPtr& pDataHeader)
 	{
 		_pClientSocket = pClientSocket;
 		_pDataHeader = pDataHeader;
@@ -215,7 +221,7 @@ public:
 	void doTask()
 	{
 		_pClientSocket->SendData(_pDataHeader);
-		delete _pDataHeader;
+		//delete _pDataHeader;
 	}
 };
 
@@ -229,9 +235,9 @@ private:
 	SOCKET _sock;
 	// client sockets
 	//std::vector<ClientSocket*> _clients;
-	std::map<SOCKET,ClientSocket*> _clients;
+	std::map<SOCKET, ClientSocketPtr> _clients;
 	// client socket buffer
-	std::vector<ClientSocket*> _clientsBuf;
+	std::vector<ClientSocketPtr> _clientsBuf;
 	// lock
 	std::mutex _mutex;
 	// thread handle
@@ -340,7 +346,7 @@ protected:
 			}
 
 #ifdef _WIN32
-			for (int n = 0; n < fd_read.fd_count; n++)
+			for (size_t n = 0; n < fd_read.fd_count; n++)
 			{
 				auto iter = _clients.find(fd_read.fd_array[n]);
 				if (iter != _clients.end())
@@ -383,7 +389,7 @@ protected:
 			for (auto pClient : temp)
 			{
 				_clients.erase(pClient->sockfd());
-				delete pClient;
+				//delete pClient;
 			}
 #endif
 		} // while (IsRunning())
@@ -393,7 +399,7 @@ protected:
 	}
 
 public:
-	void addClient(ClientSocket* pClientSocket)
+	void addClient(ClientSocketPtr& pClientSocket)
 	{
 		// self unlocking
 		std::lock_guard<std::mutex> lockGuard(_mutex);
@@ -428,7 +434,7 @@ public:
 	}
 
 	// receive data, deal sticking package and splitting package
-	int RecvData(ClientSocket* pclient)
+	int RecvData(ClientSocketPtr& pclient)
 	{
 		char* szRecv = pclient->recvBuf() + pclient->GetLastRecvPos();
 		//receive client data
@@ -455,7 +461,7 @@ public:
 		while (pclient->GetLastRecvPos() >= sizeof(DataHeader))
 		{
 			// convert message buffer to DataHeader
-			DataHeader * pheader = (DataHeader*)pclient->recvBuf();
+			DataHeader* pheader = (DataHeader*)pclient->recvBuf();
 			// whether message buffer size greater than current client message size,
 			if (pclient->GetLastRecvPos() >= pheader->data_length)
 			{
@@ -482,39 +488,10 @@ public:
 	}
 
 	// response net message
-	virtual void OnNetMessage(ClientSocket* pClientSocket, DataHeader* pheader)
+	virtual void OnNetMessage(ClientSocketPtr& pClientSocket, DataHeader* pheader)
 	{
 		// statistics speed of server receiving client data packet
 		_pNetEvent->OnNetMessage(this, pClientSocket, pheader);
-
-		switch (pheader->cmd)
-		{
-		case CMD_LOGIN:
-		{
-			//Login* login = (Login*)pheader;
-			//printf("socket<%d> receive client socket<%d> message: CMD_LOGIN , data length<%d>, user name<%s>, pwd<%s>\n", (int)_sock, (int)sock_client, pheader->data_length, login->username, login->password);
-
-			//LoginResponse ret;
-			//pClientSocket->SendData(&ret);
-		}
-		break;
-		case CMD_LOGOUT:
-		{
-			//Logout* logout = (Logout*)pheader;
-			//printf("socket<%d> receive client socket<%d> message: CMD_LOGOUT , data length<%d>, user name<%s>\n", (int)_sock, (int)sock_client, pheader->data_length, logout->username);
-
-			//LogoutResponse ret;
-			//pClientSocket->SendData(&ret);
-		}
-		break;
-		default:
-		{
-			printf("socket<%d> receive client socket<%d> message: CMD_UNKNOWN , data length<%d>\n", (int)_sock, (int)pClientSocket->sockfd(), pheader->data_length);
-			//UnknownResponse ret;
-			//pClientSocket->SendData(&ret);
-		}
-		break;
-		}
 	}
 
 	// close socket
@@ -526,14 +503,14 @@ public:
 		for (auto iter : _clients)
 		{
 			closesocket(iter.first);
-			delete iter.second;
+			//delete iter.second;
 		}
 		closesocket(_sock);
 #else
 		for (auto iter : _clients)
 		{
 			close(iter.first);
-			delete iter.second;
+			//delete iter.second;
 		}
 		close(_sock);
 #endif
@@ -552,9 +529,10 @@ public:
 
 	// for task
 public:
-	void addSendTask(ClientSocket* pClientSocket, DataHeader* pDataHeader)
+	void addSendTask(ClientSocketPtr& pClientSocket, DataHeaderPtr& pDataHeader)
 	{
-		_taskServer.addTask(new CellSend2ClientTask(pClientSocket, pDataHeader));
+		std::shared_ptr<ITask> pTask = std::make_shared<CellSend2ClientTask>(pClientSocket, pDataHeader);
+		_taskServer.addTask(pTask);
 	}
 };
 
@@ -565,7 +543,7 @@ class EasyTcpServer : public INetEvent
 {
 private:
 	// CellServers
-	std::vector<CellServer*> _cellServers;
+	std::vector<CellServerPtr> _cellServers;
 	// lock
 	std::mutex _mutex;
 	// high resolution timers
@@ -595,7 +573,7 @@ public:
 		for (auto pCellServer : _cellServers)
 		{
 			pCellServer->Stop();
-			delete pCellServer;
+			//delete pCellServer;
 		}
 		_cellServers.clear();
 
@@ -702,7 +680,7 @@ public:
 		}
 
 		// assign comed client to CellServer with the least number of client
-		addClient2CellServer(new ClientSocket(sock_client));
+		addClient2CellServer(std::make_shared<ClientSocket>(sock_client));
 		//// get client ip address
 		//inet_ntoa(client_addr.sin_addr)
 
@@ -714,7 +692,7 @@ public:
 	{
 		for (int n = 0; n < nCellServer; n++)
 		{
-			auto pCellServer = new CellServer(_sock);
+			CellServerPtr pCellServer = std::make_shared<CellServer>(_sock);
 			_cellServers.push_back(pCellServer);
 			pCellServer->RegisterNetEventListener(this);
 			pCellServer->Start();
@@ -722,7 +700,7 @@ public:
 	}
 
 	// select CellServer which queue is smallest add client message to it
-	void addClient2CellServer(ClientSocket* pClientSocket)
+	void addClient2CellServer(ClientSocketPtr& pClientSocket)
 	{
 		auto pMinCellServer = _cellServers[0];
 		for (auto pCellServer : _cellServers)
@@ -827,25 +805,25 @@ public:
 	// inherit INetEvent
 public:
 	// it would only be triggered by one thread, safe
-	virtual void OnLeave(ClientSocket* pClientSocket)
+	virtual void OnLeave(ClientSocketPtr& pClientSocket)
 	{
 		_clientCount--;
 	}
 
 	// multiple thread triggering, not safe
-	virtual void OnNetMessage(CellServer* pCellServer, ClientSocket* pClientSocket, DataHeader* pheader)
+	virtual void OnNetMessage(CellServer* pCellServer, ClientSocketPtr& pClientSocket, DataHeader* pheader)
 	{
 		_msgCount++;
 	}
 
 	// multiple thread triggering, not safe
-	virtual void OnJoin(ClientSocket* pClientSocket)
+	virtual void OnJoin(ClientSocketPtr& pClientSocket)
 	{
 		_clientCount++;
 	}
 
 	// multiple thread triggering, not safe
-	virtual void OnNetRecv(ClientSocket* pClientSocket)
+	virtual void OnNetRecv(ClientSocketPtr& pClientSocket)
 	{
 		_recvCount++;
 	}

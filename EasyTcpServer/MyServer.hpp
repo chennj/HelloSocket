@@ -8,7 +8,7 @@ class MyServer : public EasyTcpServer
 	// overwrite parent function
 public:
 	// multiple thread triggering, nosafe
-	virtual void OnNetMessage(CellServer* pCellServer, ClientSocket* pClientSocket, DataHeader* pheader)
+	virtual void OnNetMessage(CellServer* pCellServer, ClientSocketPtr& pClientSocket, DataHeader* pheader)
 	{
 		EasyTcpServer::OnNetMessage(pCellServer, pClientSocket, pheader);
 
@@ -19,8 +19,8 @@ public:
 			Login* login = (Login*)pheader;
 			//printf("socket<%d> receive client socket<%d> message: CMD_LOGIN , data length<%d>, user name<%s>, pwd<%s>\n", (int)_sock, (int)sock_client, pheader->data_length, login->username, login->password);
 
-			//LoginResponse* ret = new LoginResponse;
-			pCellServer->addSendTask(pClientSocket, new LoginResponse);
+			DataHeaderPtr ret = std::make_shared<LoginResponse>();
+			pCellServer->addSendTask(pClientSocket, ret);
 		}
 		break;
 		case CMD_LOGOUT:
@@ -43,19 +43,19 @@ public:
 	}
 
 	// it would only be triggered by one thread, safe
-	virtual void OnLeave(ClientSocket* pClientSocket)
+	virtual void OnLeave(ClientSocketPtr& pClientSocket)
 	{
 		EasyTcpServer::OnLeave(pClientSocket);
 	}
 
 	// multiple thread triggering, nosafe
-	virtual void OnJoin(ClientSocket* pClientSocket)
+	virtual void OnJoin(ClientSocketPtr& pClientSocket)
 	{
 		EasyTcpServer::OnJoin(pClientSocket);
 	}
 
 	// multiple thread triggering, nosafe
-	virtual void OnNetRecv(ClientSocket* pClientSocket)
+	virtual void OnNetRecv(ClientSocketPtr& pClientSocket)
 	{
 		EasyTcpServer::OnNetRecv(pClientSocket);
 	}

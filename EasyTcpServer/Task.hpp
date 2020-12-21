@@ -23,11 +23,13 @@ public:
 	virtual void doTask() = 0;
 };
 
+typedef std::shared_ptr<ITask> ITaskPtr;
+
 class TaskServer
 {
 private:
-	std::list<ITask*> _tasks;
-	std::list<ITask*> _tasksBuf;
+	std::list<ITaskPtr> _tasks;
+	std::list<ITaskPtr> _tasksBuf;
 	std::mutex _mutex;
 
 public:
@@ -40,7 +42,7 @@ public:
 
 public:
 	// add task
-	void addTask(ITask* pCellTask)
+	void addTask(ITaskPtr& pCellTask)
 	{
 		std::lock_guard<std::mutex> lock(_mutex);
 		_tasksBuf.push_back(pCellTask);
@@ -81,7 +83,7 @@ public:
 			for (auto pTask : _tasks)
 			{
 				pTask->doTask();
-				delete pTask;
+				//delete pTask;
 			}
 			// clear task;
 			_tasks.clear();
