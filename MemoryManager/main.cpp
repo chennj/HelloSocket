@@ -50,13 +50,13 @@ public:
 	void clone() {}
 };
 
-void fun1(shared_ptr<ClassA> pa)
+void fun(shared_ptr<ClassA> pa)
 {
 	pa->num++;
 	printf("fun pa->num = %d\n",pa->num);
 }
 
-void fun2(AutoPtr<ClassA> pa)
+void fun(AutoPtr<ClassA> pa)
 {
 	pa->num++;
 	printf("fun pa->num = %d\n", pa->num);
@@ -83,13 +83,14 @@ int main()
 	{
 		shared_ptr<ClassA> cls_a = make_shared<ClassA>();
 		cls_a->num = 100;
-		fun1(cls_a);
+		fun(cls_a);
 	}
 
 	{
 		AutoPtr<ClassA> cls_a = new ClassA;
 		cls_a->num = 100;
-		fun2(cls_a);
+		//有缺陷，如果和内存池一起用会出现两次删除同一地址而崩溃
+		//fun(cls_a);
 	}
 
 	system("PAUSE");
