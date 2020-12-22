@@ -7,9 +7,9 @@
 
 bool g_run = true;
 // sending thread amount
-const int tCount = 4;
+const int tCount = 8;
 // client amount
-const int nCount = 2000;
+const int nCount = 1000;
 // client object
 EasyTcpClient* pclients[nCount];
 // client send count

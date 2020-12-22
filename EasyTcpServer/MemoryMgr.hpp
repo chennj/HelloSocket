@@ -3,15 +3,8 @@
 
 #include<stdlib.h>
 #include<mutex>
-#include<assert.h>
 
-#ifdef _DEBUG
-#include<stdio.h>
-	#define xPrintf(...) printf(__VA_ARGS__)
-#else
-	#define xPrintf(...)
-#endif
-
+#include"Init.h"
 #define ALLOC_MAX_MEM_SIZE 128
 #define ALLOC_MAX_BLOCK_QUANTITY 100000
 

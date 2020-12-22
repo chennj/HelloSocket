@@ -8,7 +8,7 @@ class MyServer : public EasyTcpServer
 	// overwrite parent function
 public:
 	// multiple thread triggering, nosafe
-	virtual void OnNetMessage(CellServer* pCellServer, ClientSocketPtr& pClientSocket, DataHeader* pheader)
+	virtual void OnNetMessage(CellServer* pCellServer, ClientSocketPtrRef pClientSocket, DataHeader* pheader)
 	{
 		EasyTcpServer::OnNetMessage(pCellServer, pClientSocket, pheader);
 
@@ -43,19 +43,19 @@ public:
 	}
 
 	// it would only be triggered by one thread, safe
-	virtual void OnLeave(ClientSocketPtr& pClientSocket)
+	virtual void OnLeave(ClientSocketPtrRef pClientSocket)
 	{
 		EasyTcpServer::OnLeave(pClientSocket);
 	}
 
 	// multiple thread triggering, nosafe
-	virtual void OnJoin(ClientSocketPtr& pClientSocket)
+	virtual void OnJoin(ClientSocketPtrRef pClientSocket)
 	{
 		EasyTcpServer::OnJoin(pClientSocket);
 	}
 
 	// multiple thread triggering, nosafe
-	virtual void OnNetRecv(ClientSocketPtr& pClientSocket)
+	virtual void OnNetRecv(ClientSocketPtrRef pClientSocket)
 	{
 		EasyTcpServer::OnNetRecv(pClientSocket);
 	}

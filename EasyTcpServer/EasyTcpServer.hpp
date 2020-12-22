@@ -31,6 +31,7 @@
 #include"MessageHeader.hpp"
 #include"CellTimestamp.hpp"
 #include"Task.hpp"
+#include "ObjectPool.hpp"
 
 // minimum buffer size
 #ifndef RECV_BUFFER_SIZE
@@ -42,14 +43,17 @@
 #endif
 
 typedef std::shared_ptr<DataHeader> DataHeaderPtr;
+typedef DataHeaderPtr& DataHeaderPtrRef;
+
 typedef std::shared_ptr<LoginResponse> LoginResponsePtr;
+typedef LoginResponsePtr& LoginResponsePtrRef;
 
 class CellServer;
 
 /**
 *	client object with socket
 */
-class ClientSocket
+class ClientSocket : public ObjectPoolBase<ClientSocket, 1000>
 {
 public:
 	ClientSocket(SOCKET sockfd = INVALID_SOCKET)
@@ -103,7 +107,7 @@ public:
 	}
 public:
 	// send data
-	int SendData(DataHeaderPtr& pheader)
+	int SendData(DataHeaderPtrRef pheader)
 	{
 		int ret = SOCKET_ERROR;
 		if (!pheader) {
@@ -167,7 +171,10 @@ private:
 };
 
 typedef std::shared_ptr<ClientSocket> ClientSocketPtr;
+typedef ClientSocketPtr& ClientSocketPtrRef;
+
 typedef std::shared_ptr<CellServer> CellServerPtr;
+typedef CellServerPtr& CellServerPtrRef;
 
 /**
 *	net event interface
@@ -178,22 +185,22 @@ public:
 	/**
 	*	event while client join
 	*/
-	virtual void OnJoin(ClientSocketPtr& pClientSocket) = 0;
+	virtual void OnJoin(ClientSocketPtrRef pClientSocket) = 0;
 
 	/**
 	*	event while client leaves
 	*/
-	virtual void OnLeave(ClientSocketPtr& pClientSocket) = 0;
+	virtual void OnLeave(ClientSocketPtrRef pClientSocket) = 0;
 
 	/**
 	*	event while client's message comes
 	*/
-	virtual void OnNetMessage(CellServer* pCellServer, ClientSocketPtr& pClientSocket, DataHeader* pheader) = 0;
+	virtual void OnNetMessage(CellServer* pCellServer, ClientSocketPtrRef pClientSocket, DataHeader* pheader) = 0;
 
 	/**
 	*	event while client's receive message
 	*/
-	virtual void OnNetRecv(ClientSocketPtr& pClientSocket) = 0;
+	virtual void OnNetRecv(ClientSocketPtrRef pClientSocket) = 0;
 };
 
 /**
@@ -206,7 +213,7 @@ private:
 	DataHeaderPtr _pDataHeader;
 
 public:
-	CellSend2ClientTask(ClientSocketPtr& pClientSocket, DataHeaderPtr& pDataHeader)
+	CellSend2ClientTask(ClientSocketPtrRef pClientSocket, DataHeaderPtrRef pDataHeader)
 	{
 		_pClientSocket = pClientSocket;
 		_pDataHeader = pDataHeader;
@@ -399,7 +406,7 @@ protected:
 	}
 
 public:
-	void addClient(ClientSocketPtr& pClientSocket)
+	void addClient(ClientSocketPtrRef pClientSocket)
 	{
 		// self unlocking
 		std::lock_guard<std::mutex> lockGuard(_mutex);
@@ -434,7 +441,7 @@ public:
 	}
 
 	// receive data, deal sticking package and splitting package
-	int RecvData(ClientSocketPtr& pclient)
+	int RecvData(ClientSocketPtrRef pclient)
 	{
 		char* szRecv = pclient->recvBuf() + pclient->GetLastRecvPos();
 		//receive client data
@@ -488,7 +495,7 @@ public:
 	}
 
 	// response net message
-	virtual void OnNetMessage(ClientSocketPtr& pClientSocket, DataHeader* pheader)
+	virtual void OnNetMessage(ClientSocketPtrRef pClientSocket, DataHeader* pheader)
 	{
 		// statistics speed of server receiving client data packet
 		_pNetEvent->OnNetMessage(this, pClientSocket, pheader);
@@ -529,7 +536,7 @@ public:
 
 	// for task
 public:
-	void addSendTask(ClientSocketPtr& pClientSocket, DataHeaderPtr& pDataHeader)
+	void addSendTask(ClientSocketPtrRef pClientSocket, DataHeaderPtrRef pDataHeader)
 	{
 		std::shared_ptr<ITask> pTask = std::make_shared<CellSend2ClientTask>(pClientSocket, pDataHeader);
 		_taskServer.addTask(pTask);
@@ -680,7 +687,9 @@ public:
 		}
 
 		// assign comed client to CellServer with the least number of client
-		addClient2CellServer(std::make_shared<ClientSocket>(sock_client));
+		ClientSocketPtr cp(new ClientSocket(sock_client));
+		addClient2CellServer(cp);
+		//addClient2CellServer(std::make_shared<ClientSocket>(sock_client));
 		//// get client ip address
 		//inet_ntoa(client_addr.sin_addr)
 
@@ -700,7 +709,7 @@ public:
 	}
 
 	// select CellServer which queue is smallest add client message to it
-	void addClient2CellServer(ClientSocketPtr& pClientSocket)
+	void addClient2CellServer(ClientSocketPtrRef pClientSocket)
 	{
 		auto pMinCellServer = _cellServers[0];
 		for (auto pCellServer : _cellServers)
@@ -805,25 +814,25 @@ public:
 	// inherit INetEvent
 public:
 	// it would only be triggered by one thread, safe
-	virtual void OnLeave(ClientSocketPtr& pClientSocket)
+	virtual void OnLeave(ClientSocketPtrRef pClientSocket)
 	{
 		_clientCount--;
 	}
 
 	// multiple thread triggering, not safe
-	virtual void OnNetMessage(CellServer* pCellServer, ClientSocketPtr& pClientSocket, DataHeader* pheader)
+	virtual void OnNetMessage(CellServer* pCellServer, ClientSocketPtrRef pClientSocket, DataHeader* pheader)
 	{
 		_msgCount++;
 	}
 
 	// multiple thread triggering, not safe
-	virtual void OnJoin(ClientSocketPtr& pClientSocket)
+	virtual void OnJoin(ClientSocketPtrRef pClientSocket)
 	{
 		_clientCount++;
 	}
 
 	// multiple thread triggering, not safe
-	virtual void OnNetRecv(ClientSocketPtr& pClientSocket)
+	virtual void OnNetRecv(ClientSocketPtrRef pClientSocket)
 	{
 		_recvCount++;
 	}

@@ -160,13 +160,13 @@ public:
 public:
 	void* operator new(size_t nSize)
 	{
-		printf("pool new\n");
+		xPrintf("pool new\n");
 		return object_pool().alloc_obj(nSize);
 	}
 
 	void operator delete(void * pv)
 	{
-		printf("pool delete\n");
+		xPrintf("pool delete\n");
 		object_pool().free_obj(pv);
 	}
 

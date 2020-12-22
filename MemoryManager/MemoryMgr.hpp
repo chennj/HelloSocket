@@ -1,16 +1,10 @@
 #ifndef _MEMORYMGR_HPP_
 #define _MEMORYMGR_HPP_
 
+#include"Init.h"
 #include<stdlib.h>
 #include<mutex>
 #include<assert.h>
-
-#ifdef _DEBUG
-#include<stdio.h>
-	#define xPrintf(...) printf(__VA_ARGS__)
-#else
-	#define xPrintf(...)
-#endif
 
 #define ALLOC_MAX_MEM_SIZE 1024
 #define ALLOC_MAX_BLOCK_QUANTITY 200000
@@ -126,26 +120,21 @@ public:
 
 		assert(1 <= pBlock->_nRef);
 
+		if (0 != --pBlock->_nRef)
+		{
+			return;
+		}
+
 		xPrintf("MemoryAlloc\t::free_mem:\t%llx, id=%d\n", pBlock, pBlock->_nID);
 
 		if (pBlock->_bPool)
 		{
 			std::lock_guard<std::mutex> lock(_mutex);
-			if (0 != --pBlock->_nRef)
-			{
-				return;
-			}
-
 			pBlock->_pNext = _pHeader;
 			_pHeader = pBlock;
 		}
 		else
 		{
-			if (0 != --pBlock->_nRef)
-			{
-				return;
-			}
-
 			free(pBlock);
 		}
 	}

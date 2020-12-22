@@ -157,6 +157,7 @@
     <ClInclude Include="Allocator.h" />
     <ClInclude Include="AutoPtr.hpp" />
     <ClInclude Include="CellTimestamp.hpp" />
+    <ClInclude Include="Init.h" />
     <ClInclude Include="MemoryMgr.hpp" />
     <ClInclude Include="ObjectPool.hpp" />
   </ItemGroup>

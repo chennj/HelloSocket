@@ -47,5 +47,11 @@
     <ClInclude Include="AutoPtr.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="Init.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="ObjectPool.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

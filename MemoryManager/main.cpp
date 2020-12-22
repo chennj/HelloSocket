@@ -10,8 +10,8 @@
 using namespace std;
 
 mutex m;
-const int tCount = 4;
-const int mCount = 1000 * 100;
+const int tCount = 8;
+const int mCount = 32;
 const int nCount = mCount / tCount;
 
 void workFun(int index)
@@ -92,7 +92,7 @@ void fun(AutoPtr<ClassA> pa)
 	printf("fun pa->num = %d\n", pa->num);
 }
 
-class ClassB : public ObjectPoolBase<ClassB>
+class ClassB : public ObjectPoolBase<ClassB, 10>
 {
 public:
 	ClassB()
@@ -122,6 +122,84 @@ public:
 	int _num;
 	int _num1;
 };
+
+class ClassC : public ObjectPoolBase<ClassC, 10>
+{
+public:
+	ClassC()
+	{
+		_num = 0;
+		_num1 = 0;
+		printf("ClassC\n");
+	}
+	ClassC(int num)
+	{
+		_num = num;
+		_num1 = 0;
+		printf("ClassC\n");
+	}
+	ClassC(int num, int num1)
+	{
+		_num = num;
+		_num1 = num1;
+		printf("ClassC\n");
+	}
+	~ClassC()
+	{
+		printf("~ClassC\n");
+	}
+
+public:
+	int _num;
+	int _num1;
+};
+
+
+class ClassD : public ObjectPoolBase<ClassD, 5>
+{
+public:
+	ClassD()
+	{
+		_num = 0;
+		_num1 = 0;
+		printf("ClassD\n");
+	}
+	ClassD(int num)
+	{
+		_num = num;
+		_num1 = 0;
+		printf("ClassD\n");
+	}
+	ClassD(int num, int num1)
+	{
+		_num = num;
+		_num1 = num1;
+		printf("ClassD\n");
+	}
+	~ClassD()
+	{
+		printf("~ClassD\n");
+	}
+
+public:
+	int _num;
+	int _num1;
+};
+
+void workFunC(int index)
+{
+	ClassC* data[nCount];
+
+	for (int i = 0; i < nCount; i++)
+	{
+		data[i] = ClassC::create_object(rand() % 1024, rand() % 1024);
+	}
+
+	for (auto pv : data)
+	{
+		ClassC::destory_object(pv);
+	}
+}
 
 int main()
 {
@@ -165,15 +243,51 @@ int main()
 	ClassA::destory_object(pa2);
 	*/
 
-	ClassB* pa1 = new ClassB();
-	printf("ClassB num=%d,num1=%d\n", pa1->_num, pa1->_num1);
-	delete pa1;
-	ClassB* pa2 = ClassB::create_object(5);
-	printf("ClassB num=%d,num1=%d\n", pa2->_num, pa2->_num1);
-	ClassB::destory_object(pa2);
-	ClassB* pa3 = ClassB::create_object(5,6);
-	printf("ClassB num=%d,num1=%d\n", pa3->_num,pa3->_num1);
-	ClassB::destory_object(pa3);
+	/*
+	ClassB* pb1 = new ClassB();
+	printf("ClassB num=%d,num1=%d\n", pb1->_num, pb1->_num1);
+	delete pb1;
+	ClassB* pb2 = ClassB::create_object(5);
+	printf("ClassB num=%d,num1=%d\n", pb2->_num, pb2->_num1);
+	ClassB::destory_object(pb2);
+	ClassB* pb3 = ClassB::create_object(5,6);
+	printf("ClassB num=%d,num1=%d\n", pb3->_num, pb3->_num1);
+	ClassB::destory_object(pb3);
+	printf("---------------------------------\n");
+	ClassC* pc1 = new ClassC();
+	printf("ClassC num=%d,num1=%d\n", pc1->_num, pc1->_num1);
+	ClassC* pc2 = ClassC::create_object(50);
+	printf("ClassC num=%d,num1=%d\n", pc2->_num, pc2->_num1);
+	ClassC* pc3 = ClassC::create_object(50, 60);
+	printf("ClassC num=%d,num1=%d\n", pc3->_num, pc3->_num1);
+	delete pc1;
+	ClassC::destory_object(pc3);
+	ClassC::destory_object(pc2);
+	*/
+
+	/*
+	thread t[tCount];
+	for (int n = 0; n < tCount; n++)
+	{
+		t[n] = thread(workFunC, n);
+	}
+	CellTimestamp tTime;
+	for (int n = 0; n < tCount; n++)
+	{
+		t[n].join();
+	}
+	cout << "ÏûºÄÊ±¼ä(ºÁÃë)£º\t" << tTime.getElapsedTimeInMilliSec() << endl;
+	*/
+
+	// will skip object pool if creating shared pointer by this way,but only call new once and efficiency
+	{
+		shared_ptr<ClassD> s1 = make_shared<ClassD>(1, 2);
+	}
+	printf("-------------------------------------------------------\n");
+	// so we should creating shared pointer by this way,but this way will call new twice and inefficiency
+	{
+		shared_ptr<ClassD> s1(new ClassD(1, 2));
+	}
 
 	system("PAUSE");
 	return 0;
