@@ -375,7 +375,7 @@ protected:
 
 			}
 #else
-			std::vector<ClientSocket*> temp;
+			std::vector<ClientSocketPtr> temp;
 			for (auto iter : _clients)
 			{
 				if (FD_ISSET(iter.first, &fd_read))

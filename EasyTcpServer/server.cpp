@@ -1,3 +1,6 @@
+// linux compile command
+// g++ server.cpp -std=c++11 -pthread -o server
+// ----------------------------------
 #include "Allocator.h"
 #include "MyServer.hpp"
 
