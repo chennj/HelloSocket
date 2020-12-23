@@ -61,7 +61,7 @@ public:
 	}
 public:
 	// send data
-	int SendData(DataHeaderPtrRef pheader)
+	int SendData(DataHeaderPtr pheader)
 	{
 		int ret = SOCKET_ERROR;
 		if (!pheader) {

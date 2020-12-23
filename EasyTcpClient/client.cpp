@@ -7,7 +7,7 @@
 
 bool g_run = true;
 // sending thread amount
-const int tCount = 8;
+const int tCount = 4;
 // client amount
 const int nCount = 1000;
 // client object
@@ -81,8 +81,8 @@ void sendThread(int id) //1~4
 	std::thread t(recvThread, begin, end);
 	t.detach();
 
-	Login login[10];
-	for (int n = 0; n < 10; n++)
+	Login login[1];
+	for (int n = 0; n < 1; n++)
 	{
 		strcpy(login[n].username, "cnj");
 		strcpy(login[n].password, "cnj123");

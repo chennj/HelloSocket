@@ -232,7 +232,7 @@ private:
 	static std::mutex _mutex;
 
 	MemoryTplOfAlloc<64,	ALLOC_MAX_BLOCK_QUANTITY * 10> _mem64_allocator;
-	MemoryTplOfAlloc<128,	ALLOC_MAX_BLOCK_QUANTITY * 5> _mem128_allocator;
+	MemoryTplOfAlloc<128,	ALLOC_MAX_BLOCK_QUANTITY * 50> _mem128_allocator;
 	//MemoryTplOfAlloc<256,	ALLOC_MAX_BLOCK_QUANTITY> _mem256_allocator;
 	//MemoryTplOfAlloc<512,	ALLOC_MAX_BLOCK_QUANTITY> _mem512_allocator;
 	//MemoryTplOfAlloc<1024,	ALLOC_MAX_BLOCK_QUANTITY> _mem1024_allocator;

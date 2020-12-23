@@ -4,32 +4,14 @@
 #include<thread>
 #include<mutex>
 #include<list>
-
-class ITask
-{
-private:
-
-public:
-	ITask()
-	{
-
-	}
-	virtual ~ITask()
-	{
-
-	}
-
-public:
-	virtual void doTask() = 0;
-};
-
-typedef std::shared_ptr<ITask> ITaskPtr;
+#include<functional>
 
 class TaskServer
 {
+	typedef std::function<void()> FTask;
 private:
-	std::list<ITaskPtr> _tasks;
-	std::list<ITaskPtr> _tasksBuf;
+	std::list<FTask> _tasks;
+	std::list<FTask> _tasksBuf;
 	std::mutex _mutex;
 
 public:
@@ -42,10 +24,10 @@ public:
 
 public:
 	// add task
-	void addTask(ITaskPtr& pCellTask)
+	void addTask(FTask fTask)
 	{
 		std::lock_guard<std::mutex> lock(_mutex);
-		_tasksBuf.push_back(pCellTask);
+		_tasksBuf.push_back(fTask);
 	}
 
 	// start service thread
@@ -64,9 +46,9 @@ public:
 			if (_tasksBuf.size()>0)
 			{
 				std::lock_guard<std::mutex> lock(_mutex);
-				for (auto pTask : _tasksBuf)
+				for (auto fTask : _tasksBuf)
 				{
-					_tasks.push_back(pTask);
+					_tasks.push_back(fTask);
 				}
 				_tasksBuf.clear();
 			}
@@ -80,10 +62,9 @@ public:
 			}
 
 
-			for (auto pTask : _tasks)
+			for (auto fTask : _tasks)
 			{
-				pTask->doTask();
-				//delete pTask;
+				fTask();
 			}
 			// clear task;
 			_tasks.clear();

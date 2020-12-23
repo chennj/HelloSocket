@@ -57,11 +57,11 @@ typedef LoginResponsePtr& LoginResponsePtrRef;
 
 // minimum buffer size
 #ifndef RECV_BUFFER_SIZE
-#define RECV_BUFFER_SIZE 1024*10*5
+#define RECV_BUFFER_SIZE 1024*10
 #endif
 
 #ifndef SEND_BUFFER_SIZE
-#define SEND_BUFFER_SIZE 1024*10*5
+#define SEND_BUFFER_SIZE 1024*10
 #endif
 
 #endif

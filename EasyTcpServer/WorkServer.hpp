@@ -12,36 +12,6 @@
 #include <atomic>
 
 /**
-*	resposible for send client message
-*/
-class WorkServerSend2ClientTask : public ITask
-{
-private:
-	ChannelPtr _pChannel;
-	DataHeaderPtr _pDataHeader;
-
-public:
-	WorkServerSend2ClientTask(ChannelPtrRef pChannel, DataHeaderPtrRef pDataHeader)
-	{
-		_pChannel = pChannel;
-		_pDataHeader = pDataHeader;
-	}
-
-	~WorkServerSend2ClientTask()
-	{
-
-	}
-
-public:
-	void doTask()
-	{
-		_pChannel->SendData(_pDataHeader);
-		//delete _pDataHeader;
-	}
-};
-
-
-/**
 *	resposible for process client message
 */
 class WorkServer
@@ -345,10 +315,13 @@ public:
 
 	// for task
 public:
-	void addSendTask(ChannelPtrRef pChannel, DataHeaderPtrRef pDataHeader)
+	void addSendTask(ChannelPtr pChannel, DataHeaderPtr pDataHeader)
 	{
-		std::shared_ptr<ITask> pTask = std::make_shared<WorkServerSend2ClientTask>(pChannel, pDataHeader);
-		_taskServer.addTask(pTask);
+		//std::shared_ptr<ITask> pTask = std::make_shared<WorkServerSend2ClientTask>(pChannel, pDataHeader);
+		_taskServer.addTask
+		(
+			[pChannel, pDataHeader]() {pChannel->SendData(pDataHeader); }
+		);
 	}
 };
 
