@@ -1,560 +1,26 @@
 #ifndef _EASYTCPSERVER_HPP_
 #define _EASYTCPSERVER_HPP_
 
-#ifdef _WIN32
-#ifndef FD_SETSIZE
-#define FD_SETSIZE      2506			//windows default FD_SETSIZE equals 64, too small
-#endif
-#define WIN32_LEAN_AND_MEAN
-#define _WINSOCK_DEPRECATED_NO_WARNINGS
-#define _CRT_SECURE_NO_WARNINGS
-#include<Windows.h>
-#include<WinSock2.h>
-#pragma comment(lib, "ws2_32.lib")
-#else
-#include<unistd.h>
-#include<arpa/inet.h>
-#include<sys/types.h>
-#include <string.h>
+#include "Init.h"
+#include "INetEvent.hpp"
+#include "WorkServer.hpp"
 
-#define SOCKET int
-#define INVALID_SOCKET	(SOCKET)(~0)
-#define SOCKET_ERROR			(-1)
-#endif
-
-#include<stdio.h>
-#include<map>
-#include<vector>
-#include<thread>
-#include<mutex>
-#include<atomic>
-#include"MessageHeader.hpp"
-#include"CellTimestamp.hpp"
-#include"Task.hpp"
-#include "ObjectPool.hpp"
-
-// minimum buffer size
-#ifndef RECV_BUFFER_SIZE
-#define RECV_BUFFER_SIZE 1024*10*5
-#endif
-
-#ifndef SEND_BUFFER_SIZE
-#define SEND_BUFFER_SIZE 1024*10*5
-#endif
-
-typedef std::shared_ptr<DataHeader> DataHeaderPtr;
-typedef DataHeaderPtr& DataHeaderPtrRef;
-
-typedef std::shared_ptr<LoginResponse> LoginResponsePtr;
-typedef LoginResponsePtr& LoginResponsePtrRef;
-
-class CellServer;
+#include <thread>
+#include <mutex>
+#include <atomic>
 
 /**
-*	client object with socket
-*/
-class ClientSocket : public ObjectPoolBase<ClientSocket, 1000>
-{
-public:
-	ClientSocket(SOCKET sockfd = INVALID_SOCKET)
-	{
-		_sockfd = sockfd;
-		memset(_szRecvBuffer, 0, RECV_BUFFER_SIZE);
-		_lastRecvPos = 0;
-		memset(_szSendBuffer, 0, SEND_BUFFER_SIZE);
-		_lastSendPos = 0;
-	}
-
-	virtual ~ClientSocket()
-	{
-		//delete[] (void*)_szRecvBuffer;
-	}
-
-public:
-	SOCKET sockfd()
-	{
-		return _sockfd;
-	}
-
-	char * recvBuf()
-	{
-		return _szRecvBuffer;
-	}
-
-	int GetLastRecvPos()
-	{
-		return _lastRecvPos;
-	}
-
-	void SetLastRecvPos(int lastRecvPos)
-	{
-		_lastRecvPos = lastRecvPos;
-	}
-
-	char * sendBuf()
-	{
-		return _szSendBuffer;
-	}
-
-	int GetLastSendPos()
-	{
-		return _lastSendPos;
-	}
-
-	void SetLastSendPos(int lastSendPos)
-	{
-		_lastSendPos = lastSendPos;
-	}
-public:
-	// send data
-	int SendData(DataHeaderPtrRef pheader)
-	{
-		int ret = SOCKET_ERROR;
-		if (!pheader) {
-			return ret;
-		}
-		// it's data length that would send
-		int nSendLen = pheader->data_length;
-		// it's data that would send
-		const char* pSendData = (const char*)pheader.get();
-		// 
-		while (true)
-		{
-			if (_lastSendPos + nSendLen >= SEND_BUFFER_SIZE)
-			{
-				// calculate the length of data that can be copied
-				int nCanCopyLen = SEND_BUFFER_SIZE - _lastSendPos;
-				// copy data to send buffer
-				memcpy(_szSendBuffer + _lastSendPos, pSendData, nCanCopyLen);
-				// position of remaining data
-				pSendData += nCanCopyLen;
-				// length of remaining data
-				nSendLen -= nCanCopyLen;
-				// send data
-				ret = send(_sockfd/*client socket*/, _szSendBuffer, SEND_BUFFER_SIZE, 0);
-				// set _lastSendPos to zero
-				_lastSendPos = 0;
-				// exception occur while send,such as client offline
-				if (SOCKET_ERROR == ret)
-				{
-					return ret;
-				}
-			}
-			else
-			{
-				// copy data to be sent to the end of the send buffer
-				memcpy(_szSendBuffer + _lastSendPos, pSendData, nSendLen);
-				// calculate the tail position of the send buffer
-				_lastSendPos += nSendLen;
-				// set return value
-				ret = 0;
-				// exit while
-				break;
-			}
-		}
-
-		return ret;
-	}
-
-private:
-	// fd_set file descriptor
-	SOCKET _sockfd;
-	// recv message buffer
-	char _szRecvBuffer[RECV_BUFFER_SIZE];
-	// recv message buffer position
-	int _lastRecvPos;
-
-	// send message buffer
-	char _szSendBuffer[SEND_BUFFER_SIZE];
-	// send message buffer position
-	int _lastSendPos;
-};
-
-typedef std::shared_ptr<ClientSocket> ClientSocketPtr;
-typedef ClientSocketPtr& ClientSocketPtrRef;
-
-typedef std::shared_ptr<CellServer> CellServerPtr;
-typedef CellServerPtr& CellServerPtrRef;
-
-/**
-*	net event interface
-*/
-class INetEvent
-{
-public:
-	/**
-	*	event while client join
-	*/
-	virtual void OnJoin(ClientSocketPtrRef pClientSocket) = 0;
-
-	/**
-	*	event while client leaves
-	*/
-	virtual void OnLeave(ClientSocketPtrRef pClientSocket) = 0;
-
-	/**
-	*	event while client's message comes
-	*/
-	virtual void OnNetMessage(CellServer* pCellServer, ClientSocketPtrRef pClientSocket, DataHeader* pheader) = 0;
-
-	/**
-	*	event while client's receive message
-	*/
-	virtual void OnNetRecv(ClientSocketPtrRef pClientSocket) = 0;
-};
-
-/**
-*	resposible for send client message
-*/
-class CellSend2ClientTask : public ITask
-{
-private:
-	ClientSocketPtr _pClientSocket;
-	DataHeaderPtr _pDataHeader;
-
-public:
-	CellSend2ClientTask(ClientSocketPtrRef pClientSocket, DataHeaderPtrRef pDataHeader)
-	{
-		_pClientSocket = pClientSocket;
-		_pDataHeader = pDataHeader;
-	}
-
-	~CellSend2ClientTask()
-	{
-
-	}
-
-public:
-	void doTask()
-	{
-		_pClientSocket->SendData(_pDataHeader);
-		//delete _pDataHeader;
-	}
-};
-
-/**
-*	resposible for process client message
-*/
-class CellServer
-{
-private:
-	// local socket
-	SOCKET _sock;
-	// client sockets
-	//std::vector<ClientSocket*> _clients;
-	std::map<SOCKET, ClientSocketPtr> _clients;
-	// client socket buffer
-	std::vector<ClientSocketPtr> _clientsBuf;
-	// lock
-	std::mutex _mutex;
-	// thread handle
-	std::thread* _pThread;
-	// register event
-	INetEvent* _pNetEvent;
-	// fd backup
-	fd_set _fd_read_bak;
-	bool _clients_change;
-	// max socket descriptor
-	SOCKET _max_socket;
-	// task 
-	TaskServer _taskServer;
-	// whether stop
-	bool _isStop;
-public:
-	CellServer(SOCKET sock = INVALID_SOCKET)
-	{
-		_sock = sock;
-		_pThread = nullptr;
-		_pNetEvent = nullptr;
-		_isStop = false;
-
-	}
-	~CellServer()
-	{
-		printf("CellServer destory.\n");
-		//delete _pThread;
-		Close();
-	}
-
-protected:
-	// process net message
-	int OnRun()
-	{
-		int ret = 1;
-
-		printf("CellServer thread start...\n");
-
-		_clients_change = true;
-
-		while (IsRunning())
-		{
-
-			if (_clientsBuf.size() > 0)
-			{
-				std::lock_guard<std::mutex> lockGuard(_mutex);
-				for (auto pClient : _clientsBuf)
-				{
-					//_clients.push_back(pClient);
-					_clients[pClient->sockfd()] = pClient;
-				}
-				_clientsBuf.clear();
-				_clients_change = true;
-			}
-
-			if (_clients.empty())
-			{
-				std::chrono::milliseconds t(1);
-				std::this_thread::sleep_for(t);
-				continue;
-			}
-
-			fd_set fd_read;
-			fd_set fd_write;
-			fd_set fd_exception;
-
-			FD_ZERO(&fd_read);
-			FD_ZERO(&fd_write);
-			FD_ZERO(&fd_exception);
-
-			if (_clients_change)
-			{
-				_clients_change = false;
-
-				_max_socket = _clients.begin()->first;
-				for (auto iter : _clients)
-				{
-					_max_socket = iter.first > _max_socket ? iter.first : _max_socket;
-					// the following statement needs to be optimized,
-					// because it takes up a lot of CPU
-					FD_SET(iter.first, &fd_read);
-				}
-				memcpy(&_fd_read_bak, &fd_read, sizeof(fd_set));
-			}
-			else
-			{
-				memcpy(&fd_read, &_fd_read_bak, sizeof(fd_set));
-			}
-
-			//nfds is range of fd_set, not fd_set's count.
-			//nfds is also max value+1 of all the file descriptor(socket).
-			//nfds can be 0 in the windows.
-			//that timeval was setted null means blocking, not null means nonblocking.
-			timeval t = { 0,0 };
-			ret = select(_max_socket + 1/*nfds*/, &fd_read, &fd_write, &fd_exception, &t);
-			if (ret < 0)
-			{
-				printf("socket<%d> error occurs while select and mission finish.\n", (int)_sock);
-				Close();
-				break;
-			}
-			else if (0 == ret)
-			{
-				continue;
-			}
-
-#ifdef _WIN32
-			for (size_t n = 0; n < fd_read.fd_count; n++)
-			{
-				auto iter = _clients.find(fd_read.fd_array[n]);
-				if (iter != _clients.end())
-				{
-					if (-1 == RecvData(iter->second))
-					{
-						_clients_change = true;
-						if (_pNetEvent)
-						{
-							_pNetEvent->OnLeave(iter->second);
-						}
-						_clients.erase(iter->first);
-					}
-				}
-				else
-				{
-					printf("incredible situation occurs while client offline\n");
-				}
-
-			}
-#else
-			std::vector<ClientSocketPtr> temp;
-			for (auto iter : _clients)
-			{
-				if (FD_ISSET(iter.first, &fd_read))
-				{
-					if (-1 == RecvData(iter.second))
-					{
-						_clients_change = true;
-						temp.push_back(iter.second);
-
-						if (_pNetEvent)
-						{
-							_pNetEvent->OnLeave(iter.second);
-						}
-					}
-				}
-			}
-
-			for (auto pClient : temp)
-			{
-				_clients.erase(pClient->sockfd());
-				//delete pClient;
-			}
-#endif
-		} // while (IsRunning())
-
-		printf("CellServer thread exit...\n");
-		return ret;
-	}
-
-public:
-	void addClient(ClientSocketPtrRef pClientSocket)
-	{
-		// self unlocking
-		std::lock_guard<std::mutex> lockGuard(_mutex);
-		//_mutex.lock();
-		_clientsBuf.push_back(pClientSocket);
-		//_mutex.unlock();
-	}
-
-	size_t getClientCount()
-	{
-		return _clients.size() + _clientsBuf.size();
-	}
-
-public:
-	// stop cellserver
-	void Stop()
-	{
-		_isStop = true;
-	}
-
-	// if is running
-	bool IsRunning()
-	{
-		return _sock != INVALID_SOCKET && !_isStop;
-	}
-
-	// start self
-	void Start()
-	{
-		_pThread = new std::thread(std::mem_fn(&CellServer::OnRun), this);
-		_taskServer.Start();
-	}
-
-	// receive data, deal sticking package and splitting package
-	int RecvData(ClientSocketPtrRef pclient)
-	{
-		char* szRecv = pclient->recvBuf() + pclient->GetLastRecvPos();
-		//receive client data
-		//int nLen = recv(pclient->sockfd(), _szRecvBuffer, RECV_BUFFER_SIZE, 0);
-		int nLen = recv(pclient->sockfd(), szRecv, RECV_BUFFER_SIZE - pclient->GetLastRecvPos(), 0);
-
-		_pNetEvent->OnNetRecv(pclient);
-
-		if (nLen <= 0)
-		{
-			//printf("server socket<%d> client socket <%d> offline\n", (int)_sock, (int)pclient->sockfd());
-			return -1;
-		}
-
-		// copy receive buffer data to message buffer
-		//memcpy(pclient->msgBuf() + pclient->GetLastPos(), _szRecvBuffer, nLen);
-
-		// update end position of message buffer
-		pclient->SetLastRecvPos(pclient->GetLastRecvPos() + nLen);
-
-		// whether message buffer size greater than message header(DataHeader)'s size,
-		// if yes, converting message buffer to struct DataHeader and clear message buffer
-		// had prcessed.
-		while (pclient->GetLastRecvPos() >= sizeof(DataHeader))
-		{
-			// convert message buffer to DataHeader
-			DataHeader* pheader = (DataHeader*)pclient->recvBuf();
-			// whether message buffer size greater than current client message size,
-			if (pclient->GetLastRecvPos() >= pheader->data_length)
-			{
-				// processed message's length
-				int nClientMsgLen = pheader->data_length;
-				// length of message buffer which was untreated
-				int nSize = pclient->GetLastRecvPos() - nClientMsgLen;
-				// process net message
-				OnNetMessage(pclient, pheader);
-				// earse processed message buffer
-				memcpy(pclient->recvBuf(), pclient->recvBuf() + nClientMsgLen, nSize);
-				// update end position of message buffer
-				pclient->SetLastRecvPos(nSize);
-			}
-			else
-			{
-				// length of message buffer which was untreated less than 
-				// length of message header(DataHeader)'s size
-				break;
-			}
-		}
-
-		return 0;
-	}
-
-	// response net message
-	virtual void OnNetMessage(ClientSocketPtrRef pClientSocket, DataHeader* pheader)
-	{
-		// statistics speed of server receiving client data packet
-		_pNetEvent->OnNetMessage(this, pClientSocket, pheader);
-	}
-
-	// close socket
-	void Close()
-	{
-		if (_sock == INVALID_SOCKET) return;
-
-#ifdef _WIN32
-		for (auto iter : _clients)
-		{
-			closesocket(iter.first);
-			//delete iter.second;
-		}
-		closesocket(_sock);
-#else
-		for (auto iter : _clients)
-		{
-			close(iter.first);
-			//delete iter.second;
-		}
-		close(_sock);
-#endif
-		_clients.clear();
-
-		_sock = INVALID_SOCKET;
-
-		printf("cell server is shutdown\n");
-	}
-
-public:
-	void RegisterNetEventListener(INetEvent * pNetEvent)
-	{
-		_pNetEvent = pNetEvent;
-	}
-
-	// for task
-public:
-	void addSendTask(ClientSocketPtrRef pClientSocket, DataHeaderPtrRef pDataHeader)
-	{
-		std::shared_ptr<ITask> pTask = std::make_shared<CellSend2ClientTask>(pClientSocket, pDataHeader);
-		_taskServer.addTask(pTask);
-	}
-};
-
-/**
-*	main server which manage CellServer
+*	main server which manage WorkServer
 */
 class EasyTcpServer : public INetEvent
 {
 private:
-	// CellServers
-	std::vector<CellServerPtr> _cellServers;
+	// WorkServers
+	std::vector<WorkServerPtr> _cellServers;
 	// lock
 	std::mutex _mutex;
 	// high resolution timers
-	CellTimestamp _tTime;
+	Timestamp _tTime;
 
 protected:
 	// local socket
@@ -577,10 +43,10 @@ public:
 
 	virtual ~EasyTcpServer()
 	{
-		for (auto pCellServer : _cellServers)
+		for (auto pWorkServer : _cellServers)
 		{
-			pCellServer->Stop();
-			//delete pCellServer;
+			pWorkServer->Stop();
+			//delete pWorkServer;
 		}
 		_cellServers.clear();
 
@@ -686,40 +152,40 @@ public:
 			return sock_client;
 		}
 
-		// assign comed client to CellServer with the least number of client
-		ClientSocketPtr cp(new ClientSocket(sock_client));
-		addClient2CellServer(cp);
-		//addClient2CellServer(std::make_shared<ClientSocket>(sock_client));
+		// assign comed client to WorkServer with the least number of client
+		ChannelPtr cp(new Channel(sock_client));
+		addClient2WorkServer(cp);
+		//addClient2WorkServer(std::make_shared<Channel>(sock_client));
 		//// get client ip address
 		//inet_ntoa(client_addr.sin_addr)
 
 		return sock_client;
 	}
 
-	// start CellServer
-	void Start(int nCellServer)
+	// start WorkServer
+	void Start(int nWorkServer)
 	{
-		for (int n = 0; n < nCellServer; n++)
+		for (int n = 0; n < nWorkServer; n++)
 		{
-			CellServerPtr pCellServer = std::make_shared<CellServer>(_sock);
-			_cellServers.push_back(pCellServer);
-			pCellServer->RegisterNetEventListener(this);
-			pCellServer->Start();
+			WorkServerPtr pWorkServer = std::make_shared<WorkServer>(_sock);
+			_cellServers.push_back(pWorkServer);
+			pWorkServer->RegisterNetEventListener(this);
+			pWorkServer->Start();
 		}
 	}
 
-	// select CellServer which queue is smallest add client message to it
-	void addClient2CellServer(ClientSocketPtrRef pClientSocket)
+	// select WorkServer which queue is smallest add client message to it
+	void addClient2WorkServer(ChannelPtrRef pChannel)
 	{
-		auto pMinCellServer = _cellServers[0];
-		for (auto pCellServer : _cellServers)
+		auto pMinWorkServer = _cellServers[0];
+		for (auto pWorkServer : _cellServers)
 		{
-			if (pMinCellServer->getClientCount() > pCellServer->getClientCount()) {
-				pMinCellServer = pCellServer;
+			if (pMinWorkServer->getClientCount() > pWorkServer->getClientCount()) {
+				pMinWorkServer = pWorkServer;
 			}
 		}
-		pMinCellServer->addClient(pClientSocket);
-		OnJoin(pClientSocket);
+		pMinWorkServer->addClient(pChannel);
+		OnJoin(pChannel);
 	}
 
 	// close socket
@@ -735,9 +201,9 @@ public:
 		close(_sock);
 #endif
 
-		//for (auto pCellServer : _cellServers)
+		//for (auto pWorkServer : _cellServers)
 		//{
-		//	delete pCellServer;
+		//	delete pWorkServer;
 		//}
 		//_cellServers.clear();
 
@@ -814,25 +280,25 @@ public:
 	// inherit INetEvent
 public:
 	// it would only be triggered by one thread, safe
-	virtual void OnLeave(ClientSocketPtrRef pClientSocket)
+	virtual void OnLeave(ChannelPtrRef pChannel)
 	{
 		_clientCount--;
 	}
 
 	// multiple thread triggering, not safe
-	virtual void OnNetMessage(CellServer* pCellServer, ClientSocketPtrRef pClientSocket, DataHeader* pheader)
+	virtual void OnNetMessage(WorkServer* pWorkServer, ChannelPtrRef pChannel, DataHeader* pheader)
 	{
 		_msgCount++;
 	}
 
 	// multiple thread triggering, not safe
-	virtual void OnJoin(ClientSocketPtrRef pClientSocket)
+	virtual void OnJoin(ChannelPtrRef pChannel)
 	{
 		_clientCount++;
 	}
 
 	// multiple thread triggering, not safe
-	virtual void OnNetRecv(ClientSocketPtrRef pClientSocket)
+	virtual void OnNetRecv(ChannelPtrRef pChannel)
 	{
 		_recvCount++;
 	}

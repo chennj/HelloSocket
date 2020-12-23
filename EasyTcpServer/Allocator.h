@@ -1,9 +1,7 @@
 #ifndef _ALLOCATOR_H_
 #define _ALLOCATOR_H_
 
-#ifndef _WIN32
-#include<unistd.h>
-#endif
+#include"Init.h"
 
 class MemoryMgr;
 extern MemoryMgr g_mem_mgr;

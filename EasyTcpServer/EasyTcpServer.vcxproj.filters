@@ -29,9 +29,6 @@
     <ClInclude Include="MessageHeader.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="CellTimestamp.hpp">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="MyServer.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
@@ -51,6 +48,18 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="ObjectPool.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Channel.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="WorkServer.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="INetEvent.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Timestamp.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

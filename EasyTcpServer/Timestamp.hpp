@@ -6,15 +6,15 @@
 
 #include <Windows.h>
 
-class CellTimestamp
+class Timestamp
 {
 public:
-	CellTimestamp()
+	Timestamp()
 	{
 		QueryPerformanceFrequency(&_frequency);
 		QueryPerformanceCounter(&_startCount);
 	}
-	~CellTimestamp()
+	~Timestamp()
 	{
 
 	}
@@ -62,14 +62,14 @@ protected:
 #include <chrono>
 
 using namespace std::chrono;
-class CellTimestamp
+class Timestamp
 {
 public:
-	CellTimestamp()
+	Timestamp()
 	{
 		update();
 	}
-	~CellTimestamp()
+	~Timestamp()
 	{
 
 	}

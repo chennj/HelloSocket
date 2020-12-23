@@ -1,10 +1,11 @@
 #ifndef _MEMORYMGR_HPP_
 #define _MEMORYMGR_HPP_
 
+#include"Init.h"
+
 #include<stdlib.h>
 #include<mutex>
 
-#include"Init.h"
 #define ALLOC_MAX_MEM_SIZE 128
 #define ALLOC_MAX_BLOCK_QUANTITY 100000
 

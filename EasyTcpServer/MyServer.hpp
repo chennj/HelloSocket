@@ -1,6 +1,7 @@
 #ifndef _MYSERVER_HPP_
 #define _MYSERVER_HPP_
 
+#include "Init.h"
 #include "EasyTcpServer.hpp"
 
 class MyServer : public EasyTcpServer
@@ -8,9 +9,9 @@ class MyServer : public EasyTcpServer
 	// overwrite parent function
 public:
 	// multiple thread triggering, nosafe
-	virtual void OnNetMessage(CellServer* pCellServer, ClientSocketPtrRef pClientSocket, DataHeader* pheader)
+	virtual void OnNetMessage(WorkServer* pWorkServer, ChannelPtrRef pChannel, DataHeader* pheader)
 	{
-		EasyTcpServer::OnNetMessage(pCellServer, pClientSocket, pheader);
+		EasyTcpServer::OnNetMessage(pWorkServer, pChannel, pheader);
 
 		switch (pheader->cmd)
 		{
@@ -20,7 +21,7 @@ public:
 			//printf("socket<%d> receive client socket<%d> message: CMD_LOGIN , data length<%d>, user name<%s>, pwd<%s>\n", (int)_sock, (int)sock_client, pheader->data_length, login->username, login->password);
 
 			DataHeaderPtr ret = std::make_shared<LoginResponse>();
-			pCellServer->addSendTask(pClientSocket, ret);
+			pWorkServer->addSendTask(pChannel, ret);
 		}
 		break;
 		case CMD_LOGOUT:
@@ -29,35 +30,35 @@ public:
 			//printf("socket<%d> receive client socket<%d> message: CMD_LOGOUT , data length<%d>, user name<%s>\n", (int)_sock, (int)sock_client, pheader->data_length, logout->username);
 
 			//LogoutResponse ret;
-			//pClientSocket->SendData(&ret);
+			//pChannel->SendData(&ret);
 		}
 		break;
 		default:
 		{
-			printf("socket<%d> receive client socket<%d> message: CMD_UNKNOWN , data length<%d>\n", (int)_sock, (int)pClientSocket->sockfd(), pheader->data_length);
+			printf("socket<%d> receive client socket<%d> message: CMD_UNKNOWN , data length<%d>\n", (int)_sock, (int)pChannel->sockfd(), pheader->data_length);
 			//UnknownResponse ret;
-			//pClientSocket->SendData(&ret);
+			//pChannel->SendData(&ret);
 		}
 		break;
 		}
 	}
 
 	// it would only be triggered by one thread, safe
-	virtual void OnLeave(ClientSocketPtrRef pClientSocket)
+	virtual void OnLeave(ChannelPtrRef pChannel)
 	{
-		EasyTcpServer::OnLeave(pClientSocket);
+		EasyTcpServer::OnLeave(pChannel);
 	}
 
 	// multiple thread triggering, nosafe
-	virtual void OnJoin(ClientSocketPtrRef pClientSocket)
+	virtual void OnJoin(ChannelPtrRef pChannel)
 	{
-		EasyTcpServer::OnJoin(pClientSocket);
+		EasyTcpServer::OnJoin(pChannel);
 	}
 
 	// multiple thread triggering, nosafe
-	virtual void OnNetRecv(ClientSocketPtrRef pClientSocket)
+	virtual void OnNetRecv(ChannelPtrRef pChannel)
 	{
-		EasyTcpServer::OnNetRecv(pClientSocket);
+		EasyTcpServer::OnNetRecv(pChannel);
 	}
 };
 
