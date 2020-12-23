@@ -38,6 +38,18 @@ void cmdThread()
 	}
 }
 
+void recvThread(int begin, int end)
+{
+	while (g_run)
+	{
+		for (int n = begin; n < end; n++)
+		{
+			pclients[n]->OnRun();
+
+		}
+	}
+}
+
 void sendThread(int id) //1~4
 {
 	//4 thread around about 1~4
@@ -65,8 +77,12 @@ void sendThread(int id) //1~4
 		std::this_thread::sleep_for(t);
 	}
 
-	Login login[1];
-	for (int n = 0; n < 1; n++)
+	// start receive thread
+	std::thread t(recvThread, begin, end);
+	t.detach();
+
+	Login login[10];
+	for (int n = 0; n < 10; n++)
 	{
 		strcpy(login[n].username, "cnj");
 		strcpy(login[n].password, "cnj123");
@@ -99,7 +115,9 @@ void sendThread(int id) //1~4
 				}
 			}
 
-			pclients[n]->OnRun();
+			//// to control speed to send
+			//std::chrono::milliseconds t(10);
+			//std::this_thread::sleep_for(t);
 
 		}
 

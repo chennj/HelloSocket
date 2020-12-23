@@ -7,7 +7,7 @@
 /**
 *	client object with socket
 */
-class Channel : public ObjectPoolBase<Channel, 1000>
+class Channel : public ObjectPoolBase<Channel, 10000>
 {
 public:
 	Channel(SOCKET sockfd = INVALID_SOCKET)
