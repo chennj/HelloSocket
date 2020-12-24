@@ -1,5 +1,5 @@
-#ifndef _EASYTCPSERVER_HPP_
-#define _EASYTCPSERVER_HPP_
+#ifndef _BOSSSERVER_HPP_
+#define _BOSSSERVER_HPP_
 
 #include "Init.h"
 #include "INetEvent.hpp"
@@ -12,7 +12,7 @@
 /**
 *	main server which manage WorkServer
 */
-class EasyTcpServer : public INetEvent
+class BossServer : public INetEvent
 {
 private:
 	// WorkServers
@@ -33,7 +33,7 @@ protected:
 	std::atomic_int _clientCount;
 
 public:
-	EasyTcpServer()
+	BossServer()
 	{
 		_sock = INVALID_SOCKET;
 		_recvCount = 0;
@@ -41,7 +41,7 @@ public:
 		_msgCount = 0;
 	}
 
-	virtual ~EasyTcpServer()
+	virtual ~BossServer()
 	{
 		for (auto pWorkServer : _cellServers)
 		{

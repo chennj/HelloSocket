@@ -18,6 +18,25 @@
       <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Allocator.cpp" />
+    <ClCompile Include="server.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Allocator.h" />
+    <ClInclude Include="AutoPtr.hpp" />
+    <ClInclude Include="Channel.hpp" />
+    <ClInclude Include="BossServer.hpp" />
+    <ClInclude Include="INetEvent.hpp" />
+    <ClInclude Include="Init.h" />
+    <ClInclude Include="MemoryMgr.hpp" />
+    <ClInclude Include="MessageHeader.hpp" />
+    <ClInclude Include="MyServer.hpp" />
+    <ClInclude Include="ObjectPool.hpp" />
+    <ClInclude Include="Task.hpp" />
+    <ClInclude Include="Timestamp.hpp" />
+    <ClInclude Include="WorkServer.hpp" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{A499BB20-31A0-465E-8F76-D22434C82C15}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
@@ -149,14 +168,6 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
   </ItemDefinitionGroup>
-  <ItemGroup>
-    <ClInclude Include="CellTimestamp.hpp" />
-    <ClInclude Include="EasyTcpServer.hpp" />
-    <ClInclude Include="MessageHeader.hpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="server.cpp" />
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

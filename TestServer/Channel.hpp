@@ -5,7 +5,7 @@
 #include "ObjectPool.hpp"
 
 // countdown to heart beat check
-#define CLIENT_HEART_DEAD_TIME 5 * 1000
+#define CLIENT_HEART_DEAD_TIME 10 * 1000
 
 /**
 *	client object with socket
@@ -117,15 +117,16 @@ public:
 	// reset timing heart beat
 	void reset_dt_heart()
 	{
-		_dtHeart = Time::getNowInMilliSec();
+		_dtHeart = 0;
 	}
 
 	// check heart beat
-	bool is_alive(time_t tNow)
+	bool is_alive(time_t dt)
 	{
-		if ((tNow - _dtHeart) > CLIENT_HEART_DEAD_TIME)
+		_dtHeart += dt;
+		if (_dtHeart > CLIENT_HEART_DEAD_TIME)
 		{
-			printf("check heart beat dead:socket<%d>,time<%d>\n", _sockfd, (tNow - _dtHeart));
+			printf("check heart beat dead:socket<%d>,time<%d>\n", _sockfd, _dtHeart);
 			return false;
 		}
 		return true;

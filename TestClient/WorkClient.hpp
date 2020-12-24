@@ -1,7 +1,10 @@
-#ifndef _EASYTCPCLIENT_TCP_
-#define _EASYTCPCLIENT_TCP_
+#ifndef _WORKCLIENT_HPP_
+#define _WORKCLIENT_HPP_
 
 #ifdef _WIN32
+#ifndef FD_SETSIZE
+#define FD_SETSIZE      2506			//windows default FD_SETSIZE equals 64, too small
+#endif
 #define WIN32_LEAN_AND_MEAN
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
 #define _CRT_SECURE_NO_WARNINGS
@@ -22,15 +25,27 @@
 #include"MessageHeader.hpp"
 
 #ifndef RECV_BUFFER_SIZE
-#define RECV_BUFFER_SIZE 1024*10
+#define RECV_BUFFER_SIZE 1024*10*5
 #endif
 
 class EasyTcpClient
 {
+private:
+	SOCKET _sock;
+	// receive buffer
+	char _szRecvBuffer[RECV_BUFFER_SIZE] = {};
+	// message buffer
+	char _szMsgBuffer[RECV_BUFFER_SIZE] = {};
+	// message buffer position
+	int _lastPos = 0;
+	//
+	bool _isConnected;
+
 public:
 	EasyTcpClient()
 	{
 		_sock = INVALID_SOCKET;
+		_isConnected = false;
 	}
 
 	virtual ~EasyTcpClient()
@@ -84,8 +99,11 @@ public:
 		if (SOCKET_ERROR == ret)
 		{
 			printf("connect server failure...\n");
+			return ret;
 		}
+		
 		//printf("connect server success...\n");
+		_isConnected = true;
 		return ret;
 	}
 
@@ -101,6 +119,7 @@ public:
 		close(_sock);
 #endif
 		_sock = INVALID_SOCKET;
+		_isConnected = false;
 	}
 
 	//deal net message
@@ -116,7 +135,7 @@ public:
 		FD_ZERO(&fdReads);
 		FD_SET(_sock, &fdReads);
 
-		timeval t = { 1,0 };
+		timeval t = { 0,0 };
 		int ret = select(_sock + 1, &fdReads, 0, 0, &t);
 		if (ret < 0)
 		{
@@ -142,7 +161,7 @@ public:
 
 	bool IsRunning()
 	{
-		return INVALID_SOCKET != _sock;
+		return INVALID_SOCKET != _sock && _isConnected;
 	}
 
 	/*
@@ -152,8 +171,10 @@ public:
 	*/
 	int RecvData()
 	{
+		char* szRecv = _szMsgBuffer + _lastPos;
 		// receive data
-		int nLen = recv(_sock, _szRecvBuffer, RECV_BUFFER_SIZE, 0);
+		//int nLen = recv(_sock, _szRecvBuffer, RECV_BUFFER_SIZE, 0);
+		int nLen = recv(_sock, szRecv, RECV_BUFFER_SIZE - _lastPos, 0);
 		if (nLen <= 0)
 		{
 			printf("disconnected to server.\n");
@@ -161,7 +182,7 @@ public:
 		}
 
 		// copy receive buffer data to message buffer
-		memcpy(_szMsgBuffer + _lastPos, _szRecvBuffer, nLen);
+		//memcpy(_szMsgBuffer + _lastPos, _szRecvBuffer, nLen);
 
 		// update end position of message buffer
 		_lastPos += nLen;
@@ -196,13 +217,18 @@ public:
 		return 0;
 	}
 
-	int SendData(DataHeader * header)
+	int SendData(DataHeader * header, int nLen)
 	{
+		int ret = SOCKET_ERROR;
 		if (IsRunning() && header)
 		{
-			return send(_sock, (const char*)header, header->data_length, 0);
+			ret = send(_sock, (const char*)header, nLen, 0);
+			if (SOCKET_ERROR == ret)
+			{
+				Close();
+			}
 		}
-		return SOCKET_ERROR;
+		return ret;
 	}
 
 	void OnNetMessage(DataHeader* header)
@@ -212,19 +238,19 @@ public:
 		{
 		case CMD_LOGIN_RESPONSE:
 		{
-			LoginResponse* ret = (LoginResponse*)header;
+			//LoginResponse* ret = (LoginResponse*)header;
 			//printf("receive server msg: CMD_LOGIN_RESPONSE, data length: %d, result: %d\n", header->data_length, ret->result);
 		}
 		break;
 		case CMD_LOGOUT_RESPONSE:
 		{
-			LogoutResponse* ret = (LogoutResponse*)header;
+			//LogoutResponse* ret = (LogoutResponse*)header;
 			//printf("receive server msg: CMD_LOGOUT_RESPONSE, data length: %d, result: %d\n", header->data_length, ret->result);
 		}
 		break;
 		case CMD_NEW_USER_JOIN:
 		{
-			NewUserJoin* ret = (NewUserJoin*)header;
+			//NewUserJoin* ret = (NewUserJoin*)header;
 			//printf("receive server msg: CMD_NEW_USER_JOIN, data length: %d, result: %d\n", header->data_length, ret->sock);
 		}
 		break;
@@ -235,14 +261,6 @@ public:
 		break;
 		}
 	}
-private:
-	SOCKET _sock;
-	// receive buffer
-	char _szRecvBuffer[RECV_BUFFER_SIZE] = {};
-	// message buffer
-	char _szMsgBuffer[RECV_BUFFER_SIZE * 10] = {};
-	// message buffer position
-	int _lastPos = 0;
 };
 
 #endif

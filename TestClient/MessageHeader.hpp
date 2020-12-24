@@ -8,6 +8,8 @@ enum CMD
 	CMD_LOGOUT,
 	CMD_LOGOUT_RESPONSE,
 	CMD_NEW_USER_JOIN,
+	CMD_HEART_C2S,
+	CMD_HEART_S2C,
 	CMD_UNKNOWN
 };
 
@@ -40,7 +42,7 @@ public:
 
 	char username[32];
 	char password[32];
-	char data[1000-68];
+	char data[100 - 68];
 };
 
 struct LoginResponse : public DataHeader
@@ -52,7 +54,7 @@ struct LoginResponse : public DataHeader
 		result = 1;
 	}
 	int result;
-	char data[1000 - 8];
+	char data[100 - 8];
 };
 
 struct Logout : public DataHeader
@@ -87,6 +89,24 @@ struct NewUserJoin : public DataHeader
 		sock = 0;
 	}
 	int sock;
+};
+
+struct HeartS2C : public DataHeader
+{
+	HeartS2C()
+	{
+		data_length = sizeof(HeartS2C);
+		cmd = CMD_HEART_S2C;
+	}
+};
+
+struct HeartC2S : public DataHeader
+{
+	HeartC2S()
+	{
+		data_length = sizeof(HeartC2S);
+		cmd = CMD_HEART_C2S;
+	}
 };
 
 #endif

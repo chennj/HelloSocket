@@ -17,17 +17,15 @@ public:
 		{
 		case CMD_LOGIN:
 		{
-			pChannel->reset_dt_heart();
-
 			Login* login = (Login*)pheader;
 			//printf("socket<%d> receive client socket<%d> message: CMD_LOGIN , data length<%d>, user name<%s>, pwd<%s>\n", (int)_sock, (int)sock_client, pheader->data_length, login->username, login->password);
 			
 			// used to debug
-			//pChannel->SendData(std::make_shared<DataHeader>(pheader));
+			pChannel->SendData(std::make_shared<LoginResponse>());
 			
 			// used to release
-			DataHeaderPtr ret = std::make_shared<LoginResponse>();
-			pWorkServer->addSendTask(pChannel, ret);
+			//DataHeaderPtr ret = std::make_shared<LoginResponse>();
+			//pWorkServer->addSendTask(pChannel, ret);
 		}
 		break;
 		case CMD_LOGOUT:

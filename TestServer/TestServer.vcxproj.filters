@@ -15,19 +15,52 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="EasyTcpServer.hpp">
+    <ClCompile Include="Allocator.cpp">
+      <Filter>头文件</Filter>
+    </ClCompile>
+    <ClCompile Include="server.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Allocator.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="AutoPtr.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Channel.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="INetEvent.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Init.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="MemoryMgr.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="MessageHeader.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="CellTimestamp.hpp">
+    <ClInclude Include="MyServer.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="server.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
+    <ClInclude Include="ObjectPool.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Task.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Timestamp.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="WorkServer.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="BossServer.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

@@ -18,6 +18,14 @@
       <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Timestamp.hpp" />
+    <ClInclude Include="WorkClient.hpp" />
+    <ClInclude Include="MessageHeader.hpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="client.cpp" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{B68FA50A-81FB-4502-860E-92C9CD510D62}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
@@ -149,13 +157,6 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
   </ItemDefinitionGroup>
-  <ItemGroup>
-    <ClInclude Include="EasyTcpClient.hpp" />
-    <ClInclude Include="MessageHeader.hpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="client.cpp" />
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

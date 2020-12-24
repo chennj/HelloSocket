@@ -39,7 +39,8 @@ private:
 	TaskServer _taskServer;
 	// whether stop
 	bool _isStop;
-
+	// 
+	time_t _oldTime;
 public:
 	WorkServer(SOCKET sock = INVALID_SOCKET)
 	{
@@ -47,6 +48,8 @@ public:
 		_pThread = nullptr;
 		_pNetEvent = nullptr;
 		_isStop = false;
+		_oldTime = Time::getNowInMilliSec();
+
 	}
 	~WorkServer()
 	{
@@ -142,11 +145,13 @@ protected:
 	void CheckTime()
 	{
 		time_t tNow = Time::getNowInMilliSec();
+		time_t dt = tNow - _oldTime;
+		_oldTime = tNow;
 
 		for (auto iter = _clients.begin(); iter != _clients.end();)
 		{
 			auto iterOld = iter++;
-			if (!iterOld->second->is_alive(tNow))
+			if (!iterOld->second->is_alive(dt))
 			{
 				_clients_change = true;
 				if (_pNetEvent)
@@ -173,7 +178,6 @@ protected:
 					{
 						_pNetEvent->OnLeave(iter->second);
 					}
-					closesocket(iter->first);
 					_clients.erase(iter->first);
 				}
 			}
@@ -198,7 +202,6 @@ protected:
 					{
 						_pNetEvent->OnLeave(iter.second);
 					}
-					close(iter->first);
 				}
 			}
 		}
@@ -260,7 +263,7 @@ public:
 			//printf("server socket<%d> client socket <%d> offline\n", (int)_sock, (int)pclient->sockfd());
 			return -1;
 		}
-
+		
 		// reset heart beat timing in here or in MyServer::OnNetMessage or in the all of these two place
 		//pclient->reset_dt_heart();
 

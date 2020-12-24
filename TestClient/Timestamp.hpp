@@ -1,5 +1,5 @@
-#ifndef _CELLTIMESTAMP_HPP_
-#define _CELLTIMESTAMP_HPP_
+#ifndef _TIMESTAMP_HPP_
+#define _TIMESTAMP_HPP_
 
 /* -------------
 // This method is only used for windows

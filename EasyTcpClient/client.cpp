@@ -1,5 +1,5 @@
-#include "EasyTcpClient.hpp"
-#include "CellTimestamp.hpp"
+#include "WorkClient.hpp"
+#include "Timestamp.hpp"
 
 #include <thread>
 #include <chrono>
@@ -9,9 +9,9 @@ bool g_run = true;
 // sending thread amount
 const int tCount = 4;
 // client amount
-const int nCount = 1000;
+const int nCount = 8;
 // client object
-EasyTcpClient* pclients[nCount];
+WorkClient* pclients[nCount];
 // client send count
 std::atomic_int sendCount = 0;
 // client parallel ready
@@ -60,7 +60,7 @@ void sendThread(int id) //1~4
 	for (int n = begin; n < end; n++)
 	{
 		if (!g_run)return;
-		pclients[n] = new EasyTcpClient;
+		pclients[n] = new WorkClient;
 	}
 
 	for (int n = begin; n < end; n++)
@@ -89,7 +89,7 @@ void sendThread(int id) //1~4
 	}
 	const int nLen = sizeof(login);
 
-	CellTimestamp tTime;
+	Timestamp tTime;
 
 	while (g_run)
 	{
@@ -147,7 +147,7 @@ int main()
 		t.detach();
 	}
 
-	CellTimestamp tTime;
+	Timestamp tTime;
 
 	while (g_run)
 	{

@@ -1,10 +1,14 @@
-#include "EasyTcpServer.hpp"
+// linux compile command
+// g++ server.cpp -std=c++11 -pthread -o server
+// ----------------------------------
+#include "Allocator.h"
+#include "MyServer.hpp"
 
 #include <thread>
 
 bool g_run = true;
 
-void cmd_thread()
+void cmdThread()
 {
 	while (true)
 	{
@@ -26,36 +30,21 @@ void cmd_thread()
 
 int main()
 {
-	//EasyTcpServer server;
-	//server.InitSocket();
-	//server.Bind(nullptr, 12345);
-	//server.Listen(5);
-
-	//EasyTcpServer server2;
-	//server2.InitSocket();
-	//server2.Bind(nullptr, 12346);
-	//server2.Listen(5);
-
-	//while (server.IsRunning() || server2.IsRunning())
-	//{
-	//	server.OnRun();
-	//	server2.OnRun();
-	//}
-	//server.Close();
-	//server2.Close();
-
-	std::thread t(cmd_thread);
+	std::thread t(cmdThread);
 	t.detach();
 
-	EasyTcpServer server;
+	MyServer server;
 	server.InitSocket();
 	server.Bind(nullptr, 12345);
 	server.Listen(5);
+	server.Start(4);
 
 	while (server.IsRunning() && g_run)
 	{
 		server.OnRun();
 	}
 	server.Close();
+
+	system("PAUSE");
 	return 0;
 }

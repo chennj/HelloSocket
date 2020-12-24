@@ -1,5 +1,5 @@
-#ifndef _EASYTCPCLIENT_TCP_
-#define _EASYTCPCLIENT_TCP_
+#ifndef _WORKCLIENT_HPP_
+#define _WORKCLIENT_HPP_
 
 #ifdef _WIN32
 #ifndef FD_SETSIZE
@@ -28,7 +28,7 @@
 #define RECV_BUFFER_SIZE 1024*10*5
 #endif
 
-class EasyTcpClient
+class WorkClient
 {
 private:
 	SOCKET _sock;
@@ -42,13 +42,13 @@ private:
 	bool _isConnected;
 
 public:
-	EasyTcpClient()
+	WorkClient()
 	{
 		_sock = INVALID_SOCKET;
 		_isConnected = false;
 	}
 
-	virtual ~EasyTcpClient()
+	virtual ~WorkClient()
 	{
 		Close();
 	}

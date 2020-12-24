@@ -1,20 +1,20 @@
-#ifndef _CELLTIMESTAMP_HPP_
-#define _CELLTIMESTAMP_HPP_
+#ifndef _TIMESTAMP_HPP_
+#define _TIMESTAMP_HPP_
 
 /* -------------
 // This method is only used for windows
 
 #include <Windows.h>
 
-class CellTimestamp
+class Timestamp
 {
 public:
-	CellTimestamp()
+	Timestamp()
 	{
 		QueryPerformanceFrequency(&_frequency);
 		QueryPerformanceCounter(&_startCount);
 	}
-	~CellTimestamp()
+	~Timestamp()
 	{
 
 	}
@@ -62,14 +62,25 @@ protected:
 #include <chrono>
 
 using namespace std::chrono;
-class CellTimestamp
+
+class Time
 {
 public:
-	CellTimestamp()
+	// get current time stamp in milliseconds
+	static time_t getNowInMilliSec()
+	{
+		return duration_cast<milliseconds>(high_resolution_clock::now().time_since_epoch()).count();
+	}
+};
+
+class Timestamp
+{
+public:
+	Timestamp()
 	{
 		update();
 	}
-	~CellTimestamp()
+	~Timestamp()
 	{
 
 	}

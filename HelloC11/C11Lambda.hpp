@@ -121,3 +121,23 @@ void test_2()
 	};
 	printf("this lambda,%d\n", call_3(5));
 }
+
+/*
+
+int i = 42;
+auto lambda = [&i](int j) { return i + j; };
+std::cout << lambda(10);
+The compiler basically generates this code for you:
+
+class Lambda {
+public:
+Lambda(const int& i) : i(i) { }
+auto operator()(int j) { return i + j; }
+private:
+const int& i;
+};
+
+int i = 42;
+auto lambda = Lambda(i);
+std::cout << lambda(10);
+*/

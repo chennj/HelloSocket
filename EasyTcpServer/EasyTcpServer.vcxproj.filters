@@ -23,9 +23,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="EasyTcpServer.hpp">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="MessageHeader.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
@@ -60,6 +57,9 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="Timestamp.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="BossServer.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

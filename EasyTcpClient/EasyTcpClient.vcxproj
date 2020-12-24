@@ -161,8 +161,8 @@
     <ClCompile Include="client.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="CellTimestamp.hpp" />
-    <ClInclude Include="EasyTcpClient.hpp" />
+    <ClInclude Include="Timestamp.hpp" />
+    <ClInclude Include="WorkClient.hpp" />
     <ClInclude Include="MessageHeader.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
