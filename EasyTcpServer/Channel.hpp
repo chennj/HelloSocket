@@ -28,6 +28,16 @@ public:
 
 	virtual ~Channel()
 	{
+		if (INVALID_SOCKET != _sockfd)
+		{
+#ifdef _WIN32
+			closesocket(_sockfd);
+#else
+			close(_sockfd);
+#endif
+			xPrintf("channel destory socket<%d>\n", _sockfd);
+			_sockfd = INVALID_SOCKET;
+		}
 	}
 
 public:

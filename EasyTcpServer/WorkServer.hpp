@@ -51,7 +51,11 @@ public:
 	~WorkServer()
 	{
 		printf("WorkServer destory.\n");
-		//delete _pThread;
+		if (_pThread->joinable())
+		{
+			_pThread->join();
+		}
+		_pThread = nullptr;
 		Close();
 	}
 
@@ -67,7 +71,6 @@ protected:
 
 		while (IsRunning())
 		{
-
 			if (_clientsBuf.size() > 0)
 			{
 				std::lock_guard<std::mutex> lockGuard(_mutex);
@@ -156,7 +159,6 @@ protected:
 				{
 					_pNetEvent->OnLeave(iterOld->second);
 				}
-				closesocket(iterOld->first);
 				_clients.erase(iterOld->first);
 				continue;
 			}
@@ -185,7 +187,6 @@ protected:
 					{
 						_pNetEvent->OnLeave(iter->second);
 					}
-					closesocket(iter->first);
 					_clients.erase(iter->first);
 				}
 			}
@@ -210,7 +211,6 @@ protected:
 					{
 						_pNetEvent->OnLeave(iter.second);
 					}
-					close(iter->first);
 				}
 			}
 		}
@@ -253,8 +253,11 @@ public:
 	// start self
 	void Start()
 	{
-		_pThread = new std::thread(std::mem_fn(&WorkServer::OnRun), this);
-		_taskServer.Start();
+		if (!_pThread)
+		{
+			_pThread = new std::thread(std::mem_fn(&WorkServer::OnRun), this);
+			_taskServer.Start();
+		}
 	}
 
 	// receive data, deal sticking package and splitting package
@@ -325,27 +328,9 @@ public:
 	void Close()
 	{
 		if (_sock == INVALID_SOCKET) return;
-
-#ifdef _WIN32
-		for (auto iter : _clients)
-		{
-			closesocket(iter.first);
-			//delete iter.second;
-		}
-		closesocket(_sock);
-#else
-		for (auto iter : _clients)
-		{
-			close(iter.first);
-			//delete iter.second;
-		}
-		close(_sock);
-#endif
-		_clients.clear();
-
 		_sock = INVALID_SOCKET;
-
-		printf("cell server is shutdown\n");
+		_clients.clear();
+		_clientsBuf.clear();
 	}
 
 public:

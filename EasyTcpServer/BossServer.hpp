@@ -46,7 +46,6 @@ public:
 		for (auto pWorkServer : _workServers)
 		{
 			pWorkServer->Stop();
-			//delete pWorkServer;
 		}
 		_workServers.clear();
 
@@ -195,18 +194,10 @@ public:
 
 #ifdef _WIN32
 		closesocket(_sock);
-		// clean windows socket environment
 		WSACleanup();
 #else
 		close(_sock);
 #endif
-
-		//for (auto pWorkServer : _workServers)
-		//{
-		//	delete pWorkServer;
-		//}
-		//_workServers.clear();
-
 		_sock = INVALID_SOCKET;
 		printf("server is shutdown\n");
 	}

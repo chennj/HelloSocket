@@ -13,13 +13,24 @@ private:
 	std::list<FTask> _tasks;
 	std::list<FTask> _tasksBuf;
 	std::mutex _mutex;
-
+	bool _isRunning;
+	std::thread* _pThread;
 public:
 	TaskServer()
 	{
+		_pThread = nullptr;
+		_isRunning = true;
 	}
 	~TaskServer()
 	{
+		_isRunning = false;
+		if (_pThread->joinable())
+		{
+			_pThread->join();
+		}
+		_pThread = nullptr;
+		_tasks.clear();
+		_tasksBuf.clear();
 	}
 
 public:
@@ -33,14 +44,18 @@ public:
 	// start service thread
 	void Start()
 	{
-		std::thread t(std::mem_fn(&TaskServer::OnRun), this);
-		t.detach();
+		//std::thread t(std::mem_fn(&TaskServer::OnRun), this);
+		//t.detach();
+		if (!_pThread)
+		{
+			_pThread = new std::thread(std::mem_fn(&TaskServer::OnRun), this);
+		}
 	}
 
 	// work loop
 	void OnRun()
 	{
-		while (true)
+		while (_isRunning)
 		{
 			// take task from task buff to task
 			if (_tasksBuf.size()>0)
@@ -68,9 +83,8 @@ public:
 			}
 			// clear task;
 			_tasks.clear();
-
 		}
-
+		printf("TaskServer thread exit...\n");
 	}
 };
 

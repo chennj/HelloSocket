@@ -1,3 +1,6 @@
+// linux compile command
+// g++ client.cpp -std=c++11 -pthread -o client
+// ----------------------------------
 #include "WorkClient.hpp"
 #include "Timestamp.hpp"
 
@@ -6,18 +9,21 @@
 #include <atomic>
 
 bool g_run = true;
+
 // sending thread amount
 const int tCount = 4;
 // client amount
-const int nCount = 1000;
+const int nCount = 100;
+
 // client object
 WorkClient* pclients[nCount];
+
 // client send count
-std::atomic_int sendCount = 0;
+std::atomic_int sendCount;
 // client parallel ready
-std::atomic_int readyCount = 0;
+std::atomic_int readyCount;
 // client exit count
-std::atomic_int exitCount = 1;
+std::atomic_int exitCount;
 
 void cmdThread()
 {
@@ -51,6 +57,7 @@ void recvThread(int begin, int end)
 			}
 		}
 	}
+
 exit:
 	printf("client recv end...\n");
 }
@@ -75,6 +82,7 @@ void sendThread(int id) //1~4
 	}
 
 	readyCount++;
+
 	while (readyCount < tCount)
 	{
 		// waitting until other thread had readied
@@ -88,13 +96,14 @@ void sendThread(int id) //1~4
 
 	const int msgcount = 1;
 	Login login[msgcount];
+
 	for (int n = 0; n < msgcount; n++)
 	{
 		strcpy(login[n].username, "cnj");
 		strcpy(login[n].password, "cnj123");
 	}
-	const int nLen = sizeof(login);
 
+	const int nLen = sizeof(login);
 	Timestamp tTime;
 
 	while (g_run)
@@ -123,17 +132,18 @@ void sendThread(int id) //1~4
 				//	g_run = false;
 				//}
 			}
-
 		}
+
 		// to control speed to send
-		//std::chrono::milliseconds t(10);
-		//std::this_thread::sleep_for(t);
+		std::chrono::milliseconds t(1);
+		std::this_thread::sleep_for(t);
 	}
 
 	for (int n = begin; n < end; n++)
 	{
 		pclients[n]->Close();
 		delete pclients[n];
+
 		//printf("client exit <%d>\n", exitCount++);
 		exitCount++;
 		//std::chrono::microseconds t(10);
@@ -143,6 +153,10 @@ void sendThread(int id) //1~4
 
 int main()
 {
+	sendCount = 0;
+	readyCount = 0;
+	exitCount = 1;
+
 	//start ui thread
 	std::thread t1(cmdThread);
 	t1.detach();
@@ -165,15 +179,20 @@ int main()
 			sendCount = 0;
 			tTime.update();
 		}
-		Sleep(1);
+		std::chrono::milliseconds t(1);
+		std::this_thread::sleep_for(t);
 	}
 
 	while (exitCount < nCount)
 	{
-		Sleep(100);
+		std::chrono::milliseconds t(100);
+		std::this_thread::sleep_for(t);
 	}
 
 	printf("client shut down...\n");
-	Sleep(2000);
+
+	std::chrono::milliseconds t(2000);
+	std::this_thread::sleep_for(t);
 	return 0;
+
 }
