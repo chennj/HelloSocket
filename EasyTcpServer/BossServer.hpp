@@ -16,7 +16,7 @@ class BossServer : public INetEvent
 {
 private:
 	// WorkServers
-	std::vector<WorkServerPtr> _cellServers;
+	std::vector<WorkServerPtr> _workServers;
 	// lock
 	std::mutex _mutex;
 	// high resolution timers
@@ -43,12 +43,12 @@ public:
 
 	virtual ~BossServer()
 	{
-		for (auto pWorkServer : _cellServers)
+		for (auto pWorkServer : _workServers)
 		{
 			pWorkServer->Stop();
 			//delete pWorkServer;
 		}
-		_cellServers.clear();
+		_workServers.clear();
 
 		Close();
 	}
@@ -168,7 +168,7 @@ public:
 		for (int n = 0; n < nWorkServer; n++)
 		{
 			WorkServerPtr pWorkServer = std::make_shared<WorkServer>(_sock);
-			_cellServers.push_back(pWorkServer);
+			_workServers.push_back(pWorkServer);
 			pWorkServer->RegisterNetEventListener(this);
 			pWorkServer->Start();
 		}
@@ -177,8 +177,8 @@ public:
 	// select WorkServer which queue is smallest add client message to it
 	void addClient2WorkServer(ChannelPtrRef pChannel)
 	{
-		auto pMinWorkServer = _cellServers[0];
-		for (auto pWorkServer : _cellServers)
+		auto pMinWorkServer = _workServers[0];
+		for (auto pWorkServer : _workServers)
 		{
 			if (pMinWorkServer->getClientCount() > pWorkServer->getClientCount()) {
 				pMinWorkServer = pWorkServer;
@@ -201,11 +201,11 @@ public:
 		close(_sock);
 #endif
 
-		//for (auto pWorkServer : _cellServers)
+		//for (auto pWorkServer : _workServers)
 		//{
 		//	delete pWorkServer;
 		//}
-		//_cellServers.clear();
+		//_workServers.clear();
 
 		_sock = INVALID_SOCKET;
 		printf("server is shutdown\n");
@@ -270,7 +270,7 @@ public:
 		auto t1 = _tTime.getElapsedSecond();
 		if (t1 >= 1.0)
 		{
-			printf("threads<%d>,time<%lf>,socket<%d> clients<%d>,recv<%d>,msg<%d>\n", (int)_cellServers.size(), t1, (int)_sock, _clientCount.load(), (int)(_recvCount / t1), (int)(_msgCount / t1));
+			printf("threads<%d>,time<%lf>,socket<%d> clients<%d>,recv<%d>,msg<%d>\n", (int)_workServers.size(), t1, (int)_sock, _clientCount.load(), (int)(_recvCount / t1), (int)(_msgCount / t1));
 			_recvCount = 0;
 			_msgCount = 0;
 			_tTime.update();

@@ -39,7 +39,7 @@ private:
 	TaskServer _taskServer;
 	// whether stop
 	bool _isStop;
-
+	// used to timing heart beat
 public:
 	WorkServer(SOCKET sock = INVALID_SOCKET)
 	{
@@ -145,15 +145,27 @@ protected:
 
 		for (auto iter = _clients.begin(); iter != _clients.end();)
 		{
+			// save current iterator;
 			auto iterOld = iter++;
-			if (!iterOld->second->is_alive(tNow))
+
+			// check heart beat
+			if (!iterOld->second->check_heart_beat(tNow))
 			{
 				_clients_change = true;
 				if (_pNetEvent)
 				{
 					_pNetEvent->OnLeave(iterOld->second);
 				}
+				closesocket(iterOld->first);
 				_clients.erase(iterOld->first);
+				continue;
+			}
+
+			// regulary check to decide whether to send data to client
+			int ret = iterOld->second->timing_send(tNow);
+			if (SOCKET_ERROR == ret)
+			{
+				printf("timing send data to client (socket<%d>) failed. ret<%d>\n", (int)iterOld->first, ret);
 			}
 		}
 	}

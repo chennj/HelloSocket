@@ -5,7 +5,9 @@
 #include "ObjectPool.hpp"
 
 // countdown to heart beat check
-#define CLIENT_HEART_DEAD_TIME 5 * 1000
+#define CLIENT_HEART_DEAD_TIME 30 * 1000
+// time interval in which server timing send data in sending buffer to client 
+#define CLIENT_TIMING_SEND_TIME 200
 
 /**
 *	client object with socket
@@ -21,11 +23,11 @@ public:
 		memset(_szSendBuffer, 0, SEND_BUFFER_SIZE);
 		_lastSendPos = 0;
 		reset_dt_heart();
+		reset_dt_send();
 	}
 
 	virtual ~Channel()
 	{
-		//delete[] (void*)_szRecvBuffer;
 	}
 
 public:
@@ -63,7 +65,28 @@ public:
 	{
 		_lastSendPos = lastSendPos;
 	}
+
 public:
+	// immediately send data in sending buffer to client
+	int SendDataIM()
+	{
+		int ret = SOCKET_ERROR;
+
+		if (_lastSendPos > 0 && SOCKET_ERROR != _sockfd)
+		{
+			ret = send(_sockfd/*client socket*/, _szSendBuffer, _lastSendPos, 0);
+			_lastSendPos = 0;
+		}
+		else
+		{
+			ret = 0;
+		}
+
+		reset_dt_send();
+
+		return ret;
+	}
+
 	// send data
 	int SendData(DataHeaderPtr pheader)
 	{
@@ -92,6 +115,8 @@ public:
 				ret = send(_sockfd/*client socket*/, _szSendBuffer, SEND_BUFFER_SIZE, 0);
 				// set _lastSendPos to zero
 				_lastSendPos = 0;
+				//
+				reset_dt_send();
 				// exception occur while send,such as client offline
 				if (SOCKET_ERROR == ret)
 				{
@@ -121,14 +146,37 @@ public:
 	}
 
 	// check heart beat
-	bool is_alive(time_t tNow)
+	bool check_heart_beat(time_t tNow)
 	{
-		if ((tNow - _dtHeart) > CLIENT_HEART_DEAD_TIME)
+		if ((tNow - _dtHeart) >= CLIENT_HEART_DEAD_TIME)
 		{
 			printf("check heart beat dead:socket<%d>,time<%d>\n", _sockfd, (tNow - _dtHeart));
 			return false;
 		}
 		return true;
+	}
+
+	void reset_dt_send()
+	{
+		_dtSend = Time::getNowInMilliSec();;
+	}
+
+	int timing_send(time_t tNow)
+	{
+		int ret = SOCKET_ERROR;
+		time_t dt = tNow - _dtSend;
+		if (dt >= CLIENT_TIMING_SEND_TIME)
+		{
+			// immediately send data in sending buffer to client
+			// reset sending timing
+			ret = SendDataIM();
+			xPrintf("check send:socket<%d>,time<%d>,result<%d>\n", (int)_sockfd, (int)dt, ret);
+		}
+		else
+		{
+			ret = 0;
+		}
+		return ret;
 	}
 
 private:
@@ -146,6 +194,8 @@ private:
 
 	// timing heart beat check
 	time_t _dtHeart;
+	// timing send data to client
+	time_t _dtSend;
 };
 
 #endif

@@ -9,7 +9,7 @@ bool g_run = true;
 // sending thread amount
 const int tCount = 4;
 // client amount
-const int nCount = 8;
+const int nCount = 1000;
 // client object
 WorkClient* pclients[nCount];
 // client send count
@@ -44,10 +44,15 @@ void recvThread(int begin, int end)
 	{
 		for (int n = begin; n < end; n++)
 		{
-			pclients[n]->OnRun();
-
+			int ret = pclients[n]->OnRun();
+			if (ret < 0)
+			{
+				goto exit;
+			}
 		}
 	}
+exit:
+	printf("client recv end...\n");
 }
 
 void sendThread(int id) //1~4
@@ -81,8 +86,9 @@ void sendThread(int id) //1~4
 	std::thread t(recvThread, begin, end);
 	t.detach();
 
-	Login login[1];
-	for (int n = 0; n < 1; n++)
+	const int msgcount = 1;
+	Login login[msgcount];
+	for (int n = 0; n < msgcount; n++)
 	{
 		strcpy(login[n].username, "cnj");
 		strcpy(login[n].password, "cnj123");
@@ -113,14 +119,15 @@ void sendThread(int id) //1~4
 				{
 					sendCount++;
 				}
+				//else {
+				//	g_run = false;
+				//}
 			}
 
-			//// to control speed to send
-			//std::chrono::milliseconds t(10);
-			//std::this_thread::sleep_for(t);
-
 		}
-
+		// to control speed to send
+		//std::chrono::milliseconds t(10);
+		//std::this_thread::sleep_for(t);
 	}
 
 	for (int n = begin; n < end; n++)
@@ -166,5 +173,7 @@ int main()
 		Sleep(100);
 	}
 
+	printf("client shut down...\n");
+	Sleep(2000);
 	return 0;
 }
