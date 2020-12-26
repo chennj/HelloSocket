@@ -135,8 +135,8 @@ void sendThread(int id) //1~4
 		}
 
 		// to control speed to send
-		std::chrono::milliseconds t(1);
-		std::this_thread::sleep_for(t);
+		//std::chrono::milliseconds t(1);
+		//std::this_thread::sleep_for(t);
 	}
 
 	for (int n = begin; n < end; n++)

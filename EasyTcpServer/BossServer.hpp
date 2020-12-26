@@ -43,10 +43,6 @@ public:
 
 	virtual ~BossServer()
 	{
-		for (auto pWorkServer : _workServers)
-		{
-			pWorkServer->Stop();
-		}
 		_workServers.clear();
 
 		Close();

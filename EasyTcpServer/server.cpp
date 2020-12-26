@@ -33,17 +33,18 @@ int main()
 	std::thread t(cmdThread);
 	t.detach();
 
-	MyServer server;
-	server.InitSocket();
-	server.Bind(nullptr, 12345);
-	server.Listen(5);
-	server.Start(4);
-
-	while (server.IsRunning() && g_run)
 	{
-		server.OnRun();
+		MyServer server;
+		server.InitSocket();
+		server.Bind(nullptr, 12345);
+		server.Listen(5);
+		server.Start(4);
+		while (server.IsRunning() && g_run)
+		{
+			server.OnRun();
+		}
+		server.Close();
 	}
-	server.Close();
 
 	system("PAUSE");
 	return 0;

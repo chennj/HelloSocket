@@ -84,6 +84,7 @@ public:
 
 		if (_lastSendPos > 0 && SOCKET_ERROR != _sockfd)
 		{
+			//std::lock_guard<std::mutex> lg(_mutex);
 			ret = send(_sockfd/*client socket*/, _szSendBuffer, _lastSendPos, 0);
 			_lastSendPos = 0;
 		}
@@ -108,6 +109,8 @@ public:
 		int nSendLen = pheader->data_length;
 		// it's data that would send
 		const char* pSendData = (const char*)pheader.get();
+		//
+		//std::lock_guard<std::mutex> lg(_mutex);
 		// 
 		while (true)
 		{
@@ -189,6 +192,16 @@ public:
 		return ret;
 	}
 
+	bool check_timing_send(time_t tNow)
+	{
+		time_t dt = tNow - _dtSend;
+		if (dt >= CLIENT_TIMING_SEND_TIME)
+		{
+			return true;
+		}
+		return false;
+	}
+
 private:
 	// fd_set file descriptor
 	SOCKET _sockfd;
@@ -206,6 +219,8 @@ private:
 	time_t _dtHeart;
 	// timing send data to client
 	time_t _dtSend;
+	//
+	std::mutex _mutex;
 };
 
 #endif

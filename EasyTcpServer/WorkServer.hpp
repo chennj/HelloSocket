@@ -4,6 +4,7 @@
 #include "Init.h"
 #include "Channel.hpp"
 #include "INetEvent.hpp"
+#include "MySemaphore.hpp"
 
 #include <map>
 #include <vector>
@@ -37,26 +38,24 @@ private:
 	SOCKET _max_socket;
 	// task 
 	TaskServer _taskServer;
-	// whether stop
-	bool _isStop;
-	// used to timing heart beat
+	// semaphore
+	MySemaphore _sem;
 public:
 	WorkServer(SOCKET sock = INVALID_SOCKET)
 	{
 		_sock = sock;
 		_pThread = nullptr;
 		_pNetEvent = nullptr;
-		_isStop = false;
 	}
 	~WorkServer()
 	{
 		printf("WorkServer destory.\n");
-		if (_pThread->joinable())
-		{
-			_pThread->join();
-		}
-		_pThread = nullptr;
+		// release resource
 		Close();
+		// waitting for child-thread(OnRun) exit
+		_sem.wait();
+		// set null;
+		_pThread = nullptr;
 	}
 
 protected:
@@ -138,6 +137,9 @@ protected:
 			CheckTime();
 		} // while (IsRunning())
 
+		// notice WorkServer main thread that child-thread(OnRun) had exit
+		_sem.wakeup();
+
 		printf("WorkServer thread exit...\n");
 		return ret;
 	}
@@ -164,10 +166,21 @@ protected:
 			}
 
 			// regulary check to decide whether to send data to client
-			int ret = iterOld->second->timing_send(tNow);
-			if (SOCKET_ERROR == ret)
+			// synchronization execute, need add lock, will reduce sending speed
+			//int ret = iterOld->second->timing_send(tNow);
+			//if (SOCKET_ERROR == ret)
+			//{
+			//	printf("timing send data to client (socket<%d>) failed. ret<%d>\n", (int)iterOld->first, ret);
+			//}
+			// check if the timing sending data time is up
+			// asynchronous execute, need not add lock
+			if (iterOld->second->check_timing_send(tNow))
 			{
-				printf("timing send data to client (socket<%d>) failed. ret<%d>\n", (int)iterOld->first, ret);
+				ChannelPtr pChannel = iterOld->second;
+				_taskServer.addTask
+				(
+					[pChannel]() {pChannel->SendDataIM(); }
+				);
 			}
 		}
 	}
@@ -238,16 +251,10 @@ public:
 	}
 
 public:
-	// stop cellserver
-	void Stop()
-	{
-		_isStop = true;
-	}
-
 	// if is running
 	bool IsRunning()
 	{
-		return _sock != INVALID_SOCKET && !_isStop;
+		return _sock != INVALID_SOCKET;
 	}
 
 	// start self
@@ -256,6 +263,7 @@ public:
 		if (!_pThread)
 		{
 			_pThread = new std::thread(std::mem_fn(&WorkServer::OnRun), this);
+			_pThread->detach();
 			_taskServer.Start();
 		}
 	}

@@ -1,6 +1,8 @@
 #ifndef _CELLTASK_HPP_
 #define _CELLTASK_HPP_
 
+#include "MySemaphore.hpp"
+
 #include<thread>
 #include<mutex>
 #include<list>
@@ -15,6 +17,7 @@ private:
 	std::mutex _mutex;
 	bool _isRunning;
 	std::thread* _pThread;
+	MySemaphore _sem;
 public:
 	TaskServer()
 	{
@@ -23,14 +26,15 @@ public:
 	}
 	~TaskServer()
 	{
+		printf("TaskServer destory.\n");
 		_isRunning = false;
-		if (_pThread->joinable())
-		{
-			_pThread->join();
-		}
-		_pThread = nullptr;
+		// waitting for child-thread(OnRun) exit
+		_sem.wait();
+		// release resources
 		_tasks.clear();
 		_tasksBuf.clear();
+		// set null
+		_pThread = nullptr;
 	}
 
 public:
@@ -49,6 +53,7 @@ public:
 		if (!_pThread)
 		{
 			_pThread = new std::thread(std::mem_fn(&TaskServer::OnRun), this);
+			_pThread->detach();
 		}
 	}
 
@@ -84,6 +89,9 @@ public:
 			// clear task;
 			_tasks.clear();
 		}
+
+		// notice WorkServer main thread that child-thread(OnRun) had exit
+		_sem.wakeup();
 		printf("TaskServer thread exit...\n");
 	}
 };
