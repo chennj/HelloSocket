@@ -3,6 +3,9 @@
 
 #include <thread>
 #include <chrono>
+#include <mutex>
+
+#include <condition_variable>
 
 /**
 * simple semaphore
@@ -10,12 +13,19 @@
 class MySemaphore
 {
 private:
-	int _isWaitExit;
-
+	// wait count
+	int _waitCount;
+	// wakeup count
+	int _wakeupCount;
+	// lock data share area
+	std::mutex _mutex;
+	// condition variable be used to blocking and waitting
+	std::condition_variable _condv;
 public:
 	MySemaphore()
 	{
-		_isWaitExit = true;
+		_waitCount = 0;
+		_wakeupCount = 0;
 	}
 
 	~MySemaphore()
@@ -26,19 +36,25 @@ public:
 public:
 	void wait()
 	{
-		while (_isWaitExit)
+		std::unique_lock<std::mutex> lock(_mutex);
+		if (--_waitCount < 0)
 		{
-			std::chrono::milliseconds t(1);
-			std::this_thread::sleep_for(t);
+			_condv.wait(lock, [this]() ->bool{
+				return _wakeupCount > 0;
+			});
+			--_wakeupCount;
 		}
-		// 在这里赋值，而不是在while语句前赋值
-		// 是为了防止wakeup在wait的前面执行而导致的死锁
-		_isWaitExit = true;
 	}
 
 	void wakeup()
 	{
-		_isWaitExit = false;
+		std::lock_guard<std::mutex> lg(_mutex);
+		if (++_waitCount <= 0)
+		{
+			++_wakeupCount;
+			_condv.notify_one();
+		}
+
 	}
 };
 
