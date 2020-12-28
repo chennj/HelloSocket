@@ -1,4 +1,4 @@
-#ifndef _CRC_AUTO_PTR_HPP_
+ï»¿#ifndef _CRC_AUTO_PTR_HPP_
 #define _CRC_AUTO_PTR_HPP_
 
 template<class C>
@@ -135,10 +135,10 @@ public:
 	*	1)
 	*	const_cast can be used to change non-const class members inside a const member function.
 	*	Consider the following code snippet. Inside const member function fun(),
-	*	¡®this¡¯ is treated by the compiler as ¡®const student* const this¡¯, i.e.
-	*	¡®this¡¯ is a constant pointer to a constant object,
-	*	thus compiler doesn¡¯t allow to change the data members through ¡®this¡¯ pointer.
-	*	const_cast changes the type of ¡®this¡¯ pointer to ¡®student* const this¡¯.
+	*	â€˜thisâ€™ is treated by the compiler as â€˜const student* const thisâ€™, i.e.
+	*	â€˜thisâ€™ is a constant pointer to a constant object,
+	*	thus compiler doesnâ€™t allow to change the data members through â€˜thisâ€™ pointer.
+	*	const_cast changes the type of â€˜thisâ€™ pointer to â€˜student* const thisâ€™.
 	*	Example:
 	*	--------
 	*	class A{
@@ -150,7 +150,7 @@ public:
 	*		}
 	*	}
 	*	2)
-	*	const_cast can be used to pass const data to a function that doesn¡¯t receive const.
+	*	const_cast can be used to pass const data to a function that doesnâ€™t receive const.
 	*	For example, in the following program fun() receives a normal pointer,
 	*	but a pointer to a const can be passed with the help of const_cast.
 	*	Example:
@@ -188,10 +188,10 @@ public:
 	*	1)
 	*	const_cast can be used to change non-const class members inside a const member function.
 	*	Consider the following code snippet. Inside const member function fun(),
-	*	¡®this¡¯ is treated by the compiler as ¡®const student* const this¡¯, i.e.
-	*	¡®this¡¯ is a constant pointer to a constant object,
-	*	thus compiler doesn¡¯t allow to change the data members through ¡®this¡¯ pointer.
-	*	const_cast changes the type of ¡®this¡¯ pointer to ¡®student* const this¡¯.
+	*	â€˜thisâ€™ is treated by the compiler as â€˜const student* const thisâ€™, i.e.
+	*	â€˜thisâ€™ is a constant pointer to a constant object,
+	*	thus compiler doesnâ€™t allow to change the data members through â€˜thisâ€™ pointer.
+	*	const_cast changes the type of â€˜thisâ€™ pointer to â€˜student* const thisâ€™.
 	*	Example:
 	*	--------
 	*	class A{
@@ -203,7 +203,7 @@ public:
 	*		}
 	*	}
 	*	2)
-	*	const_cast can be used to pass const data to a function that doesn¡¯t receive const.
+	*	const_cast can be used to pass const data to a function that doesnâ€™t receive const.
 	*	For example, in the following program fun() receives a normal pointer,
 	*	but a pointer to a const can be passed with the help of const_cast.
 	*	Example:

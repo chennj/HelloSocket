@@ -1,4 +1,4 @@
-#ifndef _CRC_SEMAPHORE_HPP_
+﻿#ifndef _CRC_SEMAPHORE_HPP_
 #define _CRC_SEMAPHORE_HPP_
 
 #include <thread>

@@ -1,4 +1,4 @@
-#ifndef _CRC_MEMORY_POOL_HPP_
+﻿#ifndef _CRC_MEMORY_POOL_HPP_
 #define _CRC_MEMORY_POOL_HPP_
 
 #include"crc_init.h"

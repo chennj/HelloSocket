@@ -1,7 +1,7 @@
-#ifndef _CRC_TASK_SERVER_HPP_
+﻿#ifndef _CRC_TASK_SERVER_HPP_
 #define _CRC_TASK_SERVER_HPP_
 
-#include "crc_semaphore.hpp"
+#include "crc_thread.hpp"
 
 #include<thread>
 #include<mutex>
@@ -15,26 +15,15 @@ private:
 	std::list<FTask> _tasks;
 	std::list<FTask> _tasksBuf;
 	std::mutex _mutex;
-	bool _isRunning;
-	std::thread* _pThread;
-	CRCSemaphore _sem;
+	CRCThread _crcThread;
 public:
 	CRCTaskServer()
 	{
-		_pThread = nullptr;
-		_isRunning = true;
 	}
 	~CRCTaskServer()
 	{
 		printf("TaskServer destory.\n");
-		_isRunning = false;
-		// waitting for child-thread(OnRun) exit
-		_sem.wait();
-		// release resources
-		_tasks.clear();
-		_tasksBuf.clear();
-		// set null
-		_pThread = nullptr;
+		Close();
 	}
 
 public:
@@ -48,19 +37,25 @@ public:
 	// start service thread
 	void Start()
 	{
-		//std::thread t(std::mem_fn(&TaskServer::OnRun), this);
-		//t.detach();
-		if (!_pThread)
-		{
-			_pThread = new std::thread(std::mem_fn(&CRCTaskServer::OnRun), this);
-			_pThread->detach();
-		}
+		_crcThread.Start
+		(
+			nullptr,
+			[this](CRCThread* pCrcThread){ OnRun(pCrcThread); },
+			nullptr
+		);
+	}
+
+	void Close()
+	{
+		if (_crcThread.IsRun())_crcThread.Close();
 	}
 
 	// work loop
-	void OnRun()
+	void OnRun(CRCThread* threadPtr)
 	{
-		while (_isRunning)
+		printf("TaskServer thread start...\n");
+
+		while (threadPtr->IsRun())
 		{
 			// take task from task buff to task
 			if (_tasksBuf.size()>0)
@@ -90,8 +85,10 @@ public:
 			_tasks.clear();
 		}
 
-		// notice WorkServer main thread that child-thread(OnRun) had exit
-		_sem.wakeup();
+		// release resources
+		_tasks.clear();
+		_tasksBuf.clear();
+
 		printf("TaskServer thread exit...\n");
 	}
 };

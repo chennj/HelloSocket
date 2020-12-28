@@ -1,4 +1,4 @@
-#ifndef _CRC_I_NET_EVENT_HPP_
+﻿#ifndef _CRC_I_NET_EVENT_HPP_
 #define _CRC_I_NET_EVENT_HPP_
 
 #include "crc_init.h"

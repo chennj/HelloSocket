@@ -1,9 +1,10 @@
-#ifndef _CRC_BOSS_SERVER_HPP_
+﻿#ifndef _CRC_BOSS_SERVER_HPP_
 #define _CRC_BOSS_SERVER_HPP_
 
 #include "crc_init.h"
 #include "crc_inet_event.hpp"
 #include "crc_work_server.hpp"
+#include "crc_thread.hpp"
 
 #include <thread>
 #include <mutex>
@@ -15,6 +16,8 @@
 class CRCBossServer : public CRCINetEvent
 {
 private:
+	// thread
+	CRCThread _crcThread;
 	// WorkServers
 	std::vector<CRCWorkServerPtr> _workServers;
 	// lock
@@ -23,14 +26,14 @@ private:
 	CRCTimestamp _tTime;
 
 protected:
-	// local socket
-	SOCKET _sock;
 	// count while client receive message
 	std::atomic_int _recvCount;
 	// count while client message comes
 	std::atomic_int _msgCount;
 	// count while client join or offline
 	std::atomic_int _clientCount;
+	// local socket
+	SOCKET _sock;
 
 public:
 	CRCBossServer()
@@ -167,6 +170,14 @@ public:
 			pWorkServer->RegisterNetEventListener(this);
 			pWorkServer->Start();
 		}
+
+		_crcThread.Start
+		(
+			nullptr,
+			[this](CRCThread* pCrcThread) { OnRun(pCrcThread); },
+			nullptr
+		);
+
 	}
 
 	// select WorkServer which queue is smallest add client message to it
@@ -195,53 +206,8 @@ public:
 		close(_sock);
 #endif
 		_sock = INVALID_SOCKET;
+		if (_crcThread.IsRun())_crcThread.Close();
 		printf("server is shutdown\n");
-	}
-
-	// only process accept request
-	int OnRun()
-	{
-		if (!IsRunning())
-		{
-			return -1;
-		}
-
-		time4Msg();
-
-		fd_set fd_read;
-		fd_set fd_write;
-		fd_set fd_exception;
-
-		FD_ZERO(&fd_read);
-		FD_ZERO(&fd_write);
-		FD_ZERO(&fd_exception);
-
-		// put server's socket in all the fd_set
-		FD_SET(_sock, &fd_read);
-		FD_SET(_sock, &fd_write);
-		FD_SET(_sock, &fd_exception);
-
-		//nfds is range of fd_set, not fd_set's count.
-		//nfds is also max value+1 of all the file descriptor(socket).
-		//nfds can be 0 in the windows.
-		//that timeval was setted null means blocking, not null means nonblocking.
-		timeval t = { 0,1 };
-		int ret = select(_sock + 1/*nfds*/, &fd_read, &fd_write, &fd_exception, &t);
-		if (ret < 0)
-		{
-			printf("socket<%d> error occurs while select and mission finish.\n", (int)_sock);
-			Close();
-			return ret;
-		}
-
-		if (FD_ISSET(_sock, &fd_read))
-		{
-			FD_CLR(_sock, &fd_read);
-
-			Accept();
-		}
-
-		return ret;
 	}
 
 	// if is running
@@ -262,6 +228,55 @@ public:
 			_msgCount = 0;
 			_tTime.update();
 		}
+	}
+
+protected:
+	// only process accept request
+	void OnRun(CRCThread* pCrcThread)
+	{
+		printf("BossServer thread start...\n");
+
+		while (pCrcThread->IsRun())
+		{
+			time4Msg();
+
+			fd_set fd_read;
+			//fd_set fd_write;
+			//fd_set fd_exception;
+
+			FD_ZERO(&fd_read);
+			//FD_ZERO(&fd_write);
+			//FD_ZERO(&fd_exception);
+
+			// put server's socket in all the fd_set
+			FD_SET(_sock, &fd_read);
+			//FD_SET(_sock, &fd_write);
+			//FD_SET(_sock, &fd_exception);
+
+			//nfds is range of fd_set, not fd_set's count.
+			//nfds is also max value+1 of all the file descriptor(socket).
+			//nfds can be 0 in the windows.
+			//that timeval was setted null means blocking, not null means nonblocking.
+			timeval t = { 0,1 };
+			//int ret = select(_sock + 1/*nfds*/, &fd_read, &fd_write, &fd_exception, &t);
+			// only check readable
+			int ret = select(_sock + 1/*nfds*/, &fd_read, nullptr, nullptr, &t);
+			if (ret < 0)
+			{
+				printf("BossServer socket<%d> error occurs while select and mission finish.\n", (int)_sock);
+				pCrcThread->ExitInSelfThread();
+				break;
+			}
+
+			if (FD_ISSET(_sock, &fd_read))
+			{
+				FD_CLR(_sock, &fd_read);
+
+				Accept();
+			}
+		}
+
+		printf("BossServer thread exit...\n");
 	}
 
 	// inherit INetEvent

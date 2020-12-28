@@ -1,11 +1,11 @@
-#ifndef _CRC_INIT_H_
+﻿#ifndef _CRC_INIT_H_
 #define _CRC_INIT_H_
 
 #include<assert.h>
 
 #ifdef _DEBUG
 #include<stdio.h>
-#define xPrintf(...) printf(__VA_ARGS__)
+#define xPrintf(...) //printf(__VA_ARGS__)
 #else
 #define xPrintf(...)
 #endif

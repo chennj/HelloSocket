@@ -1,4 +1,4 @@
-#ifndef _CRC_TIMESTAMP_HPP_
+﻿#ifndef _CRC_TIMESTAMP_HPP_
 #define _CRC_TIMESTAMP_HPP_
 
 /* -------------

@@ -1,4 +1,4 @@
-#ifndef _CRC_MESSAGE_HEADER_HPP_
+﻿#ifndef _CRC_MESSAGE_HEADER_HPP_
 #define _CRC_MESSAGE_HEADER_HPP_
 
 enum CMD

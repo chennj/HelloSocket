@@ -1,4 +1,4 @@
-#ifndef _CRC_CHANNEL_HPP_
+﻿#ifndef _CRC_CHANNEL_HPP_
 #define _CRC_CHANNEL_HPP_
 
 #include "crc_init.h"
@@ -14,6 +14,29 @@
 */
 class CRCChannel : public CRCObjectPoolBase<CRCChannel, 10000>
 {
+
+private:
+	// fd_set file descriptor
+	SOCKET _sockfd;
+	// recv message buffer
+	char _szRecvBuffer[RECV_BUFFER_SIZE];
+	// recv message buffer position
+	int _lastRecvPos;
+
+	// send message buffer
+	char _szSendBuffer[SEND_BUFFER_SIZE];
+	// send message buffer position
+	int _lastSendPos;
+
+	// timing heart beat check
+	time_t _dtHeart;
+	// timing send data to client
+	time_t _dtSend;
+	//
+	//std::mutex _mutex;
+	// full send count
+	int _sendBufFullCount = 0;
+
 public:
 	CRCChannel(SOCKET sockfd = INVALID_SOCKET)
 	{
@@ -24,6 +47,7 @@ public:
 		_lastSendPos = 0;
 		reset_dt_heart();
 		reset_dt_send();
+		_sendBufFullCount = 0;
 	}
 
 	virtual ~CRCChannel()
@@ -82,11 +106,12 @@ public:
 	{
 		int ret = SOCKET_ERROR;
 
-		if (_lastSendPos > 0 && SOCKET_ERROR != _sockfd)
+		if (_lastSendPos > 0 && INVALID_SOCKET != _sockfd)
 		{
 			//std::lock_guard<std::mutex> lg(_mutex);
 			ret = send(_sockfd/*client socket*/, _szSendBuffer, _lastSendPos, 0);
 			_lastSendPos = 0;
+			_sendBufFullCount = 0;
 		}
 		else
 		{
@@ -116,6 +141,8 @@ public:
 		{
 			if (_lastSendPos + nSendLen >= SEND_BUFFER_SIZE)
 			{
+				// count while buffer is full
+				_sendBufFullCount++;
 				// calculate the length of data that can be copied
 				int nCanCopyLen = SEND_BUFFER_SIZE - _lastSendPos;
 				// copy data to send buffer
@@ -202,25 +229,6 @@ public:
 		return false;
 	}
 
-private:
-	// fd_set file descriptor
-	SOCKET _sockfd;
-	// recv message buffer
-	char _szRecvBuffer[RECV_BUFFER_SIZE];
-	// recv message buffer position
-	int _lastRecvPos;
-
-	// send message buffer
-	char _szSendBuffer[SEND_BUFFER_SIZE];
-	// send message buffer position
-	int _lastSendPos;
-
-	// timing heart beat check
-	time_t _dtHeart;
-	// timing send data to client
-	time_t _dtSend;
-	//
-	std::mutex _mutex;
 };
 
 #endif

@@ -1,4 +1,4 @@
-#ifndef _CRC_SERVER_HPP_
+﻿#ifndef _CRC_SERVER_HPP_
 #define _CRC_SERVER_HPP_
 
 #include "crc_init.h"

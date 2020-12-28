@@ -1,10 +1,10 @@
-#ifndef _CRC_WORK_SERVER_HPP_
+﻿#ifndef _CRC_WORK_SERVER_HPP_
 #define _CRC_WORK_SERVER_HPP_
 
 #include "crc_init.h"
 #include "crc_channel.hpp"
 #include "crc_inet_event.hpp"
-#include "crc_semaphore.hpp"
+#include "crc_thread.hpp"
 
 #include <map>
 #include <vector>
@@ -28,7 +28,7 @@ private:
 	// lock
 	std::mutex _mutex;
 	// thread handle
-	std::thread* _pThread;
+	CRCThread _crcThread;
 	// register event
 	CRCINetEvent* _pNetEvent;
 	// fd backup
@@ -38,13 +38,10 @@ private:
 	SOCKET _max_socket;
 	// task 
 	CRCTaskServer _taskServer;
-	// semaphore
-	CRCSemaphore _sem;
 public:
 	CRCWorkServer(SOCKET sock = INVALID_SOCKET)
 	{
 		_sock = sock;
-		_pThread = nullptr;
 		_pNetEvent = nullptr;
 	}
 	~CRCWorkServer()
@@ -52,15 +49,11 @@ public:
 		printf("WorkServer destory.\n");
 		// release resource
 		Close();
-		// waitting for child-thread(OnRun) exit
-		_sem.wait();
-		// set null;
-		_pThread = nullptr;
 	}
 
 protected:
 	// process net message
-	int OnRun()
+	int OnRun(CRCThread* pCrcThread)
 	{
 		int ret = 1;
 
@@ -68,7 +61,7 @@ protected:
 
 		_clients_change = true;
 
-		while (IsRunning())
+		while (pCrcThread->IsRun())
 		{
 			if (_clientsBuf.size() > 0)
 			{
@@ -116,16 +109,19 @@ protected:
 				memcpy(&fd_read, &_fd_read_bak, sizeof(fd_set));
 			}
 
+			memcpy(&fd_write, &_fd_read_bak, sizeof(fd_set));
+			//memcpy(&fd_exception, &_fd_read_bak, sizeof(fd_set));
+
 			//nfds is range of fd_set, not fd_set's count.
 			//nfds is also max value+1 of all the file descriptor(socket).
 			//nfds can be 0 in the windows.
 			//that timeval was setted null means blocking, not null means nonblocking.
 			timeval t = { 0,1 };
-			ret = select(_max_socket + 1/*nfds*/, &fd_read, &fd_write, &fd_exception, &t);
+			ret = select(_max_socket + 1/*nfds*/, &fd_read, &fd_write, nullptr, &t);
 			if (ret < 0)
 			{
-				printf("socket<%d> error occurs while select and mission finish.\n", (int)_sock);
-				Close();
+				printf("WorkServer socket<%d> error occurs while select and mission finish.\n", (int)_sock);
+				pCrcThread->ExitInSelfThread();
 				break;
 			}
 			//else if (0 == ret)
@@ -134,11 +130,10 @@ protected:
 			//}
 
 			ReadData(fd_read);
+			//WriteData(fd_write);
+			//ReadData(fd_exception);
 			CheckTime();
 		} // while (IsRunning())
-
-		// notice WorkServer main thread that child-thread(OnRun) had exit
-		_sem.wakeup();
 
 		printf("WorkServer thread exit...\n");
 		return ret;
@@ -156,12 +151,7 @@ protected:
 			// check heart beat
 			if (!iterOld->second->check_heart_beat(tNow))
 			{
-				_clients_change = true;
-				if (_pNetEvent)
-				{
-					_pNetEvent->OnLeave(iterOld->second);
-				}
-				_clients.erase(iterOld->first);
+				OnClientLeave(iterOld);
 				continue;
 			}
 
@@ -185,22 +175,71 @@ protected:
 		}
 	}
 
+	void WriteData(fd_set& fd_write)
+	{
+#ifdef _WIN32
+		for (size_t n = 0; n < fd_write.fd_count; n++)
+		{
+			auto iter = _clients.find(fd_write.fd_array[n]);
+			if (iter != _clients.end())
+			{
+				CRCChannelPtr pChannel = iter->second;
+				_taskServer.addTask
+				(
+					[pChannel]() {pChannel->SendDataIM(); }
+				);
+			}
+			else
+			{
+				printf("incredible situation occurs while client offline\n");
+			}
+
+		}
+#else
+		//std::vector<ChannelPtr> temp;
+		//for (auto iter : _clients)
+		//{
+		//	if (FD_ISSET(iter.first, &fd_write))
+		//	{
+		//		CRCChannelPtr pChannel = iter.second;
+		//		_taskServer.addTask
+		//		(
+		//			[pChannel]() {pChannel->SendDataIM(); }
+		//		);
+		//	}
+		//}
+		//for (auto pClient : temp)
+		//{
+		//	_clients.erase(pClient->sockfd());
+		//}
+
+		for (auto iter = _clients.begin(); iter != _clients.end())
+		{
+			if (FD_ISSET(iter.first, &fd_write))
+			{
+				CRCChannelPtr pChannel = iter->second;
+				_taskServer.addTask
+				(
+					[pChannel]() {pChannel->SendDataIM(); }
+				);
+			}
+		}
+#endif
+
+	}
+
 	void ReadData(fd_set& fd_read)
 	{
 #ifdef _WIN32
 		for (size_t n = 0; n < fd_read.fd_count; n++)
 		{
 			auto iter = _clients.find(fd_read.fd_array[n]);
+
 			if (iter != _clients.end())
 			{
 				if (-1 == RecvData(iter->second))
 				{
-					_clients_change = true;
-					if (_pNetEvent)
-					{
-						_pNetEvent->OnLeave(iter->second);
-					}
-					_clients.erase(iter->first);
+					OnClientLeave(iter);
 				}
 			}
 			else
@@ -210,29 +249,50 @@ protected:
 
 		}
 #else
-		std::vector<ChannelPtr> temp;
-		for (auto iter : _clients)
+		//std::vector<ChannelPtr> temp;
+		//for (auto iter : _clients)
+		//{
+		//	if (FD_ISSET(iter.first, &fd_read))
+		//	{
+		//		if (-1 == RecvData(iter.second))
+		//		{
+		//			_clients_change = true;
+		//			temp.push_back(iter.second);
+
+		//			if (_pNetEvent)
+		//			{
+		//				_pNetEvent->OnLeave(iter.second);
+		//			}
+		//		}
+		//	}
+		//}
+		//for (auto pClient : temp)
+		//{
+		//	_clients.erase(pClient->sockfd());
+		//}
+
+		for (auto iter = _clients.begin(); iter != _clients.end())
 		{
 			if (FD_ISSET(iter.first, &fd_read))
 			{
-				if (-1 == RecvData(iter.second))
+				auto iterOld = iter++;
+				if (-1 == RecvData(iterOld.second))
 				{
-					_clients_change = true;
-					temp.push_back(iter.second);
-
-					if (_pNetEvent)
-					{
-						_pNetEvent->OnLeave(iter.second);
-					}
+					OnClientLeave(iterOld);
 				}
 			}
 		}
-
-		for (auto pClient : temp)
-		{
-			_clients.erase(pClient->sockfd());
-		}
 #endif
+	}
+
+	void OnClientLeave(std::map<SOCKET, CRCChannelPtr>::iterator iter)
+	{
+		_clients_change = true;
+		if (_pNetEvent)
+		{
+			_pNetEvent->OnLeave(iter->second);
+		}
+		_clients.erase(iter->first);
 	}
 
 public:
@@ -260,12 +320,16 @@ public:
 	// start self
 	void Start()
 	{
-		if (!_pThread)
-		{
-			_pThread = new std::thread(std::mem_fn(&CRCWorkServer::OnRun), this);
-			_pThread->detach();
-			_taskServer.Start();
-		}
+		_crcThread.Start
+		(
+			// onCreate
+			nullptr,
+			// onRun
+			[this](CRCThread* pCrcThread) {OnRun(pCrcThread); },
+			// onDestory
+			[this](CRCThread* pCrcThread) {ClearClients(pCrcThread); }
+		);
+		_taskServer.Start();
 	}
 
 	// receive data, deal sticking package and splitting package
@@ -337,6 +401,15 @@ public:
 	{
 		if (_sock == INVALID_SOCKET) return;
 		_sock = INVALID_SOCKET;
+		// close task server
+		_taskServer.Close();
+		// close thread
+		if (_crcThread.IsRun())_crcThread.Close();
+	}
+
+	// clear resource
+	void ClearClients(CRCThread* pCrcThread)
+	{
 		_clients.clear();
 		_clientsBuf.clear();
 	}

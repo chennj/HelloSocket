@@ -1,4 +1,4 @@
-#ifndef _CRC_WORK_CLIENT_HPP_
+﻿#ifndef _CRC_WORK_CLIENT_HPP_
 #define _CRC_WORK_CLIENT_HPP_
 
 #ifdef _WIN32

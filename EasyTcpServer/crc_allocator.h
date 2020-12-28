@@ -1,4 +1,4 @@
-#ifndef _CRC_ALLOCATOR_H_
+﻿#ifndef _CRC_ALLOCATOR_H_
 #define _CRC_ALLOCATOR_H_
 
 #include"crc_init.h"
