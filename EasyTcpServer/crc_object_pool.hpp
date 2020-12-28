@@ -1,11 +1,11 @@
-#ifndef _OBJECTPOOL_HPP_
-#define _OBJECTPOOL_HPP_
+#ifndef _CRC_OBJECT_POOL_HPP_
+#define _CRC_OBJECT_POOL_HPP_
 
-#include"Init.h"
+#include"crc_init.h"
 #include<mutex>
 
 template<class Type, size_t nPoolQuantity>
-class ObjectPool
+class CRCObjectPool
 {
 protected:
 	struct NodeHeader
@@ -27,11 +27,11 @@ private:
 	std::mutex _mutex;
 
 public:
-	ObjectPool()
+	CRCObjectPool()
 	{
 		init_pool();
 	}
-	~ObjectPool()
+	~CRCObjectPool()
 	{
 		delete _pObjPool;
 	}
@@ -135,10 +135,10 @@ public:
 };
 
 template<class Type, size_t nPoolQuantity>
-class ObjectPoolBase
+class CRCObjectPoolBase
 {
 private:
-	typedef ObjectPool<Type, nPoolQuantity> ClassTypePool;
+	typedef CRCObjectPool<Type, nPoolQuantity> ClassTypePool;
 	static ClassTypePool& object_pool()
 	{
 		// single object pool
@@ -147,12 +147,12 @@ private:
 	}
 
 public:
-	ObjectPoolBase()
+	CRCObjectPoolBase()
 	{
 
 	}
 
-	~ObjectPoolBase()
+	~CRCObjectPoolBase()
 	{
 
 	}

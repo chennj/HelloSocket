@@ -18,51 +18,54 @@
     <ClCompile Include="server.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="Allocator.cpp">
+    <ClCompile Include="crc_allocator.cpp">
       <Filter>头文件</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="MessageHeader.hpp">
+    <ClInclude Include="crc_semaphore.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="MyServer.hpp">
+    <ClInclude Include="crc_thread.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="Task.hpp">
+    <ClInclude Include="crc_server.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="MemoryMgr.hpp">
+    <ClInclude Include="crc_channel.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="Allocator.h">
+    <ClInclude Include="crc_boss_server.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="AutoPtr.hpp">
+    <ClInclude Include="crc_allocator.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="Init.h">
+    <ClInclude Include="crc_inet_event.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="ObjectPool.hpp">
+    <ClInclude Include="crc_memory_pool.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="Channel.hpp">
+    <ClInclude Include="crc_message_header.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="WorkServer.hpp">
+    <ClInclude Include="crc_object_pool.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="INetEvent.hpp">
+    <ClInclude Include="crc_task_server.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="Timestamp.hpp">
+    <ClInclude Include="crc_timestamp.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="BossServer.hpp">
+    <ClInclude Include="crc_work_server.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="MySemaphore.hpp">
+    <ClInclude Include="crc_init.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="crc_auto_ptr.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

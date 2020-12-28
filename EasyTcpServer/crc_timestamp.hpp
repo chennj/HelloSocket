@@ -1,5 +1,5 @@
-#ifndef _TIMESTAMP_HPP_
-#define _TIMESTAMP_HPP_
+#ifndef _CRC_TIMESTAMP_HPP_
+#define _CRC_TIMESTAMP_HPP_
 
 /* -------------
 // This method is only used for windows
@@ -63,7 +63,7 @@ LARGE_INTEGER _frequency;
 
 using namespace std::chrono;
 
-class Time
+class CRCTime
 {
 public:
 	// get current time stamp in milliseconds
@@ -73,14 +73,14 @@ public:
 	}
 };
 
-class Timestamp
+class CRCTimestamp
 {
 public:
-	Timestamp()
+	CRCTimestamp()
 	{
 		update();
 	}
-	~Timestamp()
+	~CRCTimestamp()
 	{
 
 	}

@@ -1,10 +1,10 @@
-#ifndef _WORKSERVER_HPP_
-#define _WORKSERVER_HPP_
+#ifndef _CRC_WORK_SERVER_HPP_
+#define _CRC_WORK_SERVER_HPP_
 
-#include "Init.h"
-#include "Channel.hpp"
-#include "INetEvent.hpp"
-#include "MySemaphore.hpp"
+#include "crc_init.h"
+#include "crc_channel.hpp"
+#include "crc_inet_event.hpp"
+#include "crc_semaphore.hpp"
 
 #include <map>
 #include <vector>
@@ -15,39 +15,39 @@
 /**
 *	resposible for process client message
 */
-class WorkServer
+class CRCWorkServer
 {
 private:
 	// local socket
 	SOCKET _sock;
 	// client sockets
 	//std::vector<Channel*> _clients;
-	std::map<SOCKET, ChannelPtr> _clients;
+	std::map<SOCKET, CRCChannelPtr> _clients;
 	// client socket buffer
-	std::vector<ChannelPtr> _clientsBuf;
+	std::vector<CRCChannelPtr> _clientsBuf;
 	// lock
 	std::mutex _mutex;
 	// thread handle
 	std::thread* _pThread;
 	// register event
-	INetEvent* _pNetEvent;
+	CRCINetEvent* _pNetEvent;
 	// fd backup
 	fd_set _fd_read_bak;
 	bool _clients_change;
 	// max socket descriptor
 	SOCKET _max_socket;
 	// task 
-	TaskServer _taskServer;
+	CRCTaskServer _taskServer;
 	// semaphore
-	MySemaphore _sem;
+	CRCSemaphore _sem;
 public:
-	WorkServer(SOCKET sock = INVALID_SOCKET)
+	CRCWorkServer(SOCKET sock = INVALID_SOCKET)
 	{
 		_sock = sock;
 		_pThread = nullptr;
 		_pNetEvent = nullptr;
 	}
-	~WorkServer()
+	~CRCWorkServer()
 	{
 		printf("WorkServer destory.\n");
 		// release resource
@@ -146,7 +146,7 @@ protected:
 
 	void CheckTime()
 	{
-		time_t tNow = Time::getNowInMilliSec();
+		time_t tNow = CRCTime::getNowInMilliSec();
 
 		for (auto iter = _clients.begin(); iter != _clients.end();)
 		{
@@ -176,7 +176,7 @@ protected:
 			// asynchronous execute, need not add lock
 			if (iterOld->second->check_timing_send(tNow))
 			{
-				ChannelPtr pChannel = iterOld->second;
+				CRCChannelPtr pChannel = iterOld->second;
 				_taskServer.addTask
 				(
 					[pChannel]() {pChannel->SendDataIM(); }
@@ -236,7 +236,7 @@ protected:
 	}
 
 public:
-	void addClient(ChannelPtrRef pChannel)
+	void addClient(CRCChannelPtrRef pChannel)
 	{
 		// self unlocking
 		std::lock_guard<std::mutex> lockGuard(_mutex);
@@ -262,14 +262,14 @@ public:
 	{
 		if (!_pThread)
 		{
-			_pThread = new std::thread(std::mem_fn(&WorkServer::OnRun), this);
+			_pThread = new std::thread(std::mem_fn(&CRCWorkServer::OnRun), this);
 			_pThread->detach();
 			_taskServer.Start();
 		}
 	}
 
 	// receive data, deal sticking package and splitting package
-	int RecvData(ChannelPtrRef pclient)
+	int RecvData(CRCChannelPtrRef pclient)
 	{
 		char* szRecv = pclient->recvBuf() + pclient->GetLastRecvPos();
 		//receive client data
@@ -296,10 +296,10 @@ public:
 		// whether message buffer size greater than message header(DataHeader)'s size,
 		// if yes, converting message buffer to struct DataHeader and clear message buffer
 		// had prcessed.
-		while (pclient->GetLastRecvPos() >= sizeof(DataHeader))
+		while (pclient->GetLastRecvPos() >= sizeof(CRCDataHeader))
 		{
 			// convert message buffer to DataHeader
-			DataHeader* pheader = (DataHeader*)pclient->recvBuf();
+			CRCDataHeader* pheader = (CRCDataHeader*)pclient->recvBuf();
 			// whether message buffer size greater than current client message size,
 			if (pclient->GetLastRecvPos() >= pheader->data_length)
 			{
@@ -326,7 +326,7 @@ public:
 	}
 
 	// response net message
-	virtual void OnNetMessage(ChannelPtrRef pChannel, DataHeader* pheader)
+	virtual void OnNetMessage(CRCChannelPtrRef pChannel, CRCDataHeader* pheader)
 	{
 		// statistics speed of server receiving client data packet
 		_pNetEvent->OnNetMessage(this, pChannel, pheader);
@@ -342,14 +342,14 @@ public:
 	}
 
 public:
-	void RegisterNetEventListener(INetEvent * pNetEvent)
+	void RegisterNetEventListener(CRCINetEvent * pNetEvent)
 	{
 		_pNetEvent = pNetEvent;
 	}
 
 	// for task
 public:
-	void addSendTask(ChannelPtr pChannel, DataHeaderPtr pDataHeader)
+	void addSendTask(CRCChannelPtr pChannel, CRCDataHeaderPtr pDataHeader)
 	{
 		//std::shared_ptr<ITask> pTask = std::make_shared<WorkServerSend2ClientTask>(pChannel, pDataHeader);
 		_taskServer.addTask

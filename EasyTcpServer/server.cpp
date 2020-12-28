@@ -1,8 +1,8 @@
 // linux compile command
 // g++ server.cpp -std=c++11 -pthread -o server
 // ----------------------------------
-#include "Allocator.h"
-#include "MyServer.hpp"
+#include "crc_allocator.h"
+#include "crc_server.hpp"
 
 #include <thread>
 
@@ -34,7 +34,7 @@ int main()
 	t.detach();
 
 	{
-		MyServer server;
+		CRCServer server;
 		server.InitSocket();
 		server.Bind(nullptr, 12345);
 		server.Listen(5);

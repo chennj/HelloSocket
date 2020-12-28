@@ -161,9 +161,9 @@
     <ClCompile Include="client.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Timestamp.hpp" />
-    <ClInclude Include="WorkClient.hpp" />
-    <ClInclude Include="MessageHeader.hpp" />
+    <ClInclude Include="crc_timestamp.hpp" />
+    <ClInclude Include="crc_work_client.hpp" />
+    <ClInclude Include="crc_message_header.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

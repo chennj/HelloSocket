@@ -1,39 +1,39 @@
-#ifndef _AUTOPTR_HPP_
-#define _AUTOPTR_HPP_
+#ifndef _CRC_AUTO_PTR_HPP_
+#define _CRC_AUTO_PTR_HPP_
 
 template<class C>
-class AutoPtr
+class CRCAutoPtr
 {
 private:
 	C* _ptr;
 public:
-	AutoPtr() :_ptr(0)
+	CRCAutoPtr() :_ptr(0)
 	{
 
 	}
 
-	AutoPtr(C* ptr) :_ptr(ptr)
+	CRCAutoPtr(C* ptr) :_ptr(ptr)
 	{
 
 	}
 
-	AutoPtr(C* ptr, bool shared) :_ptr(ptr)
+	CRCAutoPtr(C* ptr, bool shared) :_ptr(ptr)
 	{
 		if (shared && _ptr)_ptr->clone();
 	}
 
-	AutoPtr(const AutoPtr& ptr) :_ptr(ptr._ptr)
+	CRCAutoPtr(const CRCAutoPtr& ptr) :_ptr(ptr._ptr)
 	{
 		if (_ptr)_ptr->clone();
 	}
 
 	template<class Other>
-	AutoPtr(const AutoPtr<Other>& ptr) : _ptr(const_cast<Other*>(ptr.get()))
+	CRCAutoPtr(const CRCAutoPtr<Other>& ptr) : _ptr(const_cast<Other*>(ptr.get()))
 	{
 		if (_ptr)_ptr->clone();
 	}
 
-	~AutoPtr()
+	~CRCAutoPtr()
 	{
 		if (_ptr)
 		{
@@ -43,7 +43,7 @@ public:
 	}
 
 public:
-	AutoPtr& assign(C* ptr)
+	CRCAutoPtr& assign(C* ptr)
 	{
 		if (_ptr != ptr)
 		{
@@ -53,7 +53,7 @@ public:
 		return *this;
 	}
 
-	AutoPtr& assign(C* ptr, bool shared)
+	CRCAutoPtr& assign(C* ptr, bool shared)
 	{
 		if (_ptr != ptr)
 		{
@@ -64,7 +64,7 @@ public:
 		return *this;
 	}
 
-	AutoPtr& assign(const AutoPtr& ptr)
+	CRCAutoPtr& assign(const CRCAutoPtr& ptr)
 	{
 		if (&ptr != this)
 		{
@@ -76,7 +76,7 @@ public:
 	}
 
 	template<class Other>
-	AutoPtr& assign(const AutoPtr<Other>& ptr)
+	CRCAutoPtr& assign(const CRCAutoPtr<Other>& ptr)
 	{
 		if (ptr.get() != _ptr)
 		{
@@ -87,7 +87,7 @@ public:
 		return *this;
 	}
 
-	void swap(AutoPtr& ptr)
+	void swap(CRCAutoPtr& ptr)
 	{
 		std::swap(_ptr, ptr._ptr);
 	}
@@ -117,18 +117,18 @@ public:
 #if defined(_MSC_VER)
 #if _MSC_VER>=1300
 	/**
-	*	Return an AutoPtr containing NULL if the case fail
+	*	Return an CRCAutoPtr containing NULL if the case fail
 	*	Example:
 	*		assume class Child : public Parent
-	*		AutoPtr<Parent> parent(new Child());
-	*		AutoPtr<Child> child = parent.cast<Child>();
+	*		CRCAutoPtr<Parent> parent(new Child());
+	*		CRCAutoPtr<Child> child = parent.cast<Child>();
 	*		assert(!child.get())
 	*/
 	template<class Other>
-	AutoPtr<Other> cast() const
+	CRCAutoPtr<Other> cast() const
 	{
 		Other* pOther = dynamic_cast<Other*>(_ptr);
-		return AutoPtr(pOther, true);
+		return CRCAutoPtr(pOther, true);
 	}
 
 	/**
@@ -162,26 +162,26 @@ public:
 	*	cout << fun(ptr1); //success
 	*/
 	template<class Other>
-	AutoPtr<Other> unsafeCast() const
+	CRCAutoPtr<Other> unsafeCast() const
 	{
 		Other* pOther = const_cast<Other*>(_ptr);
-		return AutoPtr(pOther, true);
+		return CRCAutoPtr(pOther, true);
 	}
 #endif
 #else
 	/**
-	*	Return an AutoPtr containing NULL if the case fail
+	*	Return an CRCAutoPtr containing NULL if the case fail
 	*	Example:
 	*		assume class Child : public Parent
-	*		AutoPtr<Parent> parent(new Child());
-	*		AutoPtr<Child> child = parent.cast<Child>();
+	*		CRCAutoPtr<Parent> parent(new Child());
+	*		CRCAutoPtr<Child> child = parent.cast<Child>();
 	*		assert(!child.get())
 	*/
 	template<class Other>
-	AutoPtr<Other> cast() const
+	CRCAutoPtr<Other> cast() const
 	{
 		Other* pOther = dynamic_cast<Other*>(_ptr);
-		return AutoPtr(pOther, true);
+		return CRCAutoPtr(pOther, true);
 	}
 
 	/**
@@ -215,10 +215,10 @@ public:
 	*	cout << fun(ptr1); //success
 	*/
 	template<class Other>
-	AutoPtr<Other> unsafeCast() const
+	CRCAutoPtr<Other> unsafeCast() const
 	{
 		Other* pOther = const_cast<Other*>(_ptr);
-		return AutoPtr(pOther, true);
+		return CRCAutoPtr(pOther, true);
 	}
 #endif
 
@@ -226,17 +226,17 @@ public:
 	/**
 	*	override operator =
 	*/
-	AutoPtr& operator = (C* ptr)
+	CRCAutoPtr& operator = (C* ptr)
 	{
 		return assign(ptr);
 	}
 
-	AutoPtr& operator = (C& ptr)
+	CRCAutoPtr& operator = (C& ptr)
 	{
 		return assign(ptr);
 	}
 
-	AutoPtr& operator = (const AutoPtr& ptr) const
+	CRCAutoPtr& operator = (const CRCAutoPtr& ptr) const
 	{
 		return assign(ptr);
 	}
@@ -244,14 +244,14 @@ public:
 #if defined(_MSC_VER)
 #if _MSC_VER>=1300
 	template<class Other>
-	AutoPtr& operator = (const AutoPtr<Other>& ptr)
+	CRCAutoPtr& operator = (const CRCAutoPtr<Other>& ptr)
 	{
 		return assign<Other>(ptr);
 	}
 #endif
 #else
 	template<class Other>
-	AutoPtr& operator = (const AutoPtr<Other>& ptr)
+	CRCAutoPtr& operator = (const CRCAutoPtr<Other>& ptr)
 	{
 		return assign<Other>(ptr);
 	}
@@ -301,7 +301,7 @@ public:
 	/**
 	*	override operator ==
 	*/
-	bool operator == (const AutoPtr& ptr) const
+	bool operator == (const CRCAutoPtr& ptr) const
 	{
 		return _ptr == ptr._ptr;
 	}
@@ -319,7 +319,7 @@ public:
 	/**
 	*	override operator !=
 	*/
-	bool operator != (const AutoPtr& ptr) const
+	bool operator != (const CRCAutoPtr& ptr) const
 	{
 		return _ptr != ptr._ptr;
 	}
@@ -337,7 +337,7 @@ public:
 	/**
 	*	override operator <
 	*/
-	bool operator < (const AutoPtr& ptr) const
+	bool operator < (const CRCAutoPtr& ptr) const
 	{
 		return _ptr < ptr._ptr;
 	}
@@ -355,7 +355,7 @@ public:
 	/**
 	*	override operator >
 	*/
-	bool operator > (const AutoPtr& ptr) const
+	bool operator > (const CRCAutoPtr& ptr) const
 	{
 		return _ptr > ptr._ptr;
 	}
@@ -373,7 +373,7 @@ public:
 	/**
 	*	override operator >=
 	*/
-	bool operator >= (const AutoPtr& ptr) const
+	bool operator >= (const CRCAutoPtr& ptr) const
 	{
 		return _ptr >= ptr._ptr;
 	}

@@ -1,17 +1,17 @@
-#ifndef _MYSERVER_HPP_
-#define _MYSERVER_HPP_
+#ifndef _CRC_SERVER_HPP_
+#define _CRC_SERVER_HPP_
 
-#include "Init.h"
-#include "BossServer.hpp"
+#include "crc_init.h"
+#include "crc_boss_server.hpp"
 
-class MyServer : public BossServer
+class CRCServer : public CRCBossServer
 {
 	// overwrite parent function
 public:
 	// multiple thread triggering, nosafe
-	virtual void OnNetMessage(WorkServer* pWorkServer, ChannelPtrRef pChannel, DataHeader* pheader)
+	virtual void OnNetMessage(CRCWorkServer* pWorkServer, CRCChannelPtrRef pChannel, CRCDataHeader* pheader)
 	{
-		BossServer::OnNetMessage(pWorkServer, pChannel, pheader);
+		CRCBossServer::OnNetMessage(pWorkServer, pChannel, pheader);
 
 		switch (pheader->cmd)
 		{
@@ -26,7 +26,7 @@ public:
 			//pChannel->SendData(std::make_shared<DataHeader>(pheader));
 			
 			// used to release
-			DataHeaderPtr ret = std::make_shared<LoginResponse>();
+			CRCDataHeaderPtr ret = std::make_shared<LoginResponse>();
 			pWorkServer->addSendTask(pChannel, ret);
 		}
 		break;
@@ -57,21 +57,21 @@ public:
 	}
 
 	// it would only be triggered by one thread, safe
-	virtual void OnLeave(ChannelPtrRef pChannel)
+	virtual void OnLeave(CRCChannelPtrRef pChannel)
 	{
-		BossServer::OnLeave(pChannel);
+		CRCBossServer::OnLeave(pChannel);
 	}
 
 	// multiple thread triggering, nosafe
-	virtual void OnJoin(ChannelPtrRef pChannel)
+	virtual void OnJoin(CRCChannelPtrRef pChannel)
 	{
-		BossServer::OnJoin(pChannel);
+		CRCBossServer::OnJoin(pChannel);
 	}
 
 	// multiple thread triggering, nosafe
-	virtual void OnNetRecv(ChannelPtrRef pChannel)
+	virtual void OnNetRecv(CRCChannelPtrRef pChannel)
 	{
-		BossServer::OnNetRecv(pChannel);
+		CRCBossServer::OnNetRecv(pChannel);
 	}
 };
 

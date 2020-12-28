@@ -1,14 +1,14 @@
-#ifndef _CELLTASK_HPP_
-#define _CELLTASK_HPP_
+#ifndef _CRC_TASK_SERVER_HPP_
+#define _CRC_TASK_SERVER_HPP_
 
-#include "MySemaphore.hpp"
+#include "crc_semaphore.hpp"
 
 #include<thread>
 #include<mutex>
 #include<list>
 #include<functional>
 
-class TaskServer
+class CRCTaskServer
 {
 	typedef std::function<void()> FTask;
 private:
@@ -17,14 +17,14 @@ private:
 	std::mutex _mutex;
 	bool _isRunning;
 	std::thread* _pThread;
-	MySemaphore _sem;
+	CRCSemaphore _sem;
 public:
-	TaskServer()
+	CRCTaskServer()
 	{
 		_pThread = nullptr;
 		_isRunning = true;
 	}
-	~TaskServer()
+	~CRCTaskServer()
 	{
 		printf("TaskServer destory.\n");
 		_isRunning = false;
@@ -52,7 +52,7 @@ public:
 		//t.detach();
 		if (!_pThread)
 		{
-			_pThread = new std::thread(std::mem_fn(&TaskServer::OnRun), this);
+			_pThread = new std::thread(std::mem_fn(&CRCTaskServer::OnRun), this);
 			_pThread->detach();
 		}
 	}

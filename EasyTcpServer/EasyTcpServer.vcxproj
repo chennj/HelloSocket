@@ -158,24 +158,25 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Allocator.cpp" />
+    <ClCompile Include="crc_allocator.cpp" />
     <ClCompile Include="server.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Allocator.h" />
-    <ClInclude Include="AutoPtr.hpp" />
-    <ClInclude Include="Channel.hpp" />
-    <ClInclude Include="INetEvent.hpp" />
-    <ClInclude Include="Init.h" />
-    <ClInclude Include="MemoryMgr.hpp" />
-    <ClInclude Include="MySemaphore.hpp" />
-    <ClInclude Include="ObjectPool.hpp" />
-    <ClInclude Include="Task.hpp" />
-    <ClInclude Include="Timestamp.hpp" />
-    <ClInclude Include="BossServer.hpp" />
-    <ClInclude Include="MessageHeader.hpp" />
-    <ClInclude Include="MyServer.hpp" />
-    <ClInclude Include="WorkServer.hpp" />
+    <ClInclude Include="crc_allocator.h" />
+    <ClInclude Include="crc_auto_ptr.hpp" />
+    <ClInclude Include="crc_channel.hpp" />
+    <ClInclude Include="crc_inet_event.hpp" />
+    <ClInclude Include="crc_init.h" />
+    <ClInclude Include="crc_memory_pool.hpp" />
+    <ClInclude Include="crc_semaphore.hpp" />
+    <ClInclude Include="crc_thread.hpp" />
+    <ClInclude Include="crc_object_pool.hpp" />
+    <ClInclude Include="crc_task_server.hpp" />
+    <ClInclude Include="crc_timestamp.hpp" />
+    <ClInclude Include="crc_boss_server.hpp" />
+    <ClInclude Include="crc_message_header.hpp" />
+    <ClInclude Include="crc_server.hpp" />
+    <ClInclude Include="crc_work_server.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

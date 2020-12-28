@@ -1,10 +1,10 @@
-#ifndef _ALLOCATOR_H_
-#define _ALLOCATOR_H_
+#ifndef _CRC_ALLOCATOR_H_
+#define _CRC_ALLOCATOR_H_
 
-#include"Init.h"
+#include"crc_init.h"
 
-class MemoryMgr;
-extern MemoryMgr g_mem_mgr;
+class CRCMemoryPool;
+extern CRCMemoryPool g_mem_mgr;
 
 void*	operator new		(size_t size);
 void	operator delete		(void* pv) throw();

@@ -1,9 +1,9 @@
-#ifndef _BOSSSERVER_HPP_
-#define _BOSSSERVER_HPP_
+#ifndef _CRC_BOSS_SERVER_HPP_
+#define _CRC_BOSS_SERVER_HPP_
 
-#include "Init.h"
-#include "INetEvent.hpp"
-#include "WorkServer.hpp"
+#include "crc_init.h"
+#include "crc_inet_event.hpp"
+#include "crc_work_server.hpp"
 
 #include <thread>
 #include <mutex>
@@ -12,15 +12,15 @@
 /**
 *	main server which manage WorkServer
 */
-class BossServer : public INetEvent
+class CRCBossServer : public CRCINetEvent
 {
 private:
 	// WorkServers
-	std::vector<WorkServerPtr> _workServers;
+	std::vector<CRCWorkServerPtr> _workServers;
 	// lock
 	std::mutex _mutex;
 	// high resolution timers
-	Timestamp _tTime;
+	CRCTimestamp _tTime;
 
 protected:
 	// local socket
@@ -33,7 +33,7 @@ protected:
 	std::atomic_int _clientCount;
 
 public:
-	BossServer()
+	CRCBossServer()
 	{
 		_sock = INVALID_SOCKET;
 		_recvCount = 0;
@@ -41,7 +41,7 @@ public:
 		_msgCount = 0;
 	}
 
-	virtual ~BossServer()
+	virtual ~CRCBossServer()
 	{
 		_workServers.clear();
 
@@ -148,7 +148,7 @@ public:
 		}
 
 		// assign comed client to WorkServer with the least number of client
-		ChannelPtr cp(new Channel(sock_client));
+		CRCChannelPtr cp(new CRCChannel(sock_client));
 		addClient2WorkServer(cp);
 		//addClient2WorkServer(std::make_shared<Channel>(sock_client));
 		//// get client ip address
@@ -162,7 +162,7 @@ public:
 	{
 		for (int n = 0; n < nWorkServer; n++)
 		{
-			WorkServerPtr pWorkServer = std::make_shared<WorkServer>(_sock);
+			CRCWorkServerPtr pWorkServer = std::make_shared<CRCWorkServer>(_sock);
 			_workServers.push_back(pWorkServer);
 			pWorkServer->RegisterNetEventListener(this);
 			pWorkServer->Start();
@@ -170,7 +170,7 @@ public:
 	}
 
 	// select WorkServer which queue is smallest add client message to it
-	void addClient2WorkServer(ChannelPtrRef pChannel)
+	void addClient2WorkServer(CRCChannelPtrRef pChannel)
 	{
 		auto pMinWorkServer = _workServers[0];
 		for (auto pWorkServer : _workServers)
@@ -267,25 +267,25 @@ public:
 	// inherit INetEvent
 public:
 	// it would only be triggered by one thread, safe
-	virtual void OnLeave(ChannelPtrRef pChannel)
+	virtual void OnLeave(CRCChannelPtrRef pChannel)
 	{
 		_clientCount--;
 	}
 
 	// multiple thread triggering, not safe
-	virtual void OnNetMessage(WorkServer* pWorkServer, ChannelPtrRef pChannel, DataHeader* pheader)
+	virtual void OnNetMessage(CRCWorkServer* pWorkServer, CRCChannelPtrRef pChannel, CRCDataHeader* pheader)
 	{
 		_msgCount++;
 	}
 
 	// multiple thread triggering, not safe
-	virtual void OnJoin(ChannelPtrRef pChannel)
+	virtual void OnJoin(CRCChannelPtrRef pChannel)
 	{
 		_clientCount++;
 	}
 
 	// multiple thread triggering, not safe
-	virtual void OnNetRecv(ChannelPtrRef pChannel)
+	virtual void OnNetRecv(CRCChannelPtrRef pChannel)
 	{
 		_recvCount++;
 	}

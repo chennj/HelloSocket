@@ -1,8 +1,8 @@
 // linux compile command
 // g++ client.cpp -std=c++11 -pthread -o client
 // ----------------------------------
-#include "WorkClient.hpp"
-#include "Timestamp.hpp"
+#include "crc_work_client.hpp"
+#include "crc_timestamp.hpp"
 
 #include <thread>
 #include <chrono>
@@ -16,7 +16,7 @@ const int tCount = 4;
 const int nCount = 100;
 
 // client object
-WorkClient* pclients[nCount];
+CRCWorkClient* pclients[nCount];
 
 // client send count
 std::atomic_int sendCount;
@@ -72,7 +72,7 @@ void sendThread(int id) //1~4
 	for (int n = begin; n < end; n++)
 	{
 		if (!g_run)return;
-		pclients[n] = new WorkClient;
+		pclients[n] = new CRCWorkClient;
 	}
 
 	for (int n = begin; n < end; n++)
@@ -104,7 +104,7 @@ void sendThread(int id) //1~4
 	}
 
 	const int nLen = sizeof(login);
-	Timestamp tTime;
+	CRCTimestamp tTime;
 
 	while (g_run)
 	{
@@ -168,7 +168,7 @@ int main()
 		t.detach();
 	}
 
-	Timestamp tTime;
+	CRCTimestamp tTime;
 
 	while (g_run)
 	{

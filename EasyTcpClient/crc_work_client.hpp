@@ -1,5 +1,5 @@
-#ifndef _WORKCLIENT_HPP_
-#define _WORKCLIENT_HPP_
+#ifndef _CRC_WORK_CLIENT_HPP_
+#define _CRC_WORK_CLIENT_HPP_
 
 #ifdef _WIN32
 #ifndef FD_SETSIZE
@@ -22,13 +22,13 @@
 #define SOCKET_ERROR			(-1)
 #endif
 #include<stdio.h>
-#include"MessageHeader.hpp"
+#include"crc_message_header.hpp"
 
 #ifndef RECV_BUFFER_SIZE
 #define RECV_BUFFER_SIZE 1024*10*5
 #endif
 
-class WorkClient
+class CRCWorkClient
 {
 private:
 	SOCKET _sock;
@@ -42,13 +42,13 @@ private:
 	bool _isConnected;
 
 public:
-	WorkClient()
+	CRCWorkClient()
 	{
 		_sock = INVALID_SOCKET;
 		_isConnected = false;
 	}
 
-	virtual ~WorkClient()
+	virtual ~CRCWorkClient()
 	{
 		Close();
 	}
@@ -190,9 +190,9 @@ public:
 		// whether message buffer size greater than message header(DataHeader)'s size,
 		// if yes, converting message buffer to struct DataHeader and clear message buffer
 		// had dealed.
-		while (_lastPos >= sizeof(DataHeader))
+		while (_lastPos >= sizeof(CRCDataHeader))
 		{
-			DataHeader * pheader = (DataHeader*)_szMsgBuffer;
+			CRCDataHeader * pheader = (CRCDataHeader*)_szMsgBuffer;
 			if (_lastPos >= pheader->data_length)
 			{
 				// processed message's length
@@ -217,7 +217,7 @@ public:
 		return 0;
 	}
 
-	int SendData(DataHeader * header, int nLen)
+	int SendData(CRCDataHeader * header, int nLen)
 	{
 		int ret = SOCKET_ERROR;
 		if (IsRunning() && header)
@@ -231,7 +231,7 @@ public:
 		return ret;
 	}
 
-	void OnNetMessage(DataHeader* header)
+	void OnNetMessage(CRCDataHeader* header)
 	{
 
 		switch (header->cmd)

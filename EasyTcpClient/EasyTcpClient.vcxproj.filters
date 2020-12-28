@@ -20,13 +20,13 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="MessageHeader.hpp">
+    <ClInclude Include="crc_timestamp.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="Timestamp.hpp">
+    <ClInclude Include="crc_work_client.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="WorkClient.hpp">
+    <ClInclude Include="crc_message_header.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

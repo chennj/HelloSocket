@@ -1,5 +1,5 @@
-#ifndef _INIT_H_
-#define _INIT_H_
+#ifndef _CRC_INIT_H_
+#define _CRC_INIT_H_
 
 #include<assert.h>
 
@@ -34,26 +34,26 @@
 #include <stdio.h>
 #include <memory>
 
-class WorkServer;
+class CRCWorkServer;
 class WorkServerSend2ClientTask;
-class Channel;
+class CRCChannel;
 
-typedef std::shared_ptr<Channel> ChannelPtr;
-typedef ChannelPtr& ChannelPtrRef;
+typedef std::shared_ptr<CRCChannel> CRCChannelPtr;
+typedef CRCChannelPtr& CRCChannelPtrRef;
 
-typedef std::shared_ptr<WorkServer> WorkServerPtr;
-typedef WorkServerPtr& WorkServerPtrRef;
+typedef std::shared_ptr<CRCWorkServer> CRCWorkServerPtr;
+typedef CRCWorkServerPtr& WorkServerPtrRef;
 
-#include "MessageHeader.hpp"
+#include "crc_message_header.hpp"
 
-typedef std::shared_ptr<DataHeader> DataHeaderPtr;
-typedef DataHeaderPtr& DataHeaderPtrRef;
+typedef std::shared_ptr<CRCDataHeader> CRCDataHeaderPtr;
+typedef CRCDataHeaderPtr& CRCDataHeaderPtrRef;
 
 typedef std::shared_ptr<LoginResponse> LoginResponsePtr;
 typedef LoginResponsePtr& LoginResponsePtrRef;
 
-#include "Timestamp.hpp"
-#include "Task.hpp"
+#include "crc_timestamp.hpp"
+#include "crc_task_server.hpp"
 
 // minimum buffer size
 #ifndef RECV_BUFFER_SIZE

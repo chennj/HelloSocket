@@ -1,5 +1,5 @@
-#ifndef _MESSAGEHEADER_HPP_
-#define _MESSAGEHEADER_HPP_
+#ifndef _CRC_MESSAGE_HEADER_HPP_
+#define _CRC_MESSAGE_HEADER_HPP_
 
 enum CMD
 {
@@ -14,13 +14,13 @@ enum CMD
 };
 
 // msg header
-struct DataHeader
+struct CRCDataHeader
 {
 	short data_length;
 	short cmd;
 };
 
-struct UnknownResponse : public DataHeader
+struct UnknownResponse : public CRCDataHeader
 {
 	UnknownResponse()
 	{
@@ -31,7 +31,7 @@ struct UnknownResponse : public DataHeader
 	char msg[32];
 };
 
-struct Login : public DataHeader
+struct Login : public CRCDataHeader
 {
 public:
 	Login()
@@ -45,7 +45,7 @@ public:
 	char data[100 - 68];
 };
 
-struct LoginResponse : public DataHeader
+struct LoginResponse : public CRCDataHeader
 {
 	LoginResponse()
 	{
@@ -57,7 +57,7 @@ struct LoginResponse : public DataHeader
 	char data[100 - 8];
 };
 
-struct Logout : public DataHeader
+struct Logout : public CRCDataHeader
 {
 public:
 	Logout()
@@ -69,7 +69,7 @@ public:
 	char username[32];
 };
 
-struct LogoutResponse : public DataHeader
+struct LogoutResponse : public CRCDataHeader
 {
 	LogoutResponse()
 	{
@@ -80,7 +80,7 @@ struct LogoutResponse : public DataHeader
 	int result;
 };
 
-struct NewUserJoin : public DataHeader
+struct NewUserJoin : public CRCDataHeader
 {
 	NewUserJoin()
 	{
@@ -91,7 +91,7 @@ struct NewUserJoin : public DataHeader
 	int sock;
 };
 
-struct HeartS2C : public DataHeader
+struct HeartS2C : public CRCDataHeader
 {
 	HeartS2C()
 	{
@@ -100,7 +100,7 @@ struct HeartS2C : public DataHeader
 	}
 };
 
-struct HeartC2S : public DataHeader
+struct HeartC2S : public CRCDataHeader
 {
 	HeartC2S()
 	{

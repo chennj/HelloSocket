@@ -1,7 +1,7 @@
-#ifndef _MEMORYMGR_HPP_
-#define _MEMORYMGR_HPP_
+#ifndef _CRC_MEMORY_POOL_HPP_
+#define _CRC_MEMORY_POOL_HPP_
 
-#include"Init.h"
+#include"crc_init.h"
 
 #include<stdlib.h>
 #include<mutex>
@@ -9,19 +9,19 @@
 #define ALLOC_MAX_MEM_SIZE 128
 #define ALLOC_MAX_BLOCK_QUANTITY 100000
 
-class MemoryAlloc;
+class CRCMemoryAlloc;
 
 /**
 *	memory block which is minimum unit of memory
 *	sizeof(MemoryBlock) = 32 byte in 64bit(x64) system, but = 20 byte in 32bit(x86) systerm
 */
-class MemoryBlock
+class CRCMemoryBlock
 {
 public:
 	// which block it belong to
-	MemoryAlloc* _pAlloc;
+	CRCMemoryAlloc* _pAlloc;
 	// next block
-	MemoryBlock* _pNext;
+	CRCMemoryBlock* _pNext;
 	// memory block number
 	int _nID;
 	// count reference
@@ -36,11 +36,11 @@ private:
 	char c3;
 
 public:
-	MemoryBlock()
+	CRCMemoryBlock()
 	{
 
 	}
-	~MemoryBlock()
+	~CRCMemoryBlock()
 	{
 
 	}
@@ -49,14 +49,14 @@ public:
 /**
 *	memory allocator
 */
-class MemoryAlloc
+class CRCMemoryAlloc
 {
 protected:
 	std::mutex _mutex;
 	// address of the memory pool
 	char* _pBufPool;
 	// header address point to MemoryBlock in memory pool
-	MemoryBlock* _pHeader;
+	CRCMemoryBlock* _pHeader;
 	// size per unit in buffer pool
 	// unit  = MemoryBlock + body
 	size_t _nUnitSize;
@@ -64,7 +64,7 @@ protected:
 	size_t _nUnitQuantity;
 
 public:
-	MemoryAlloc()
+	CRCMemoryAlloc()
 	{
 		xPrintf("create memory allocator instance\n");
 
@@ -73,7 +73,7 @@ public:
 		_nUnitSize		= 0;
 		_nUnitQuantity	= 0;
 	}
-	~MemoryAlloc()
+	~CRCMemoryAlloc()
 	{
 		xPrintf("release memory pool\n");
 		if (_pBufPool)
@@ -90,10 +90,10 @@ public:
 			init_pool();
 		}
 
-		MemoryBlock* pRet = nullptr;
+		CRCMemoryBlock* pRet = nullptr;
 		if (nullptr == _pHeader)
 		{
-			pRet = (MemoryBlock*)malloc(nSize + sizeof(MemoryBlock));
+			pRet = (CRCMemoryBlock*)malloc(nSize + sizeof(CRCMemoryBlock));
 			pRet->_bPool = false;
 			pRet->_nID = -1;
 			pRet->_nRef = 1;
@@ -110,13 +110,13 @@ public:
 
 		}
 		xPrintf("MemoryAlloc\t::alloc_mem:\t%llx, id=%d, size=%d\n", pRet, pRet->_nID, nSize);
-		return ( (char*)pRet + sizeof(MemoryBlock) );
+		return ( (char*)pRet + sizeof(CRCMemoryBlock) );
 	}
 
 	// release memory
 	void free_mem(void* pv)
 	{
-		MemoryBlock* pBlock = (MemoryBlock*)( (char*)pv - sizeof(MemoryBlock) );
+		CRCMemoryBlock* pBlock = (CRCMemoryBlock*)( (char*)pv - sizeof(CRCMemoryBlock) );
 
 		assert(1 <= pBlock->_nRef);
 
@@ -147,7 +147,7 @@ public:
 	// initialize 
 	void init_pool()
 	{
-		xPrintf("initialize memory pool,size of type=%d,unit quantity=%d\n", _nUnitSize - sizeof(MemoryBlock), _nUnitQuantity);
+		xPrintf("initialize memory pool,size of type=%d,unit quantity=%d\n", _nUnitSize - sizeof(CRCMemoryBlock), _nUnitQuantity);
 
 		// assert _pBufPool must be null
 		assert(nullptr == _pBufPool);
@@ -167,7 +167,7 @@ public:
 		*	initialize the memory pool
 		*/
 		// convert _pBufPool to MemoryBlock
-		_pHeader = (MemoryBlock*)_pBufPool;
+		_pHeader = (CRCMemoryBlock*)_pBufPool;
 
 		// init first MemoryBlock
 		_pHeader->_bPool	= true;
@@ -177,10 +177,10 @@ public:
 		_pHeader->_pNext	= nullptr;
 
 		// calculate address of next unit and link all of units to chain
-		MemoryBlock* pCurr = _pHeader;
+		CRCMemoryBlock* pCurr = _pHeader;
 		for (size_t n = 1; n < _nUnitQuantity; n++)
 		{
-			MemoryBlock* pTemp = (MemoryBlock*)( (char*)_pHeader + (n * _nUnitSize) );
+			CRCMemoryBlock* pTemp = (CRCMemoryBlock*)( (char*)_pHeader + (n * _nUnitSize) );
 
 			pTemp->_bPool = true;
 			pTemp->_nID = n;
@@ -199,10 +199,10 @@ public:
 *	allocator template of memory allocator which easy to used to initialize MemoryAlloc
 */
 template<size_t nUnitSize, size_t nUnitQuantity>
-class MemoryTplOfAlloc : public MemoryAlloc
+class CRCMemoryTplOfAlloc : public CRCMemoryAlloc
 {
 public:
-	MemoryTplOfAlloc()
+	CRCMemoryTplOfAlloc()
 	{
 
 		/**
@@ -216,7 +216,7 @@ public:
 		// calculated from fllowing below sentence.
 		while ((n <<= 1) < nUnitSize);
 		// calculate unit's size
-		_nUnitSize = n + sizeof(MemoryBlock);
+		_nUnitSize = n + sizeof(CRCMemoryBlock);
 
 		_nUnitQuantity = nUnitQuantity;
 	}
@@ -225,22 +225,22 @@ public:
 /**
 *	memory manager tool, thread safe
 */
-class MemoryMgr
+class CRCMemoryPool
 {
 private:
-	static MemoryMgr* _instance;
+	static CRCMemoryPool* _instance;
 	static std::mutex _mutex;
 
-	MemoryTplOfAlloc<64,	ALLOC_MAX_BLOCK_QUANTITY * 10> _mem64_allocator;
-	MemoryTplOfAlloc<128,	ALLOC_MAX_BLOCK_QUANTITY * 50> _mem128_allocator;
+	CRCMemoryTplOfAlloc<64,	ALLOC_MAX_BLOCK_QUANTITY * 10> _mem64_allocator;
+	CRCMemoryTplOfAlloc<128,	ALLOC_MAX_BLOCK_QUANTITY * 50> _mem128_allocator;
 	//MemoryTplOfAlloc<256,	ALLOC_MAX_BLOCK_QUANTITY> _mem256_allocator;
 	//MemoryTplOfAlloc<512,	ALLOC_MAX_BLOCK_QUANTITY> _mem512_allocator;
 	//MemoryTplOfAlloc<1024,	ALLOC_MAX_BLOCK_QUANTITY> _mem1024_allocator;
 
-	MemoryAlloc* _szAlloc[ALLOC_MAX_MEM_SIZE + 1];
+	CRCMemoryAlloc* _szAlloc[ALLOC_MAX_MEM_SIZE + 1];
 
 private:
-	MemoryMgr()
+	CRCMemoryPool()
 	{
 		init_allocator(0,	64,		&_mem64_allocator);
 		init_allocator(65,	128,	&_mem128_allocator);
@@ -249,17 +249,17 @@ private:
 		//init_allocator(513, 1024,	&_mem1024_allocator);
 		xPrintf("create memory manager instance\n");
 	}
-	~MemoryMgr()
+	~CRCMemoryPool()
 	{
 		xPrintf("destory memory manager instance\n");
 	}
 
-	MemoryMgr(const MemoryMgr& signal) = delete;
-	const MemoryMgr& operator=(const MemoryMgr &signal) = delete;
+	CRCMemoryPool(const CRCMemoryPool& signal) = delete;
+	const CRCMemoryPool& operator=(const CRCMemoryPool &signal) = delete;
 
 private:
 	// initialize buffer pool mapping array
-	void init_allocator(int nBegin, int nEnd, MemoryAlloc* pAlloc)
+	void init_allocator(int nBegin, int nEnd, CRCMemoryAlloc* pAlloc)
 	{
 		for (int n = nBegin; n <= nEnd; n++)
 		{
@@ -277,14 +277,14 @@ public:
 		}
 		else
 		{
-			MemoryBlock* pRet = (MemoryBlock*)malloc(nSize + sizeof(MemoryBlock));
+			CRCMemoryBlock* pRet = (CRCMemoryBlock*)malloc(nSize + sizeof(CRCMemoryBlock));
 			pRet->_bPool = false;
 			pRet->_nID = -1;
 			pRet->_nRef = 1;
 			pRet->_pAlloc = nullptr;
 			pRet->_pNext = nullptr;
 			xPrintf("MemoryMgr\t::alloc_mem:\t%llx, id=%d, size=%d\n", pRet, pRet->_nID, nSize);
-			return ((char*)pRet + sizeof(MemoryBlock));
+			return ((char*)pRet + sizeof(CRCMemoryBlock));
 
 		}
 	}
@@ -292,7 +292,7 @@ public:
 	// release memory
 	void free_mem(void* pv)
 	{
-		MemoryBlock* pBlock = (MemoryBlock*)((char*)pv - sizeof(MemoryBlock));
+		CRCMemoryBlock* pBlock = (CRCMemoryBlock*)((char*)pv - sizeof(CRCMemoryBlock));
 		if (pBlock->_bPool)
 		{
 			pBlock->_pAlloc->free_mem(pv);
@@ -310,26 +310,26 @@ public:
 	// add ref count for shareing buffer block
 	void add_ref(void* pv)
 	{
-		MemoryBlock* pBlock = (MemoryBlock*)((char*)pv - sizeof(MemoryBlock));
+		CRCMemoryBlock* pBlock = (CRCMemoryBlock*)((char*)pv - sizeof(CRCMemoryBlock));
 		++pBlock->_nRef;
 	}
 public:
 	// single instance mode
-	static MemoryMgr& instance();
+	static CRCMemoryPool& instance();
 };
 
-std::mutex MemoryMgr::_mutex;
+std::mutex CRCMemoryPool::_mutex;
 
-MemoryMgr* MemoryMgr::_instance = nullptr;
+CRCMemoryPool* CRCMemoryPool::_instance = nullptr;
 
-MemoryMgr& MemoryMgr::instance()
+CRCMemoryPool& CRCMemoryPool::instance()
 {
 	if (nullptr == _instance)
 	{
 		std::lock_guard<std::mutex> lock(_mutex);
 		if (nullptr == _instance)
 		{
-			static MemoryMgr mgr;
+			static CRCMemoryPool mgr;
 			_instance = &mgr;
 		}
 	}

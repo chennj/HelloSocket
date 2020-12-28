@@ -1,5 +1,5 @@
-#ifndef _MY_SEMAPHORE_HPP_
-#define _MY_SEMAPHORE_HPP_
+#ifndef _CRC_SEMAPHORE_HPP_
+#define _CRC_SEMAPHORE_HPP_
 
 #include <thread>
 #include <chrono>
@@ -10,7 +10,7 @@
 /**
 * simple semaphore
 */
-class MySemaphore
+class CRCSemaphore
 {
 private:
 	// wait count
@@ -22,13 +22,13 @@ private:
 	// condition variable be used to blocking and waitting
 	std::condition_variable _condv;
 public:
-	MySemaphore()
+	CRCSemaphore()
 	{
 		_waitCount = 0;
 		_wakeupCount = 0;
 	}
 
-	~MySemaphore()
+	~CRCSemaphore()
 	{
 
 	}

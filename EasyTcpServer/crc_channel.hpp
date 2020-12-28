@@ -1,8 +1,8 @@
-#ifndef _CHANNEL_HPP_
-#define _CHANNEL_HPP_
+#ifndef _CRC_CHANNEL_HPP_
+#define _CRC_CHANNEL_HPP_
 
-#include "Init.h"
-#include "ObjectPool.hpp"
+#include "crc_init.h"
+#include "crc_object_pool.hpp"
 
 // countdown to heart beat check
 #define CLIENT_HEART_DEAD_TIME 30 * 1000
@@ -12,10 +12,10 @@
 /**
 *	client object with socket
 */
-class Channel : public ObjectPoolBase<Channel, 10000>
+class CRCChannel : public CRCObjectPoolBase<CRCChannel, 10000>
 {
 public:
-	Channel(SOCKET sockfd = INVALID_SOCKET)
+	CRCChannel(SOCKET sockfd = INVALID_SOCKET)
 	{
 		_sockfd = sockfd;
 		memset(_szRecvBuffer, 0, RECV_BUFFER_SIZE);
@@ -26,7 +26,7 @@ public:
 		reset_dt_send();
 	}
 
-	virtual ~Channel()
+	virtual ~CRCChannel()
 	{
 		if (INVALID_SOCKET != _sockfd)
 		{
@@ -99,7 +99,7 @@ public:
 	}
 
 	// send data
-	int SendData(DataHeaderPtr pheader)
+	int SendData(CRCDataHeaderPtr pheader)
 	{
 		int ret = SOCKET_ERROR;
 		if (!pheader) {
@@ -155,7 +155,7 @@ public:
 	// reset timing heart beat
 	void reset_dt_heart()
 	{
-		_dtHeart = Time::getNowInMilliSec();
+		_dtHeart = CRCTime::getNowInMilliSec();
 	}
 
 	// check heart beat
@@ -171,7 +171,7 @@ public:
 
 	void reset_dt_send()
 	{
-		_dtSend = Time::getNowInMilliSec();;
+		_dtSend = CRCTime::getNowInMilliSec();;
 	}
 
 	int timing_send(time_t tNow)
