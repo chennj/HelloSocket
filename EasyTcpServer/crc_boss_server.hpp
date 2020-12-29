@@ -67,6 +67,12 @@ public:
 		WORD ver = MAKEWORD(2, 2);
 		WSADATA data;
 		WSAStartup(ver, &data);
+#else
+		// ignore exception signal
+		if (signal(SIGPIPE, SIG_IGN) == SIG_ERR)
+		{
+			return (1);
+		}
 #endif
 		// 1 create socket
 		_sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);

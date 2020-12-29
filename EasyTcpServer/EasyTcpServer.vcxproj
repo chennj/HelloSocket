@@ -164,6 +164,7 @@
   <ItemGroup>
     <ClInclude Include="crc_allocator.h" />
     <ClInclude Include="crc_auto_ptr.hpp" />
+    <ClInclude Include="crc_buffer.hpp" />
     <ClInclude Include="crc_channel.hpp" />
     <ClInclude Include="crc_inet_event.hpp" />
     <ClInclude Include="crc_init.h" />

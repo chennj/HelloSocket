@@ -140,9 +140,9 @@ protected:
 			{
 				if (fd_exception.fd_count > 0)
 				{
-					printf("###>>>WorkServer exception<%d>\n", fd_exception.fd_count);
+					xPrintf("###>>>WorkServer exception<%d>\n", fd_exception.fd_count);
 				}
-				printf("WorkServer readable<%d>, writable<%d>\n", fd_read.fd_count, fd_write.fd_count);
+				xPrintf("WorkServer readable<%d>, writable<%d>\n", fd_read.fd_count, fd_write.fd_count);
 				_tTime.update();
 			}
 
@@ -332,57 +332,29 @@ public:
 	}
 
 	// receive data, deal sticking package and splitting package
-	int RecvData(CRCChannelPtrRef pclient)
+	int RecvData(CRCChannelPtrRef pClient)
 	{
-		char* szRecv = pclient->recvBuf() + pclient->GetLastRecvPos();
 		//receive client data
-		//int nLen = recv(pclient->sockfd(), _szRecvBuffer, RECV_BUFFER_SIZE, 0);
-		int nLen = recv(pclient->sockfd(), szRecv, RECV_BUFFER_SIZE - pclient->GetLastRecvPos(), 0);
-
-		_pNetEvent->OnNetRecv(pclient);
-
+		int nLen = pClient->RecvData();
 		if (nLen <= 0)
 		{
 			//printf("server socket<%d> client socket <%d> offline\n", (int)_sock, (int)pclient->sockfd());
 			return -1;
 		}
 
-		// reset heart beat timing in here or in MyServer::OnNetMessage or in the all of these two place
+		// trigger event while received net message
+		_pNetEvent->OnNetRecv(pClient);
+
+		// reset heart beat timing in here or in CRCServer::OnNetMessage or in the all of these two place
 		//pclient->reset_dt_heart();
 
-		// copy receive buffer data to message buffer
-		//memcpy(pclient->msgBuf() + pclient->GetLastPos(), _szRecvBuffer, nLen);
-
-		// update end position of message buffer
-		pclient->SetLastRecvPos(pclient->GetLastRecvPos() + nLen);
-
-		// whether message buffer size greater than message header(DataHeader)'s size,
-		// if yes, converting message buffer to struct DataHeader and clear message buffer
-		// had prcessed.
-		while (pclient->GetLastRecvPos() >= sizeof(CRCDataHeader))
+		// loop proccess message
+		while (pClient->HasMessage())
 		{
-			// convert message buffer to DataHeader
-			CRCDataHeader* pheader = (CRCDataHeader*)pclient->recvBuf();
-			// whether message buffer size greater than current client message size,
-			if (pclient->GetLastRecvPos() >= pheader->data_length)
-			{
-				// processed message's length
-				int nClientMsgLen = pheader->data_length;
-				// length of message buffer which was untreated
-				int nSize = pclient->GetLastRecvPos() - nClientMsgLen;
-				// process net message
-				OnNetMessage(pclient, pheader);
-				// earse processed message buffer
-				memcpy(pclient->recvBuf(), pclient->recvBuf() + nClientMsgLen, nSize);
-				// update end position of message buffer
-				pclient->SetLastRecvPos(nSize);
-			}
-			else
-			{
-				// length of message buffer which was untreated less than 
-				// length of message header(DataHeader)'s size
-				break;
-			}
+			// process message
+			OnNetMessage(pClient, pClient->front_message());
+			// remove one message from buffer
+			pClient->pop_front_message();
 		}
 
 		return 0;

@@ -5,7 +5,7 @@
 
 #ifdef _DEBUG
 #include<stdio.h>
-#define xPrintf(...) //printf(__VA_ARGS__)
+#define xPrintf(...) printf(__VA_ARGS__)
 #else
 #define xPrintf(...)
 #endif
@@ -25,6 +25,7 @@
 #include<arpa/inet.h>
 #include<sys/types.h>
 #include <string.h>
+#include <signal.h>
 
 #define SOCKET int
 #define INVALID_SOCKET	(SOCKET)(~0)

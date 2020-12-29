@@ -3,6 +3,7 @@
 
 #include "crc_init.h"
 #include "crc_object_pool.hpp"
+#include "crc_buffer.hpp"
 
 // countdown to heart beat check
 #define CLIENT_HEART_DEAD_TIME 30 * 1000
@@ -18,15 +19,12 @@ class CRCChannel : public CRCObjectPoolBase<CRCChannel, 10000>
 private:
 	// fd_set file descriptor
 	SOCKET _sockfd;
-	// recv message buffer
-	char _szRecvBuffer[RECV_BUFFER_SIZE];
-	// recv message buffer position
-	int _lastRecvPos;
+	
+	// receive buffer
+	CRCBuffer _recvBuf;
+	// sending buffer
+	CRCBuffer _sendBuf;
 
-	// send message buffer
-	char _szSendBuffer[SEND_BUFFER_SIZE];
-	// send message buffer position
-	int _lastSendPos;
 
 	// timing heart beat check
 	time_t _dtHeart;
@@ -34,20 +32,17 @@ private:
 	time_t _dtSend;
 	//
 	//std::mutex _mutex;
-	// full send count
-	int _sendBufFullCount = 0;
+
 
 public:
-	CRCChannel(SOCKET sockfd = INVALID_SOCKET)
+	CRCChannel(SOCKET sockfd = INVALID_SOCKET):
+		_sendBuf(SEND_BUFFER_SIZE),
+		_recvBuf(RECV_BUFFER_SIZE)
 	{
 		_sockfd = sockfd;
-		memset(_szRecvBuffer, 0, RECV_BUFFER_SIZE);
-		_lastRecvPos = 0;
-		memset(_szSendBuffer, 0, SEND_BUFFER_SIZE);
-		_lastSendPos = 0;
+
 		reset_dt_heart();
 		reset_dt_send();
-		_sendBufFullCount = 0;
 	}
 
 	virtual ~CRCChannel()
@@ -70,53 +65,38 @@ public:
 		return _sockfd;
 	}
 
-	char * recvBuf()
-	{
-		return _szRecvBuffer;
-	}
-
-	int GetLastRecvPos()
-	{
-		return _lastRecvPos;
-	}
-
-	void SetLastRecvPos(int lastRecvPos)
-	{
-		_lastRecvPos = lastRecvPos;
-	}
-
-	char * sendBuf()
-	{
-		return _szSendBuffer;
-	}
-
-	int GetLastSendPos()
-	{
-		return _lastSendPos;
-	}
-
-	void SetLastSendPos(int lastSendPos)
-	{
-		_lastSendPos = lastSendPos;
-	}
-
 public:
+	// if had message
+	bool HasMessage()
+	{
+		return _recvBuf.has_data();
+	}
+
+	CRCDataHeader* front_message()
+	{
+		return (CRCDataHeader*)_recvBuf.getBuf();
+	}
+
+	void pop_front_message()
+	{
+		if (HasMessage())
+			_recvBuf.pop(front_message()->data_length);
+	}
+
+	// receive data
+	int RecvData()
+	{
+		return _recvBuf.read4socket(_sockfd);
+	}
+
 	// immediately send data in sending buffer to client
 	int SendDataIM()
 	{
 		int ret = 0;
-
-		if (_lastSendPos > 0 && INVALID_SOCKET != _sockfd)
-		{
-			//std::lock_guard<std::mutex> lg(_mutex);
-			ret = send(_sockfd/*client socket*/, _szSendBuffer, _lastSendPos, 0);
-			//reset last position send buffer
-			_lastSendPos = 0;
-			// reset count flag which sending buffer is full
-			_sendBufFullCount = 0;
-			// reset timing send timer
-			reset_dt_send();
-		}
+		// send data
+		ret = _sendBuf.write2socket(_sockfd);
+		// reset timing send timer
+		reset_dt_send();
 
 		return ret;
 	}
@@ -128,51 +108,52 @@ public:
 		if (!pheader) {
 			return ret;
 		}
-		// it's data length that would send
-		int nSendLen = pheader->data_length;
-		// it's data that would send
-		const char* pSendData = (const char*)pheader.get();
-		//
-		//std::lock_guard<std::mutex> lg(_mutex);
-		// 
-		while (true)
-		{
-			if (_lastSendPos + nSendLen >= SEND_BUFFER_SIZE)
-			{
-				// count while buffer is full
-				_sendBufFullCount++;
-				// calculate the length of data that can be copied
-				int nCanCopyLen = SEND_BUFFER_SIZE - _lastSendPos;
-				// copy data to send buffer
-				memcpy(_szSendBuffer + _lastSendPos, pSendData, nCanCopyLen);
-				// position of remaining data
-				pSendData += nCanCopyLen;
-				// length of remaining data
-				nSendLen -= nCanCopyLen;
-				// send data
-				ret = send(_sockfd/*client socket*/, _szSendBuffer, SEND_BUFFER_SIZE, 0);
-				// set _lastSendPos to zero
-				_lastSendPos = 0;
-				//
-				reset_dt_send();
-				// exception occur while send,such as client offline
-				if (SOCKET_ERROR == ret)
-				{
-					return ret;
-				}
-			}
-			else
-			{
-				// copy data to be sent to the end of the send buffer
-				memcpy(_szSendBuffer + _lastSendPos, pSendData, nSendLen);
-				// calculate the tail position of the send buffer
-				_lastSendPos += nSendLen;
-				// set return value
-				ret = 0;
-				// exit while
-				break;
-			}
-		}
+
+		//// it's data length that would send
+		//int nSendLen = pheader->data_length;
+		//// it's data that would send
+		//const char* pSendData = (const char*)pheader.get();
+		////
+		////std::lock_guard<std::mutex> lg(_mutex);
+		//// 
+		//while (true)
+		//{
+		//	if (_lastSendPos + nSendLen >= SEND_BUFFER_SIZE)
+		//	{
+		//		// count while buffer is full
+		//		_sendBufFullCount++;
+		//		// calculate the length of data that can be copied
+		//		int nCanCopyLen = SEND_BUFFER_SIZE - _lastSendPos;
+		//		// copy data to send buffer
+		//		memcpy(_szSendBuffer + _lastSendPos, pSendData, nCanCopyLen);
+		//		// position of remaining data
+		//		pSendData += nCanCopyLen;
+		//		// length of remaining data
+		//		nSendLen -= nCanCopyLen;
+		//		// send data
+		//		ret = send(_sockfd/*client socket*/, _szSendBuffer, SEND_BUFFER_SIZE, 0);
+		//		// set _lastSendPos to zero
+		//		_lastSendPos = 0;
+		//		//
+		//		reset_dt_send();
+		//		// exception occur while send,such as client offline
+		//		if (SOCKET_ERROR == ret)
+		//		{
+		//			return ret;
+		//		}
+		//	}
+		//	else
+		//	{
+		//		// copy data to be sent to the end of the send buffer
+		//		memcpy(_szSendBuffer + _lastSendPos, pSendData, nSendLen);
+		//		// calculate the tail position of the send buffer
+		//		_lastSendPos += nSendLen;
+		//		// set return value
+		//		ret = 0;
+		//		// exit while
+		//		break;
+		//	}
+		//}
 
 		return ret;
 	}
@@ -184,30 +165,13 @@ public:
 		if (!pheader) {
 			return ret;
 		}
+
 		// it's data length that would send
 		int nSendLen = pheader->data_length;
 		// it's data that would send
 		const char* pSendData = (const char*)pheader.get();
 
-		if (_lastSendPos + nSendLen <= SEND_BUFFER_SIZE)
-		{
-			// copy data to be sent to the end of the send buffer
-			memcpy(_szSendBuffer + _lastSendPos, pSendData, nSendLen);
-			// calculate the tail position of the send buffer
-			_lastSendPos += nSendLen;
-
-			if (_lastRecvPos == SEND_BUFFER_SIZE)
-			{
-				_sendBufFullCount++;
-			}
-
-			// set return value
-			ret = nSendLen;
-		}
-		else
-		{
-			_sendBufFullCount++;
-		}
+		ret = _sendBuf.push(pSendData, nSendLen);
 
 		return ret;
 	}

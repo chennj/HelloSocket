@@ -11,9 +11,9 @@
 bool g_run = true;
 
 // sending thread amount
-const int tCount = 1;
+const int tCount = 2;
 // client amount
-const int nCount = 10;
+const int nCount = 100;
 
 // client object
 CRCWorkClient* pclients[nCount];
@@ -51,11 +51,11 @@ void recvThread(int begin, int end)
 	{
 		for (int n = begin; n < end; n++)
 		{
-			if (t.getElapsedSecond() > 4.0 && n == begin) {
-				//模拟一个客户端接收被堵塞的情况，服务器的运行情况
-				//期望：对于没有被堵塞的客户端运行正常
-				continue;
-			}
+			//if (t.getElapsedSecond() > 4.0 && n == begin) {
+			//	//模拟一个客户端接收被堵塞的情况，服务器的运行情况
+			//	//期望：对于没有被堵塞的客户端运行正常
+			//	continue;
+			//}
 
 			int ret = pclients[n]->OnRun();
 			if (ret < 0)
@@ -142,8 +142,8 @@ void sendThread(int id) //1~4
 		}
 
 		// to control speed to send
-		std::chrono::milliseconds t(1);
-		std::this_thread::sleep_for(t);
+		//std::chrono::milliseconds t(1);
+		//std::this_thread::sleep_for(t);
 	}
 
 	for (int n = begin; n < end; n++)

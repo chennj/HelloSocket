@@ -68,5 +68,8 @@
     <ClInclude Include="crc_auto_ptr.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="crc_buffer.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
