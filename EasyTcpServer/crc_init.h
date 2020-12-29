@@ -65,4 +65,8 @@ typedef LoginResponsePtr& LoginResponsePtrRef;
 #define SEND_BUFFER_SIZE 1024*10
 #endif
 
+#ifndef DEFAULT_BUFFER_SIZE
+#define DEFAULT_BUFFER_SIZE 1024*4
+#endif
+
 #endif

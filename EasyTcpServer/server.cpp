@@ -26,7 +26,7 @@ int main()
 			}
 			else
 			{
-				printf("this command was not supported.\n");
+				CRCLogger::info("this command was not supported.\n");
 			}
 		}
 	}

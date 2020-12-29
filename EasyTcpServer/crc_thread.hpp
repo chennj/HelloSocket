@@ -2,6 +2,7 @@
 #define _CRC_THREAD_HPP_
 
 #include "crc_semaphore.hpp"
+#include "crc_log.hpp"
 
 class CRCThread
 {
@@ -43,7 +44,7 @@ public:
 		std::lock_guard<std::mutex> lg(_mutex);
 		if (_isRun)
 		{
-			printf("thread is running\n");
+			CRCLogger::info("thread is running\n");
 			return;
 		}
 

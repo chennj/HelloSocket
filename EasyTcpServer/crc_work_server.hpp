@@ -5,6 +5,7 @@
 #include "crc_channel.hpp"
 #include "crc_inet_event.hpp"
 #include "crc_thread.hpp"
+#include "crc_log.hpp"
 
 #include <map>
 #include <vector>
@@ -49,7 +50,7 @@ public:
 	}
 	~CRCWorkServer()
 	{
-		printf("WorkServer destory.\n");
+		CRCLogger::info("WorkServer destory.\n");
 		// release resource
 		Close();
 	}
@@ -60,7 +61,7 @@ protected:
 	{
 		int ret = 1;
 
-		printf("WorkServer thread start...\n");
+		CRCLogger::info("WorkServer thread start...\n");
 
 		_clients_change = true;
 
@@ -123,7 +124,7 @@ protected:
 			ret = select(_max_socket + 1/*nfds*/, &fd_read, &fd_write, &fd_exception, &t);
 			if (ret < 0)
 			{
-				printf("WorkServer socket<%d> error occurs while select and mission finish.\n", (int)_sock);
+				CRCLogger::info("WorkServer socket<%d> error occurs while select and mission finish.\n", (int)_sock);
 				pCrcThread->ExitInSelfThread();
 				break;
 			}
@@ -150,7 +151,7 @@ protected:
 			CheckTime();
 		} // while (IsRunning())
 
-		printf("WorkServer thread exit...\n");
+		CRCLogger::info("WorkServer thread exit...\n");
 		return ret;
 	}
 
@@ -178,7 +179,7 @@ protected:
 			//int ret = iterOld->second->timing_send(tNow);
 			//if (SOCKET_ERROR == ret)
 			//{
-			//	printf("timing send data to client (socket<%d>) failed. ret<%d>\n", (int)iterOld->first, ret);
+			//	CRCLogger::info("timing send data to client (socket<%d>) failed. ret<%d>\n", (int)iterOld->first, ret);
 			//}
 
 			// check if the timing sending data time is up
@@ -209,7 +210,7 @@ protected:
 			}
 			else
 			{
-				printf("incredible situation occurs while write data to client\n");
+				CRCLogger::info("incredible situation occurs while write data to client\n");
 			}
 
 		}
@@ -255,7 +256,7 @@ protected:
 			}
 			else
 			{
-				printf("incredible situation occurs while read data from client\n");
+				CRCLogger::info("incredible situation occurs while read data from client\n");
 			}
 
 		}
@@ -338,7 +339,7 @@ public:
 		int nLen = pClient->RecvData();
 		if (nLen <= 0)
 		{
-			//printf("server socket<%d> client socket <%d> offline\n", (int)_sock, (int)pclient->sockfd());
+			//CRCLogger::info("server socket<%d> client socket <%d> offline\n", (int)_sock, (int)pclient->sockfd());
 			return -1;
 		}
 

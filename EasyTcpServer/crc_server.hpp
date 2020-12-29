@@ -20,13 +20,13 @@ public:
 			//pChannel->reset_dt_heart();
 
 			Login* login = (Login*)pheader;
-			//printf("socket<%d> receive client socket<%d> message: CMD_LOGIN , data length<%d>, user name<%s>, pwd<%s>\n", (int)_sock, (int)sock_client, pheader->data_length, login->username, login->password);
+			//CRCLogger::info("socket<%d> receive client socket<%d> message: CMD_LOGIN , data length<%d>, user name<%s>, pwd<%s>\n", (int)_sock, (int)sock_client, pheader->data_length, login->username, login->password);
 			
 			// Asynchronous send mode with sending buffer which is as the same thread as main thread
 			if (SOCKET_ERROR == pChannel->SendDataBuffer(std::make_shared<LoginResponse>()))
 			{
 				if (_tTime.getElapsedSecond() >= 1.0)
-					printf("Socket<%d>, Send Buffer Is Full\n", pChannel->sockfd());
+					CRCLogger::info("Socket<%d>, Send Buffer Is Full\n", pChannel->sockfd());
 			}
 			
 			// Synchronous send mode with sending task pool which is not as the same thread as main thread
@@ -37,7 +37,7 @@ public:
 		case CMD_LOGOUT:
 		{
 			//Logout* logout = (Logout*)pheader;
-			//printf("socket<%d> receive client socket<%d> message: CMD_LOGOUT , data length<%d>, user name<%s>\n", (int)_sock, (int)sock_client, pheader->data_length, logout->username);
+			//CRCLogger::info("socket<%d> receive client socket<%d> message: CMD_LOGOUT , data length<%d>, user name<%s>\n", (int)_sock, (int)sock_client, pheader->data_length, logout->username);
 
 			//LogoutResponse ret;
 			//pChannel->SendData(&ret);
@@ -52,7 +52,7 @@ public:
 		break;
 		default:
 		{
-			printf("socket<%d> receive client socket<%d> message: CMD_UNKNOWN , data length<%d>\n", (int)_sock, (int)pChannel->sockfd(), pheader->data_length);
+			CRCLogger::info("socket<%d> receive client socket<%d> message: CMD_UNKNOWN , data length<%d>\n", (int)_sock, (int)pChannel->sockfd(), pheader->data_length);
 			//UnknownResponse ret;
 			//pChannel->SendData(&ret);
 		}

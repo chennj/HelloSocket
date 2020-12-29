@@ -59,7 +59,7 @@ public:
 	{
 		if (INVALID_SOCKET != _sock)
 		{
-			printf("close previous connection socket<%d>\n", (int)_sock);
+			CRCLogger::info("close previous connection socket<%d>\n", (int)_sock);
 			Close();
 		}
 
@@ -78,10 +78,10 @@ public:
 		_sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 		if (SOCKET_ERROR == _sock)
 		{
-			printf("create socket failure.\n");
+			CRCLogger::info("create socket failure.\n");
 			return _sock;
 		}
-		printf("socket<%d> create success.\n", (int)_sock);
+		CRCLogger::info("socket<%d> create success.\n", (int)_sock);
 		return _sock;
 	}
 
@@ -118,11 +118,11 @@ public:
 		int ret = bind(_sock, (sockaddr*)&_sin, sizeof(sockaddr_in));
 		if (ret == SOCKET_ERROR)
 		{
-			printf("socket<%d> bind failure because port used by other.\n", (int)_sock);
+			CRCLogger::info("socket<%d> bind failure because port used by other.\n", (int)_sock);
 			Close();
 			return ret;
 		}
-		printf("socket<%d> bind port<%d> success.\n", (int)_sock, port);
+		CRCLogger::info("socket<%d> bind port<%d> success.\n", (int)_sock, port);
 		return ret;
 	}
 
@@ -132,11 +132,11 @@ public:
 		int ret = listen(_sock, n);
 		if (SOCKET_ERROR == ret)
 		{
-			printf("socket<%d> listen failure.\n", (int)_sock);
+			CRCLogger::info("socket<%d> listen failure.\n", (int)_sock);
 			Close();
 			return ret;
 		}
-		printf("socket<%d> listenning ... \n", (int)_sock);
+		CRCLogger::info("socket<%d> listenning ... \n", (int)_sock);
 		return ret;
 	}
 
@@ -154,7 +154,7 @@ public:
 #endif
 		if (INVALID_SOCKET == sock_client)
 		{
-			printf("socket<%d> accept a invalid client request.\n", (int)_sock);
+			CRCLogger::info("socket<%d> accept a invalid client request.\n", (int)_sock);
 			return sock_client;
 		}
 
@@ -215,7 +215,7 @@ public:
 #endif
 		_sock = INVALID_SOCKET;
 		if (_crcThread.IsRun())_crcThread.Close();
-		printf("server is shutdown\n");
+		CRCLogger::info("server is shutdown\n");
 	}
 
 	// if is running
@@ -231,7 +231,7 @@ public:
 		auto t1 = _tTime.getElapsedSecond();
 		if (t1 >= 1.0)
 		{
-			printf("threads<%d>,time<%lf>,socket<%d> clients<%d>,recv<%d>,msg<%d>\n", (int)_workServers.size(), t1, (int)_sock, _clientCount.load(), (int)(_recvCount / t1), (int)(_msgCount / t1));
+			CRCLogger::info("threads<%d>,time<%lf>,socket<%d> clients<%d>,recv<%d>,msg<%d>\n", (int)_workServers.size(), t1, (int)_sock, _clientCount.load(), (int)(_recvCount / t1), (int)(_msgCount / t1));
 			_recvCount = 0;
 			_msgCount = 0;
 			_tTime.update();
@@ -242,7 +242,7 @@ protected:
 	// only process accept request
 	void OnRun(CRCThread* pCrcThread)
 	{
-		printf("BossServer thread start...\n");
+		CRCLogger::info("BossServer thread start...\n");
 
 		while (pCrcThread->IsRun())
 		{
@@ -271,7 +271,7 @@ protected:
 			int ret = select(_sock + 1/*nfds*/, &fd_read, nullptr, nullptr, &t);
 			if (ret < 0)
 			{
-				printf("BossServer socket<%d> error occurs while select and mission finish.\n", (int)_sock);
+				CRCLogger::info("BossServer socket<%d> error occurs while select and mission finish.\n", (int)_sock);
 				pCrcThread->ExitInSelfThread();
 				break;
 			}
@@ -284,7 +284,7 @@ protected:
 			}
 		}
 
-		printf("BossServer thread exit...\n");
+		CRCLogger::info("BossServer thread exit...\n");
 	}
 
 	// inherit INetEvent

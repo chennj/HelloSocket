@@ -1,7 +1,9 @@
 ﻿#ifndef _CRC_TASK_SERVER_HPP_
 #define _CRC_TASK_SERVER_HPP_
 
+#include "crc_init.h"
 #include "crc_thread.hpp"
+#include "crc_log.hpp"
 
 #include<thread>
 #include<mutex>
@@ -22,7 +24,7 @@ public:
 	}
 	~CRCTaskServer()
 	{
-		printf("TaskServer destory.\n");
+		CRCLogger::info("TaskServer destory.\n");
 		Close();
 	}
 
@@ -53,7 +55,7 @@ public:
 	// work loop
 	void OnRun(CRCThread* threadPtr)
 	{
-		printf("TaskServer thread start...\n");
+		CRCLogger::info("TaskServer thread start...\n");
 
 		while (threadPtr->IsRun())
 		{
@@ -89,7 +91,7 @@ public:
 		_tasks.clear();
 		_tasksBuf.clear();
 
-		printf("TaskServer thread exit...\n");
+		CRCLogger::info("TaskServer thread exit...\n");
 	}
 };
 

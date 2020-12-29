@@ -39,6 +39,18 @@ public:
 	{
 		int ret = 0;
 
+		// buffer is full
+		if (_lastPos + nLen > _nSize)
+		{
+			int n = DEFAULT_BUFFER_SIZE;
+			while ((n <<= 1) < (_nSize + nLen));
+			_nSize = n;
+			char* buffer = new char[_nSize];
+			memcpy(buffer, _pBuf, _lastPos);
+			delete[] _pBuf;
+			_pBuf = buffer;
+		}
+
 		if (_lastPos + nLen <= _nSize)
 		{
 			// copy data to the end of the buffer
@@ -110,7 +122,7 @@ public:
 
 		if (nLen <= 0)
 		{
-			//printf("server socket<%d> client socket <%d> offline\n", (int)_sock, (int)pclient->sockfd());
+			//CRCLogger::info("server socket<%d> client socket <%d> offline\n", (int)_sock, (int)pclient->sockfd());
 			return nLen;
 		}
 

@@ -187,7 +187,7 @@ public:
 	{
 		if ((tNow - _dtHeart) >= CLIENT_HEART_DEAD_TIME)
 		{
-			printf("check heart beat dead:socket<%d>,time<%d>\n", _sockfd, (tNow - _dtHeart));
+			CRCLogger::info("check heart beat dead:socket<%d>,time<%d>\n", _sockfd, (tNow - _dtHeart));
 			return false;
 		}
 		return true;

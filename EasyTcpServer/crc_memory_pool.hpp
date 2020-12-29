@@ -99,7 +99,7 @@ public:
 			pRet->_nRef = 1;
 			pRet->_pAlloc = this;
 			pRet->_pNext = nullptr;
-			printf("MemoryAlloc\t::alloc_mem:\t%llx, id=%d, size=%d\n", pRet, pRet->_nID, nSize);
+			CRCLogger::info("MemoryAlloc\t::alloc_mem:\t%llx, id=%d, size=%d\n", pRet, pRet->_nID, nSize);
 		}
 		else
 		{
