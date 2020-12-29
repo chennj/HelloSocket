@@ -22,6 +22,8 @@ private:
 	std::vector<CRCWorkServerPtr> _workServers;
 	// lock
 	std::mutex _mutex;
+
+protected:
 	// high resolution timers
 	CRCTimestamp _tTime;
 

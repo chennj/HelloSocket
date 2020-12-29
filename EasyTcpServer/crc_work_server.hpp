@@ -38,11 +38,14 @@ private:
 	SOCKET _max_socket;
 	// task 
 	CRCTaskServer _taskServer;
+	// timer
+	CRCTimestamp _tTime;
 public:
 	CRCWorkServer(SOCKET sock = INVALID_SOCKET)
 	{
 		_sock = sock;
 		_pNetEvent = nullptr;
+		_tTime.update();
 	}
 	~CRCWorkServer()
 	{
@@ -110,14 +113,14 @@ protected:
 			}
 
 			memcpy(&fd_write, &_fd_read_bak, sizeof(fd_set));
-			//memcpy(&fd_exception, &_fd_read_bak, sizeof(fd_set));
+			memcpy(&fd_exception, &_fd_read_bak, sizeof(fd_set));
 
 			//nfds is range of fd_set, not fd_set's count.
 			//nfds is also max value+1 of all the file descriptor(socket).
 			//nfds can be 0 in the windows.
 			//that timeval was setted null means blocking, not null means nonblocking.
 			timeval t = { 0,1 };
-			ret = select(_max_socket + 1/*nfds*/, &fd_read, &fd_write, nullptr, &t);
+			ret = select(_max_socket + 1/*nfds*/, &fd_read, &fd_write, &fd_exception, &t);
 			if (ret < 0)
 			{
 				printf("WorkServer socket<%d> error occurs while select and mission finish.\n", (int)_sock);
@@ -130,8 +133,20 @@ protected:
 			//}
 
 			ReadData(fd_read);
-			//WriteData(fd_write);
-			//ReadData(fd_exception);
+			WriteData(fd_write);
+			WriteData(fd_exception);
+#ifdef _WIN32
+			if (_tTime.getElapsedSecond() >= 1.0)
+			{
+				if (fd_exception.fd_count > 0)
+				{
+					printf("###>>>WorkServer exception<%d>\n", fd_exception.fd_count);
+				}
+				printf("WorkServer readable<%d>, writable<%d>\n", fd_read.fd_count, fd_write.fd_count);
+				_tTime.update();
+			}
+
+#endif
 			CheckTime();
 		} // while (IsRunning())
 
@@ -155,23 +170,27 @@ protected:
 				continue;
 			}
 
-			// regulary check to decide whether to send data to client
+			/**
+			*
+			*	regulary check to decide whether to send data to client
+			*/
 			// synchronization execute, need add lock, will reduce sending speed
 			//int ret = iterOld->second->timing_send(tNow);
 			//if (SOCKET_ERROR == ret)
 			//{
 			//	printf("timing send data to client (socket<%d>) failed. ret<%d>\n", (int)iterOld->first, ret);
 			//}
+
 			// check if the timing sending data time is up
 			// asynchronous execute, need not add lock
-			if (iterOld->second->check_timing_send(tNow))
-			{
-				CRCChannelPtr pChannel = iterOld->second;
-				_taskServer.addTask
-				(
-					[pChannel]() {pChannel->SendDataIM(); }
-				);
-			}
+			//if (iterOld->second->check_timing_send(tNow))
+			//{
+			//	CRCChannelPtr pChannel = iterOld->second;
+			//	_taskServer.addTask
+			//	(
+			//		[pChannel]() {pChannel->SendDataIM(); }
+			//	);
+			//}
 		}
 	}
 
@@ -183,46 +202,38 @@ protected:
 			auto iter = _clients.find(fd_write.fd_array[n]);
 			if (iter != _clients.end())
 			{
-				CRCChannelPtr pChannel = iter->second;
-				_taskServer.addTask
-				(
-					[pChannel]() {pChannel->SendDataIM(); }
-				);
+				if (-1 == iter->second->SendDataIM())
+				{
+					OnClientLeave(iter);
+				}
 			}
 			else
 			{
-				printf("incredible situation occurs while client offline\n");
+				printf("incredible situation occurs while write data to client\n");
 			}
 
 		}
 #else
-		//std::vector<ChannelPtr> temp;
-		//for (auto iter : _clients)
-		//{
-		//	if (FD_ISSET(iter.first, &fd_write))
-		//	{
-		//		CRCChannelPtr pChannel = iter.second;
-		//		_taskServer.addTask
-		//		(
-		//			[pChannel]() {pChannel->SendDataIM(); }
-		//		);
-		//	}
-		//}
-		//for (auto pClient : temp)
-		//{
-		//	_clients.erase(pClient->sockfd());
-		//}
-
-		for (auto iter = _clients.begin(); iter != _clients.end())
+		std::vector<CRCChannelPtr> temp;
+		for (auto iter : _clients)
 		{
 			if (FD_ISSET(iter.first, &fd_write))
 			{
-				CRCChannelPtr pChannel = iter->second;
-				_taskServer.addTask
-				(
-					[pChannel]() {pChannel->SendDataIM(); }
-				);
+				if (-1 == RecvData(iter.second))
+				{
+					_clients_change = true;
+					temp.push_back(iter.second);
+
+					if (_pNetEvent)
+					{
+						_pNetEvent->OnLeave(iter.second);
+					}
+				}
 			}
+		}
+		for (auto pClient : temp)
+		{
+			_clients.erase(pClient->sockfd());
 		}
 #endif
 
@@ -244,43 +255,31 @@ protected:
 			}
 			else
 			{
-				printf("incredible situation occurs while client offline\n");
+				printf("incredible situation occurs while read data from client\n");
 			}
 
 		}
 #else
-		//std::vector<ChannelPtr> temp;
-		//for (auto iter : _clients)
-		//{
-		//	if (FD_ISSET(iter.first, &fd_read))
-		//	{
-		//		if (-1 == RecvData(iter.second))
-		//		{
-		//			_clients_change = true;
-		//			temp.push_back(iter.second);
-
-		//			if (_pNetEvent)
-		//			{
-		//				_pNetEvent->OnLeave(iter.second);
-		//			}
-		//		}
-		//	}
-		//}
-		//for (auto pClient : temp)
-		//{
-		//	_clients.erase(pClient->sockfd());
-		//}
-
-		for (auto iter = _clients.begin(); iter != _clients.end())
+		std::vector<CRCChannelPtr> temp;
+		for (auto iter : _clients)
 		{
 			if (FD_ISSET(iter.first, &fd_read))
 			{
-				auto iterOld = iter++;
-				if (-1 == RecvData(iterOld.second))
+				if (-1 == RecvData(iter.second))
 				{
-					OnClientLeave(iterOld);
+					_clients_change = true;
+					temp.push_back(iter.second);
+
+					if (_pNetEvent)
+					{
+						_pNetEvent->OnLeave(iter.second);
+					}
 				}
 			}
+		}
+		for (auto pClient : temp)
+		{
+			_clients.erase(pClient->sockfd());
 		}
 #endif
 	}

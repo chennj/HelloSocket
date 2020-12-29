@@ -22,12 +22,16 @@ public:
 			Login* login = (Login*)pheader;
 			//printf("socket<%d> receive client socket<%d> message: CMD_LOGIN , data length<%d>, user name<%s>, pwd<%s>\n", (int)_sock, (int)sock_client, pheader->data_length, login->username, login->password);
 			
-			// used to debug
-			//pChannel->SendData(std::make_shared<DataHeader>(pheader));
+			// Asynchronous send mode with sending buffer which is as the same thread as main thread
+			if (SOCKET_ERROR == pChannel->SendDataBuffer(std::make_shared<LoginResponse>()))
+			{
+				if (_tTime.getElapsedSecond() >= 1.0)
+					printf("Socket<%d>, Send Buffer Is Full\n", pChannel->sockfd());
+			}
 			
-			// used to release
-			CRCDataHeaderPtr ret = std::make_shared<LoginResponse>();
-			pWorkServer->addSendTask(pChannel, ret);
+			// Synchronous send mode with sending task pool which is not as the same thread as main thread
+			//CRCDataHeaderPtr ret = std::make_shared<LoginResponse>();
+			//pWorkServer->addSendTask(pChannel, ret);
 		}
 		break;
 		case CMD_LOGOUT:

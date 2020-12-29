@@ -104,26 +104,24 @@ public:
 	// immediately send data in sending buffer to client
 	int SendDataIM()
 	{
-		int ret = SOCKET_ERROR;
+		int ret = 0;
 
 		if (_lastSendPos > 0 && INVALID_SOCKET != _sockfd)
 		{
 			//std::lock_guard<std::mutex> lg(_mutex);
 			ret = send(_sockfd/*client socket*/, _szSendBuffer, _lastSendPos, 0);
+			//reset last position send buffer
 			_lastSendPos = 0;
+			// reset count flag which sending buffer is full
 			_sendBufFullCount = 0;
+			// reset timing send timer
+			reset_dt_send();
 		}
-		else
-		{
-			ret = 0;
-		}
-
-		reset_dt_send();
 
 		return ret;
 	}
 
-	// send data
+	// used to send data by synchronous block mode
 	int SendData(CRCDataHeaderPtr pheader)
 	{
 		int ret = SOCKET_ERROR;
@@ -174,6 +172,41 @@ public:
 				// exit while
 				break;
 			}
+		}
+
+		return ret;
+	}
+
+	// used to send data by asynchronous not-block mode
+	int SendDataBuffer(CRCDataHeaderPtr pheader)
+	{
+		int ret = SOCKET_ERROR;
+		if (!pheader) {
+			return ret;
+		}
+		// it's data length that would send
+		int nSendLen = pheader->data_length;
+		// it's data that would send
+		const char* pSendData = (const char*)pheader.get();
+
+		if (_lastSendPos + nSendLen <= SEND_BUFFER_SIZE)
+		{
+			// copy data to be sent to the end of the send buffer
+			memcpy(_szSendBuffer + _lastSendPos, pSendData, nSendLen);
+			// calculate the tail position of the send buffer
+			_lastSendPos += nSendLen;
+
+			if (_lastRecvPos == SEND_BUFFER_SIZE)
+			{
+				_sendBufFullCount++;
+			}
+
+			// set return value
+			ret = nSendLen;
+		}
+		else
+		{
+			_sendBufFullCount++;
 		}
 
 		return ret;

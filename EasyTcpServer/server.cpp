@@ -13,7 +13,7 @@ int main()
 		server.InitSocket();
 		server.Bind(nullptr, 12345);
 		server.Listen(5);
-		server.Start(4);
+		server.Start(1);
 
 		while (true)
 		{
