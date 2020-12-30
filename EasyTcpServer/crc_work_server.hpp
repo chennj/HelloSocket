@@ -5,7 +5,7 @@
 #include "crc_channel.hpp"
 #include "crc_inet_event.hpp"
 #include "crc_thread.hpp"
-#include "crc_log.hpp"
+#include "crc_task_server.hpp"
 
 #include <map>
 #include <vector>

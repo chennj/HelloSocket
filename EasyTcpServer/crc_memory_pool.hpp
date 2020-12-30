@@ -1,10 +1,11 @@
 ﻿#ifndef _CRC_MEMORY_POOL_HPP_
 #define _CRC_MEMORY_POOL_HPP_
 
-#include"crc_init.h"
+#include "crc_init.h"
+#include "crc_logger.h"
 
-#include<stdlib.h>
-#include<mutex>
+#include <stdlib.h>
+#include <mutex>
 
 #define ALLOC_MAX_MEM_SIZE 128
 #define ALLOC_MAX_BLOCK_QUANTITY 100000

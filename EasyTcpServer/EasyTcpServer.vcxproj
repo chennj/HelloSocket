@@ -159,6 +159,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="crc_allocator.cpp" />
+    <ClCompile Include="crc_logger.cpp" />
     <ClCompile Include="server.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -168,7 +169,7 @@
     <ClInclude Include="crc_channel.hpp" />
     <ClInclude Include="crc_inet_event.hpp" />
     <ClInclude Include="crc_init.h" />
-    <ClInclude Include="crc_log.hpp" />
+    <ClInclude Include="crc_logger.h" />
     <ClInclude Include="crc_memory_pool.hpp" />
     <ClInclude Include="crc_semaphore.hpp" />
     <ClInclude Include="crc_thread.hpp" />

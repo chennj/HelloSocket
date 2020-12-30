@@ -9,6 +9,9 @@
 int main()
 {
 	{
+		CRCLogger::instance().set_log_path("/log/server.log","w");
+		CRCLogger::instance().start();
+
 		CRCServer server;
 		server.InitSocket();
 		server.Bind(nullptr, 12345);

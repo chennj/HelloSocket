@@ -21,6 +21,9 @@
     <ClCompile Include="crc_allocator.cpp">
       <Filter>头文件</Filter>
     </ClCompile>
+    <ClCompile Include="crc_logger.cpp">
+      <Filter>头文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="crc_semaphore.hpp">
@@ -71,7 +74,7 @@
     <ClInclude Include="crc_buffer.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="crc_log.hpp">
+    <ClInclude Include="crc_logger.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

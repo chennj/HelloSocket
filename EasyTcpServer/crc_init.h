@@ -54,7 +54,6 @@ typedef std::shared_ptr<LoginResponse> LoginResponsePtr;
 typedef LoginResponsePtr& LoginResponsePtrRef;
 
 #include "crc_timestamp.hpp"
-#include "crc_task_server.hpp"
 
 // minimum buffer size
 #ifndef RECV_BUFFER_SIZE

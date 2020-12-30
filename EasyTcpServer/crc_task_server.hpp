@@ -3,12 +3,17 @@
 
 #include "crc_init.h"
 #include "crc_thread.hpp"
-#include "crc_log.hpp"
 
 #include<thread>
 #include<mutex>
 #include<list>
 #include<functional>
+
+// 这里是为了防止和CRCLogger产生循环引用
+namespace Logger
+{
+	void info(const char* str);
+}
 
 class CRCTaskServer
 {
@@ -24,7 +29,6 @@ public:
 	}
 	~CRCTaskServer()
 	{
-		CRCLogger::info("TaskServer destory.\n");
 		Close();
 	}
 
@@ -50,12 +54,18 @@ public:
 	void Close()
 	{
 		if (_crcThread.IsRun())_crcThread.Close();
+
+		// 有可能循环结束时，任务没有执行完
+		for (auto fTask : _tasksBuf)
+		{
+			fTask();
+		}
 	}
 
 	// work loop
 	void OnRun(CRCThread* threadPtr)
 	{
-		CRCLogger::info("TaskServer thread start...\n");
+		Logger::info("TaskServer thread start...\n");
 
 		while (threadPtr->IsRun())
 		{
@@ -87,11 +97,7 @@ public:
 			_tasks.clear();
 		}
 
-		// release resources
-		_tasks.clear();
-		_tasksBuf.clear();
-
-		CRCLogger::info("TaskServer thread exit...\n");
+		Logger::info("TaskServer thread exit...\n");
 	}
 };
 

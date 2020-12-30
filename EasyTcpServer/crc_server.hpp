@@ -37,7 +37,7 @@ public:
 		case CMD_LOGOUT:
 		{
 			//Logout* logout = (Logout*)pheader;
-			//CRCLogger::info("socket<%d> receive client socket<%d> message: CMD_LOGOUT , data length<%d>, user name<%s>\n", (int)_sock, (int)sock_client, pheader->data_length, logout->username);
+			//CRCCRCLogger::info("socket<%d> receive client socket<%d> message: CMD_LOGOUT , data length<%d>, user name<%s>\n", (int)_sock, (int)sock_client, pheader->data_length, logout->username);
 
 			//LogoutResponse ret;
 			//pChannel->SendData(&ret);
