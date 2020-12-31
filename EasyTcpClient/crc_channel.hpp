@@ -1,15 +1,14 @@
-﻿#ifndef _CRC_CHANNEL_HPP_
+#ifndef _CRC_CHANNEL_HPP_
 #define _CRC_CHANNEL_HPP_
 
 #include "crc_init.h"
 #include "crc_object_pool.hpp"
 #include "crc_buffer.hpp"
-#include "crc_logger.hpp"
 
 // countdown to heart beat check
-#define CLIENT_HEART_DEAD_TIME 5 * 1000
+#define SERVER_HEART_DEAD_TIME 30 * 1000
 // time interval in which server timing send data in sending buffer to client 
-#define CLIENT_TIMING_SEND_TIME 200
+#define SERVER_TIMING_SEND_TIME 200
 
 /**
 *	client object with socket
@@ -20,7 +19,7 @@ class CRCChannel : public CRCObjectPoolBase<CRCChannel, 10000>
 private:
 	// fd_set file descriptor
 	SOCKET _sockfd;
-	
+
 	// receive buffer
 	CRCBuffer _recvBuf;
 	// sending buffer
@@ -36,7 +35,7 @@ private:
 
 
 public:
-	CRCChannel(SOCKET sockfd = INVALID_SOCKET):
+	CRCChannel(SOCKET sockfd = INVALID_SOCKET) :
 		_sendBuf(SEND_BUFFER_SIZE),
 		_recvBuf(RECV_BUFFER_SIZE)
 	{
@@ -160,7 +159,7 @@ public:
 	}
 
 	// used to send data by asynchronous not-block mode
-	int SendDataBuffer(CRCDataHeaderPtr pheader)
+	int SendDataBuffer(const CRCDataHeader* pheader)
 	{
 		int ret = SOCKET_ERROR;
 		if (!pheader) {
@@ -170,7 +169,7 @@ public:
 		// it's data length that would send
 		int nSendLen = pheader->data_length;
 		// it's data that would send
-		const char* pSendData = (const char*)pheader.get();
+		const char* pSendData = (const char*)pheader;
 
 		ret = _sendBuf.push(pSendData, nSendLen);
 
@@ -186,9 +185,9 @@ public:
 	// check heart beat
 	bool check_heart_beat(time_t tNow)
 	{
-		if ((tNow - _dtHeart) >= CLIENT_HEART_DEAD_TIME)
+		if ((tNow - _dtHeart) >= SERVER_HEART_DEAD_TIME)
 		{
-			CRCLogger::info("check heart beat dead:socket<%d>,time<%d>\n", _sockfd, (tNow - _dtHeart));
+			//CRCLogger::info("check heart beat dead:socket<%d>,time<%d>\n", _sockfd, (tNow - _dtHeart));
 			return false;
 		}
 		return true;
@@ -203,7 +202,7 @@ public:
 	{
 		int ret = SOCKET_ERROR;
 		time_t dt = tNow - _dtSend;
-		if (dt >= CLIENT_TIMING_SEND_TIME)
+		if (dt >= SERVER_TIMING_SEND_TIME)
 		{
 			// immediately send data in sending buffer to client
 			// reset sending timing
@@ -220,7 +219,7 @@ public:
 	bool check_timing_send(time_t tNow)
 	{
 		time_t dt = tNow - _dtSend;
-		if (dt >= CLIENT_TIMING_SEND_TIME)
+		if (dt >= SERVER_TIMING_SEND_TIME)
 		{
 			return true;
 		}
@@ -231,6 +230,7 @@ public:
 	{
 		return _sendBuf.has_any_data();
 	}
+
 };
 
 #endif

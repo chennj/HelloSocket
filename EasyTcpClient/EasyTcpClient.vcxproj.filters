@@ -29,5 +29,23 @@
     <ClInclude Include="crc_message_header.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="crc_init.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="crc_net_environment.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="crc_buffer.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="crc_channel.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="crc_object_pool.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="crc_client.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

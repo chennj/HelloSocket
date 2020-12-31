@@ -1,50 +1,22 @@
 ﻿#ifndef _CRC_WORK_CLIENT_HPP_
 #define _CRC_WORK_CLIENT_HPP_
 
-#ifdef _WIN32
-#ifndef FD_SETSIZE
-#define FD_SETSIZE      2506			//windows default FD_SETSIZE equals 64, too small
-#endif
-#define WIN32_LEAN_AND_MEAN
-#define _WINSOCK_DEPRECATED_NO_WARNINGS
-#define _CRT_SECURE_NO_WARNINGS
-#include<Windows.h>
-#include<WinSock2.h>
-#pragma comment(lib, "ws2_32.lib")
-#else
-#include<unistd.h>
-#include<arpa/inet.h>
-#include<sys/types.h>
-#include <string.h>
-
-#define SOCKET int
-#define INVALID_SOCKET (SOCKET)(~0)
-#define SOCKET_ERROR			(-1)
-#endif
-#include<stdio.h>
-#include"crc_message_header.hpp"
-
-#ifndef RECV_BUFFER_SIZE
-#define RECV_BUFFER_SIZE 1024*10*5
-#endif
+#include "crc_init.h"
+#include "crc_net_environment.hpp"
+#include "crc_channel.hpp"
 
 class CRCWorkClient
 {
-private:
-	SOCKET _sock;
-	// receive buffer
-	char _szRecvBuffer[RECV_BUFFER_SIZE] = {};
-	// message buffer
-	char _szMsgBuffer[RECV_BUFFER_SIZE] = {};
-	// message buffer position
-	int _lastPos = 0;
+protected:
 	//
 	bool _isConnected;
+	//
+	CRCChannel* _pChannel;
 
 public:
 	CRCWorkClient()
 	{
-		_sock = INVALID_SOCKET;
+		_pChannel = nullptr;
 		_isConnected = false;
 	}
 
@@ -57,32 +29,31 @@ public:
 	// create socket
 	int InitSocket()
 	{
-		if (INVALID_SOCKET != _sock)
+		CRCNetEnvironment::init();
+
+		if (_pChannel)
 		{
-			printf("close previous connection<socket=%d>\n", (int)_sock);
+			printf("close previous connection<socket=%d>\n", (int)_pChannel->sockfd());
 			Close();
 		}
 
-#ifdef _WIN32
-		WORD ver = MAKEWORD(2, 2);
-		WSADATA data;
-		WSAStartup(ver, &data);
-#endif
 		// 1 create socket
-		_sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-		if (SOCKET_ERROR == _sock)
+		SOCKET sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+		if (SOCKET_ERROR == sock)
 		{
 			printf("create socket failure.\n");
 			return -1;
 		}
-		//printf("create socket success.\n");
+
+		_pChannel = new CRCChannel(sock);
+
 		return 0;
 	}
 
 	// connect server
 	int Connect(const char * ip, unsigned short port)
 	{
-		if (INVALID_SOCKET == _sock)
+		if (!_pChannel)
 		{
 			InitSocket();
 		}
@@ -95,14 +66,13 @@ public:
 #else
 		_sin.sin_addr.s_addr = inet_addr(ip);
 #endif
-		int ret = connect(_sock, (sockaddr*)&_sin, sizeof(sockaddr_in));
+		int ret = connect(_pChannel->sockfd(), (sockaddr*)&_sin, sizeof(sockaddr_in));
 		if (SOCKET_ERROR == ret)
 		{
 			printf("connect server failure...\n");
 			return ret;
 		}
 		
-		//printf("connect server success...\n");
 		_isConnected = true;
 		return ret;
 	}
@@ -110,15 +80,10 @@ public:
 	// close socket
 	void Close()
 	{
-		if (_sock == INVALID_SOCKET) return;
-
-#ifdef _WIN32
-		closesocket(_sock);
-		WSACleanup();
-#else
-		close(_sock);
-#endif
-		_sock = INVALID_SOCKET;
+		if (!_pChannel) return;
+	
+		delete _pChannel;
+		_pChannel = nullptr;
 		_isConnected = false;
 	}
 
@@ -127,16 +92,26 @@ public:
 	{
 		if (!IsRunning()) return -1;
 
-#ifdef _WIN32
-		FD_SET fdReads;
-#else
-		fd_set fdReads;
-#endif
-		FD_ZERO(&fdReads);
-		FD_SET(_sock, &fdReads);
+		SOCKET sock = _pChannel->sockfd();
 
+		fd_set fdRead;
+		FD_ZERO(&fdRead);
+		FD_SET(sock, &fdRead);
+
+		fd_set fdWrite;
+		FD_ZERO(&fdWrite);
 		timeval t = { 0,0 };
-		int ret = select(_sock + 1, &fdReads, 0, 0, &t);
+		int ret;
+		if (_pChannel->is_need_write())
+		{
+			FD_SET(sock, &fdWrite);
+			ret = select(sock + 1, &fdRead, &fdWrite, nullptr, &t);
+		}
+		else
+		{
+			ret = select(sock + 1, &fdRead, nullptr, nullptr, &t);
+		}
+		 
 		if (ret < 0)
 		{
 			printf("error occurs while listen server\n");
@@ -144,11 +119,19 @@ public:
 			return ret;
 		}
 
-		if (FD_ISSET(_sock, &fdReads))
+		if (FD_ISSET(sock, &fdRead))
 		{
-			FD_CLR(_sock, &fdReads);
-
 			int ret = RecvData();
+			if (-1 == ret)
+			{
+				Close();
+				return ret;
+			}
+		}
+
+		if (FD_ISSET(sock, &fdWrite))
+		{
+			int ret = _pChannel->SendDataIM();
 			if (-1 == ret)
 			{
 				Close();
@@ -161,7 +144,7 @@ public:
 
 	bool IsRunning()
 	{
-		return INVALID_SOCKET != _sock && _isConnected;
+		return _pChannel && _isConnected;
 	}
 
 	/*
@@ -171,96 +154,31 @@ public:
 	*/
 	int RecvData()
 	{
-		char* szRecv = _szMsgBuffer + _lastPos;
-		// receive data
-		//int nLen = recv(_sock, _szRecvBuffer, RECV_BUFFER_SIZE, 0);
-		int nLen = recv(_sock, szRecv, RECV_BUFFER_SIZE - _lastPos, 0);
+		//receive client data
+		int nLen = _pChannel->RecvData();
 		if (nLen <= 0)
 		{
-			printf("disconnected to server.\n");
 			return -1;
 		}
 
-		// copy receive buffer data to message buffer
-		//memcpy(_szMsgBuffer + _lastPos, _szRecvBuffer, nLen);
-
-		// update end position of message buffer
-		_lastPos += nLen;
-
-		// whether message buffer size greater than message header(DataHeader)'s size,
-		// if yes, converting message buffer to struct DataHeader and clear message buffer
-		// had dealed.
-		while (_lastPos >= sizeof(CRCDataHeader))
+		// loop proccess message
+		while (_pChannel->HasMessage())
 		{
-			CRCDataHeader * pheader = (CRCDataHeader*)_szMsgBuffer;
-			if (_lastPos >= pheader->data_length)
-			{
-				// processed message's length
-				int nMsgSize = pheader->data_length;
-				// length of message buffer which was untreated
-				int nSize = _lastPos - nMsgSize;
-				// process net message
-				OnNetMessage(pheader);
-				// earse processed message buffer
-				memcpy(_szMsgBuffer, _szMsgBuffer + nMsgSize, nSize);
-				// update end position of message buffer
-				_lastPos = nSize;
-			}
-			else
-			{
-				// length of message buffer which was untreated less than 
-				// length of message header(DataHeader)'s size
-				break;
-			}
+			// process message
+			OnNetMessage(_pChannel->front_message());
+			// remove one message from buffer
+			_pChannel->pop_front_message();
 		}
 
-		return 0;
+		return nLen;
 	}
 
-	int SendData(CRCDataHeader * header, int nLen)
+	int SendData(const CRCDataHeader* pHeader)
 	{
-		int ret = SOCKET_ERROR;
-		if (IsRunning() && header)
-		{
-			ret = send(_sock, (const char*)header, nLen, 0);
-			if (SOCKET_ERROR == ret)
-			{
-				Close();
-			}
-		}
-		return ret;
+		return _pChannel->SendDataBuffer(pHeader);
 	}
 
-	void OnNetMessage(CRCDataHeader* header)
-	{
-
-		switch (header->cmd)
-		{
-		case CMD_LOGIN_RESPONSE:
-		{
-			//LoginResponse* ret = (LoginResponse*)header;
-			//printf("receive server msg: CMD_LOGIN_RESPONSE, data length: %d, result: %d\n", header->data_length, ret->result);
-		}
-		break;
-		case CMD_LOGOUT_RESPONSE:
-		{
-			//LogoutResponse* ret = (LogoutResponse*)header;
-			//printf("receive server msg: CMD_LOGOUT_RESPONSE, data length: %d, result: %d\n", header->data_length, ret->result);
-		}
-		break;
-		case CMD_NEW_USER_JOIN:
-		{
-			//NewUserJoin* ret = (NewUserJoin*)header;
-			//printf("receive server msg: CMD_NEW_USER_JOIN, data length: %d, result: %d\n", header->data_length, ret->sock);
-		}
-		break;
-		default:
-		{
-			printf("receive server msg: UNKNOWN, data length: %d\n", header->data_length);
-		}
-		break;
-		}
-	}
+	virtual void OnNetMessage(CRCDataHeader* header) = 0;
 };
 
 #endif

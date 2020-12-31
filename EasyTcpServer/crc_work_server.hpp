@@ -114,14 +114,14 @@ protected:
 			}
 
 			memcpy(&fd_write, &_fd_read_bak, sizeof(fd_set));
-			memcpy(&fd_exception, &_fd_read_bak, sizeof(fd_set));
+			//memcpy(&fd_exception, &_fd_read_bak, sizeof(fd_set));
 
 			//nfds is range of fd_set, not fd_set's count.
 			//nfds is also max value+1 of all the file descriptor(socket).
 			//nfds can be 0 in the windows.
 			//that timeval was setted null means blocking, not null means nonblocking.
 			timeval t = { 0,1 };
-			ret = select(_max_socket + 1/*nfds*/, &fd_read, &fd_write, &fd_exception, &t);
+			ret = select(_max_socket + 1/*nfds*/, &fd_read, &fd_write, nullptr, &t);
 			if (ret < 0)
 			{
 				CRCLogger::info("WorkServer socket<%d> error occurs while select and mission finish.\n", (int)_sock);
@@ -135,14 +135,14 @@ protected:
 
 			ReadData(fd_read);
 			WriteData(fd_write);
-			WriteData(fd_exception);
+			//WriteData(fd_exception);
 #ifdef _WIN32
 			if (_tTime.getElapsedSecond() >= 1.0)
 			{
-				if (fd_exception.fd_count > 0)
-				{
-					xPrintf("###>>>WorkServer exception<%d>\n", fd_exception.fd_count);
-				}
+				//if (fd_exception.fd_count > 0)
+				//{
+				//	xPrintf("###>>>WorkServer exception<%d>\n", fd_exception.fd_count);
+				//}
 				xPrintf("WorkServer readable<%d>, writable<%d>\n", fd_read.fd_count, fd_write.fd_count);
 				_tTime.update();
 			}

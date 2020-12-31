@@ -2,7 +2,6 @@
 #define _CRC_BUFFER_HPP_
 
 #include "crc_init.h"
-#include "crc_logger.hpp"
 
 class CRCBuffer
 {
@@ -41,16 +40,16 @@ public:
 		int ret = 0;
 
 		// buffer is full
-		if (_lastPos + nLen > _nSize)
-		{
-			int n = DEFAULT_BUFFER_SIZE;
-			while ((n <<= 1) < (_nSize + nLen));
-			_nSize = n;
-			char* buffer = new char[_nSize];
-			memcpy(buffer, _pBuf, _lastPos);
-			delete[] _pBuf;
-			_pBuf = buffer;
-		}
+		//if (_lastPos + nLen > _nSize)
+		//{
+		//	int n = DEFAULT_BUFFER_SIZE;
+		//	while ((n <<= 1) < (_nSize + nLen));
+		//	_nSize = n;
+		//	char* buffer = new char[_nSize];
+		//	memcpy(buffer, _pBuf, _lastPos);
+		//	delete[] _pBuf;
+		//	_pBuf = buffer;
+		//}
 
 		if (_lastPos + nLen <= _nSize)
 		{
@@ -69,6 +68,7 @@ public:
 		}
 		else
 		{
+			//printf("send buffer is full\n");
 			_fullCount++;
 		}
 

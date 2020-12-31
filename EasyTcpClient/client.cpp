@@ -1,7 +1,7 @@
 // linux compile command
 // g++ client.cpp -std=c++11 -pthread -o client
 // ----------------------------------
-#include "crc_work_client.hpp"
+#include "crc_client.hpp"
 #include "crc_timestamp.hpp"
 
 #include <thread>
@@ -16,7 +16,7 @@ const int tCount = 2;
 const int nCount = 100;
 
 // client object
-CRCWorkClient* pclients[nCount];
+CRCClient* pclients[nCount];
 
 // client send count
 std::atomic_int sendCount;
@@ -47,6 +47,7 @@ void cmdThread()
 void recvThread(int begin, int end)
 {
 	CRCTimestamp t;
+	int ret = 0;
 	while (g_run)
 	{
 		for (int n = begin; n < end; n++)
@@ -57,16 +58,9 @@ void recvThread(int begin, int end)
 			//	continue;
 			//}
 
-			int ret = pclients[n]->OnRun();
-			if (ret < 0)
-			{
-				goto exit;
-			}
+			ret = pclients[n]->OnRun();
 		}
 	}
-
-exit:
-	printf("client recv end...\n");
 }
 
 void sendThread(int id) //1~4
@@ -79,13 +73,13 @@ void sendThread(int id) //1~4
 	for (int n = begin; n < end; n++)
 	{
 		if (!g_run)return;
-		pclients[n] = new CRCWorkClient;
+		pclients[n] = new CRCClient;
 	}
 
 	for (int n = begin; n < end; n++)
 	{
 		if (!g_run)return;
-		pclients[n]->Connect("192.168.137.129", 12345);
+		pclients[n]->Connect("127.0.0.1", 12345);
 	}
 
 	readyCount++;
@@ -113,6 +107,8 @@ void sendThread(int id) //1~4
 	const int nLen = sizeof(login);
 	CRCTimestamp tTime;
 
+	int one_print = 1;
+	int one = end - begin;
 	while (g_run)
 	{
 		for (int n = begin; n < end; n++)
@@ -131,19 +127,22 @@ void sendThread(int id) //1~4
 
 			if (pclients[n]->IsRunning())
 			{
-				if (SOCKET_ERROR != pclients[n]->SendData(login, nLen))
+				if (SOCKET_ERROR != pclients[n]->SendData(login))
 				{
 					sendCount++;
 				}
-				//else {
-				//	g_run = false;
-				//}
+			}
+			else {
+				if (one_print <= one) {
+					printf("server close one client\n");
+					one_print++;
+				}
 			}
 		}
 
 		// to control speed to send
-		//std::chrono::milliseconds t(1);
-		//std::this_thread::sleep_for(t);
+		std::chrono::microseconds t(100);
+		std::this_thread::sleep_for(t);
 	}
 
 	for (int n = begin; n < end; n++)
