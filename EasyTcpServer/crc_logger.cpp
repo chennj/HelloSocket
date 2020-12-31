@@ -11,6 +11,7 @@ Logger::info(const char* str)
 			auto t = system_clock::now();
 			auto tt = system_clock::to_time_t(t);
 			std::tm* ttt = std::gmtime(&tt);
+			fprintf(pLog->_logFile, "%s", "INFO ");
 			fprintf(pLog->_logFile, "%d-%d-%d %d:%d:%d\t%s",
 				ttt->tm_year + 1900, ttt->tm_mon + 1, ttt->tm_mday,
 				ttt->tm_hour + 8, ttt->tm_min, ttt->tm_sec,

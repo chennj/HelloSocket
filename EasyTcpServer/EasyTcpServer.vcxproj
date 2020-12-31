@@ -171,6 +171,7 @@
     <ClInclude Include="crc_init.h" />
     <ClInclude Include="crc_logger.h" />
     <ClInclude Include="crc_memory_pool.hpp" />
+    <ClInclude Include="crc_net_environment.hpp" />
     <ClInclude Include="crc_semaphore.hpp" />
     <ClInclude Include="crc_thread.hpp" />
     <ClInclude Include="crc_object_pool.hpp" />

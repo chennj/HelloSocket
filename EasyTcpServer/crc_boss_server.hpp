@@ -5,6 +5,7 @@
 #include "crc_inet_event.hpp"
 #include "crc_work_server.hpp"
 #include "crc_thread.hpp"
+#include "crc_net_environment.hpp"
 
 #include <thread>
 #include <mutex>
@@ -57,23 +58,14 @@ public:
 	// initialize socket
 	int InitSocket()
 	{
+		CRCNetEnvironment::init();
+
 		if (INVALID_SOCKET != _sock)
 		{
 			CRCLogger::info("close previous connection socket<%d>\n", (int)_sock);
 			Close();
 		}
 
-#ifdef _WIN32
-		WORD ver = MAKEWORD(2, 2);
-		WSADATA data;
-		WSAStartup(ver, &data);
-#else
-		// ignore exception signal
-		if (signal(SIGPIPE, SIG_IGN) == SIG_ERR)
-		{
-			return (1);
-		}
-#endif
 		// 1 create socket
 		_sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 		if (SOCKET_ERROR == _sock)
@@ -209,7 +201,6 @@ public:
 
 #ifdef _WIN32
 		closesocket(_sock);
-		WSACleanup();
 #else
 		close(_sock);
 #endif

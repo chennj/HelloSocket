@@ -77,5 +77,8 @@
     <ClInclude Include="crc_logger.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="crc_net_environment.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
