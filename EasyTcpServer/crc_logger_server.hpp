@@ -1,16 +1,14 @@
-ï»¿#ifndef _CRC_TASK_SERVER_HPP_
-#define _CRC_TASK_SERVER_HPP_
+#ifndef _CRC_LOGSERVER_HPP_
+#define _CRC_LOGSERVER_HPP_
 
 #include "crc_init.h"
 #include "crc_thread.hpp"
-#include "crc_logger.hpp"
 
-#include<thread>
 #include<mutex>
 #include<list>
 #include<functional>
 
-class CRCTaskServer
+class CRCLogServer
 {
 	typedef std::function<void()> FTask;
 private:
@@ -19,10 +17,10 @@ private:
 	std::mutex _mutex;
 	CRCThread _crcThread;
 public:
-	CRCTaskServer()
+	CRCLogServer()
 	{
 	}
-	~CRCTaskServer()
+	~CRCLogServer()
 	{
 		Close();
 	}
@@ -41,7 +39,7 @@ public:
 		_crcThread.Start
 		(
 			nullptr,
-			[this](CRCThread* pCrcThread){ OnRun(pCrcThread); },
+			[this](CRCThread* pCrcThread) { OnRun(pCrcThread); },
 			nullptr
 		);
 	}
@@ -50,7 +48,7 @@ public:
 	{
 		if (_crcThread.IsRun())_crcThread.Close();
 
-		// æœ‰å¯èƒ½å¾ªçŽ¯ç»“æŸæ—¶ï¼Œä»»åŠ¡æ²¡æœ‰æ‰§è¡Œå®Œ
+		// ÓÐ¿ÉÄÜÑ­»·½áÊøÊ±£¬ÈÎÎñÃ»ÓÐÖ´ÐÐÍê
 		for (auto fTask : _tasksBuf)
 		{
 			fTask();
@@ -60,7 +58,7 @@ public:
 	// work loop
 	void OnRun(CRCThread* threadPtr)
 	{
-		CRCLogger::info("TaskServer thread start...\n");
+		print("LogServer thread start ...\n");
 
 		while (threadPtr->IsRun())
 		{
@@ -92,8 +90,15 @@ public:
 			_tasks.clear();
 		}
 
-		CRCLogger::info("TaskServer thread exit...\n");
+		print("LogServer thread exit ...\n");
+	}
+
+private:
+	void print(const char* str)
+	{
+		printf("%s", str);
 	}
 };
+
 
 #endif

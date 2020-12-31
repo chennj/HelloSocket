@@ -2,7 +2,7 @@
 #define _CRC_MEMORY_POOL_HPP_
 
 #include "crc_init.h"
-#include "crc_logger.h"
+#include "crc_logger.hpp"
 
 #include <stdlib.h>
 #include <mutex>

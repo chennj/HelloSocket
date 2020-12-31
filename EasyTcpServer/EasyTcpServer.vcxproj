@@ -159,17 +159,17 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="crc_allocator.cpp" />
-    <ClCompile Include="crc_logger.cpp" />
     <ClCompile Include="server.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="crc_logger_server.hpp" />
     <ClInclude Include="crc_allocator.h" />
     <ClInclude Include="crc_auto_ptr.hpp" />
     <ClInclude Include="crc_buffer.hpp" />
     <ClInclude Include="crc_channel.hpp" />
     <ClInclude Include="crc_inet_event.hpp" />
     <ClInclude Include="crc_init.h" />
-    <ClInclude Include="crc_logger.h" />
+    <ClInclude Include="crc_logger.hpp" />
     <ClInclude Include="crc_memory_pool.hpp" />
     <ClInclude Include="crc_net_environment.hpp" />
     <ClInclude Include="crc_semaphore.hpp" />

@@ -1,26 +1,53 @@
-#ifndef _CRC_LOGGER_H_
-#define _CRC_LOGGER_H_
-
-#include "crc_init.h"
-#include "crc_task_server.hpp"
+#ifndef _CRC_LOGGER_HPP_
+#define _CRC_LOGGER_HPP_
 
 #include <ctime>
+#include "crc_logger.hpp"
+#include "crc_logger_server.hpp"
 
 class CRCLogger
 {
-	friend void Logger::info(const char* str);
-
 private:
-	std::shared_ptr<CRCTaskServer> _pTaskServer;
+	std::shared_ptr<CRCLogServer> _pLogServer;
 	FILE* _logFile;
 
 public:
-	CRCLogger();
-	~CRCLogger();
+	CRCLogger()
+	{
+		_logFile = nullptr;
+
+		_pLogServer = std::make_shared<CRCLogServer>();
+	}
+
+	~CRCLogger()
+	{
+	}
 
 public:
-	void set_log_path(const char* path, const char* mode = "");
-	void start();
+	void set_log_path(const char* path, const char* mode = "")
+	{
+		if (_logFile)
+		{
+			info("CRCLogger::set_log_path old logger file had closed\n");
+			fclose(_logFile);
+			_logFile = nullptr;
+		}
+
+		_logFile = fopen(path, mode);
+		if (_logFile)
+		{
+			info("CRCLogger::set_log_path success, <%s,%s>\n", path, mode);
+		}
+		else
+		{
+			info("CRCLogger::set_log_path failed, <%s,%s>\n", path, mode);
+		}
+	}
+
+	void start()
+	{
+		_pLogServer->Start();
+	}
 public:
 	static CRCLogger& instance()
 	{
@@ -32,13 +59,13 @@ public:
 	{
 		auto pLog = &CRCLogger::instance();
 
-		pLog->_pTaskServer->addTask([pLog, str]() {
+		pLog->_pLogServer->addTask([pLog, str]() {
 			if (pLog->_logFile)
 			{
 				auto t = system_clock::now();
 				auto tt = system_clock::to_time_t(t);
 				std::tm* ttt = std::gmtime(&tt);
-				fprintf(pLog->_logFile, "%s","INFO ");
+				fprintf(pLog->_logFile, "%s", "INFO ");
 				fprintf(pLog->_logFile, "%d-%d-%d %d:%d:%d\t%s",
 					ttt->tm_year + 1900, ttt->tm_mon + 1, ttt->tm_mday,
 					ttt->tm_hour + 8, ttt->tm_min, ttt->tm_sec,
@@ -54,7 +81,7 @@ public:
 	{
 		auto pLog = &CRCLogger::instance();
 
-		pLog->_pTaskServer->addTask([pLog, format, args...]() {
+		pLog->_pLogServer->addTask([pLog, format, args...]() {
 			if (pLog->_logFile)
 			{
 				auto t = system_clock::now();
@@ -73,3 +100,4 @@ public:
 };
 
 #endif
+

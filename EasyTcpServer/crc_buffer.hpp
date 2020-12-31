@@ -2,6 +2,7 @@
 #define _CRC_BUFFER_HPP_
 
 #include "crc_init.h"
+#include "crc_logger.hpp"
 
 class CRCBuffer
 {

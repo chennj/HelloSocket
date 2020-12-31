@@ -19,10 +19,7 @@ private:
 		WSAStartup(ver, &data);
 #else
 		// ignore exception signal
-		if (signal(SIGPIPE, SIG_IGN) == SIG_ERR)
-		{
-			return (1);
-		}
+		signal(SIGPIPE, SIG_IGN);
 #endif
 	}
 

@@ -4,7 +4,7 @@
 #include "crc_init.h"
 #include "crc_object_pool.hpp"
 #include "crc_buffer.hpp"
-#include "crc_logger.h"
+#include "crc_logger.hpp"
 
 // countdown to heart beat check
 #define CLIENT_HEART_DEAD_TIME 30 * 1000

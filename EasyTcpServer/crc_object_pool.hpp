@@ -1,8 +1,10 @@
 ﻿#ifndef _CRC_OBJECT_POOL_HPP_
 #define _CRC_OBJECT_POOL_HPP_
 
-#include"crc_init.h"
-#include<mutex>
+#include "crc_init.h"
+#include "crc_logger.hpp"
+
+#include <mutex>
 
 template<class Type, size_t nPoolQuantity>
 class CRCObjectPool
