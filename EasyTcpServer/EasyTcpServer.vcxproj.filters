@@ -47,9 +47,6 @@
     <ClInclude Include="crc_memory_pool.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="crc_message_header.hpp">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="crc_object_pool.hpp">
       <Filter>头文件</Filter>
     </ClInclude>

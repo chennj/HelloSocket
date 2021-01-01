@@ -45,7 +45,7 @@ typedef CRCChannelPtr& CRCChannelPtrRef;
 typedef std::shared_ptr<CRCWorkServer> CRCWorkServerPtr;
 typedef CRCWorkServerPtr& WorkServerPtrRef;
 
-#include "../common/include/crc_message_header.hpp"
+#include "crc_message_header.hpp"
 
 typedef std::shared_ptr<CRCDataHeader> CRCDataHeaderPtr;
 typedef CRCDataHeaderPtr& CRCDataHeaderPtrRef;

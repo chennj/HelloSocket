@@ -37,7 +37,7 @@ class CRCChannel;
 typedef std::shared_ptr<CRCChannel> CRCChannelPtr;
 typedef CRCChannelPtr& CRCChannelPtrRef;
 
-#include "crc_message_header.hpp"
+#include "../common/include/crc_message_header.hpp"
 
 typedef std::shared_ptr<CRCDataHeader> CRCDataHeaderPtr;
 typedef CRCDataHeaderPtr& CRCDataHeaderPtrRef;

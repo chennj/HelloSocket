@@ -18,6 +18,24 @@
       <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="crc_buffer.hpp" />
+    <ClInclude Include="crc_channel.hpp" />
+    <ClInclude Include="crc_client.hpp" />
+    <ClInclude Include="crc_init.h" />
+    <ClInclude Include="crc_logger.hpp" />
+    <ClInclude Include="crc_logger_server.hpp" />
+    <ClInclude Include="crc_message_header.hpp" />
+    <ClInclude Include="crc_net_environment.hpp" />
+    <ClInclude Include="crc_object_pool.hpp" />
+    <ClInclude Include="crc_semaphore.hpp" />
+    <ClInclude Include="crc_thread.hpp" />
+    <ClInclude Include="crc_timestamp.hpp" />
+    <ClInclude Include="crc_work_client.hpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="client.cpp" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{1AB7827B-F4D6-4F1D-A07F-81FE7A923D55}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
@@ -153,9 +171,6 @@
       <AdditionalDependencies>ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
-  <ItemGroup>
-    <ClCompile Include="client.cpp" />
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

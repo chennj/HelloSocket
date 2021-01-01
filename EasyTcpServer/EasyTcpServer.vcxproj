@@ -178,7 +178,6 @@
     <ClInclude Include="crc_task_server.hpp" />
     <ClInclude Include="crc_timestamp.hpp" />
     <ClInclude Include="crc_boss_server.hpp" />
-    <ClInclude Include="crc_message_header.hpp" />
     <ClInclude Include="crc_server.hpp" />
     <ClInclude Include="crc_work_server.hpp" />
   </ItemGroup>

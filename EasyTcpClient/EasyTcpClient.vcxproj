@@ -173,7 +173,6 @@
     <ClInclude Include="crc_thread.hpp" />
     <ClInclude Include="crc_timestamp.hpp" />
     <ClInclude Include="crc_work_client.hpp" />
-    <ClInclude Include="crc_message_header.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
