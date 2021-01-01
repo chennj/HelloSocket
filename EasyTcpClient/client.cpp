@@ -79,7 +79,9 @@ void sendThread(int id) //1~4
 	for (int n = begin; n < end; n++)
 	{
 		if (!g_run)return;
-		pclients[n]->Connect("127.0.0.1", 12345);
+		// 192.168.137.129 ubuntu
+		// 127.0.0.1
+		pclients[n]->Connect("192.168.137.129", 12345);
 	}
 
 	readyCount++;

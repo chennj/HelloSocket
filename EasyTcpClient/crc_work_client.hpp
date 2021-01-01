@@ -175,7 +175,7 @@ public:
 
 	int SendData(const CRCDataHeader* pHeader)
 	{
-		return _pChannel->SendDataBuffer(pHeader);
+		return _pChannel->SendDataBuffer(std::make_shared<CRCDataHeader>(*pHeader));
 	}
 
 	virtual void OnNetMessage(CRCDataHeader* header) = 0;

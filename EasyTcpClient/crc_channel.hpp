@@ -6,9 +6,9 @@
 #include "crc_buffer.hpp"
 
 // countdown to heart beat check
-#define SERVER_HEART_DEAD_TIME 30 * 1000
+#define CLIENT_HEART_DEAD_TIME 5 * 1000
 // time interval in which server timing send data in sending buffer to client 
-#define SERVER_TIMING_SEND_TIME 200
+#define CLIENT_TIMING_SEND_TIME 200
 
 /**
 *	client object with socket
@@ -159,7 +159,7 @@ public:
 	}
 
 	// used to send data by asynchronous not-block mode
-	int SendDataBuffer(const CRCDataHeader* pheader)
+	int SendDataBuffer(CRCDataHeaderPtr pheader)
 	{
 		int ret = SOCKET_ERROR;
 		if (!pheader) {
@@ -169,7 +169,7 @@ public:
 		// it's data length that would send
 		int nSendLen = pheader->data_length;
 		// it's data that would send
-		const char* pSendData = (const char*)pheader;
+		const char* pSendData = (const char*)pheader.get();
 
 		ret = _sendBuf.push(pSendData, nSendLen);
 
@@ -185,7 +185,7 @@ public:
 	// check heart beat
 	bool check_heart_beat(time_t tNow)
 	{
-		if ((tNow - _dtHeart) >= SERVER_HEART_DEAD_TIME)
+		if ((tNow - _dtHeart) >= CLIENT_HEART_DEAD_TIME)
 		{
 			//CRCLogger::info("check heart beat dead:socket<%d>,time<%d>\n", _sockfd, (tNow - _dtHeart));
 			return false;
@@ -202,7 +202,7 @@ public:
 	{
 		int ret = SOCKET_ERROR;
 		time_t dt = tNow - _dtSend;
-		if (dt >= SERVER_TIMING_SEND_TIME)
+		if (dt >= CLIENT_TIMING_SEND_TIME)
 		{
 			// immediately send data in sending buffer to client
 			// reset sending timing
@@ -219,7 +219,7 @@ public:
 	bool check_timing_send(time_t tNow)
 	{
 		time_t dt = tNow - _dtSend;
-		if (dt >= SERVER_TIMING_SEND_TIME)
+		if (dt >= CLIENT_TIMING_SEND_TIME)
 		{
 			return true;
 		}
@@ -230,7 +230,6 @@ public:
 	{
 		return _sendBuf.has_any_data();
 	}
-
 };
 
 #endif

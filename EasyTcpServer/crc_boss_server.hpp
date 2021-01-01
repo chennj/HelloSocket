@@ -50,8 +50,6 @@ public:
 
 	virtual ~CRCBossServer()
 	{
-		_workServers.clear();
-
 		Close();
 	}
 
@@ -206,6 +204,9 @@ public:
 		close(_sock);
 #endif
 		_sock = INVALID_SOCKET;
+
+		_workServers.clear();
+
 		if (_crcThread.IsRun())_crcThread.Close();
 		CRCLogger::info("server is shutdown\n");
 	}
@@ -236,7 +237,8 @@ protected:
 	{
 		CRCLogger::info("BossServer thread start...\n");
 
-		while (pCrcThread->IsRun())
+		//while (pCrcThread->IsRun())
+		while(IsRunning())
 		{
 			time4Msg();
 
@@ -264,7 +266,8 @@ protected:
 			if (ret < 0)
 			{
 				CRCLogger::info("BossServer socket<%d> error occurs while select and mission finish.\n", (int)_sock);
-				pCrcThread->ExitInSelfThread();
+				//pCrcThread->ExitInSelfThread();
+				//Close();
 				break;
 			}
 
@@ -275,6 +278,8 @@ protected:
 				Accept();
 			}
 		}
+
+		pCrcThread->ExitInSelfThread();
 
 		CRCLogger::info("BossServer thread exit...\n");
 	}

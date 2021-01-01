@@ -88,11 +88,11 @@ protected:
 
 			fd_set fd_read;
 			fd_set fd_write;
-			fd_set fd_exception;
+			//fd_set fd_exception;
 
 			FD_ZERO(&fd_read);
 			FD_ZERO(&fd_write);
-			FD_ZERO(&fd_exception);
+			//FD_ZERO(&fd_exception);
 
 			if (_clients_change)
 			{
@@ -113,25 +113,44 @@ protected:
 				memcpy(&fd_read, &_fd_read_bak, sizeof(fd_set));
 			}
 
-			memcpy(&fd_write, &_fd_read_bak, sizeof(fd_set));
+			//memcpy(&fd_write, &_fd_read_bak, sizeof(fd_set));
 			//memcpy(&fd_exception, &_fd_read_bak, sizeof(fd_set));
+			// 优化可写检查，不直接拷贝，只有有了需要写数据的客户端
+			// 才去加入到写监听集合里。避免cpu空转，产生大量的浪费。
+			bool haveDataToWrite = false;
+			for (auto iter : _clients)
+			{
+				if (iter.second->is_need_write())
+				{
+					haveDataToWrite = true;
+					FD_SET(iter.first, &fd_write);
+				}
+			}
+
 
 			//nfds is range of fd_set, not fd_set's count.
 			//nfds is also max value+1 of all the file descriptor(socket).
 			//nfds can be 0 in the windows.
 			//that timeval was setted null means blocking, not null means nonblocking.
 			timeval t = { 0,1 };
-			ret = select(_max_socket + 1/*nfds*/, &fd_read, &fd_write, nullptr, &t);
+			if (haveDataToWrite)
+			{
+				ret = select(_max_socket + 1/*nfds*/, &fd_read, &fd_write, nullptr, &t);
+			}
+			else
+			{
+				ret = select(_max_socket + 1/*nfds*/, &fd_read, nullptr, nullptr, &t);
+			}
 			if (ret < 0)
 			{
 				CRCLogger::info("WorkServer socket<%d> error occurs while select and mission finish.\n", (int)_sock);
 				pCrcThread->ExitInSelfThread();
 				break;
 			}
-			//else if (0 == ret)
-			//{
-			//	continue;
-			//}
+			else if (0 == ret)
+			{
+				continue;
+			}
 
 			ReadData(fd_read);
 			WriteData(fd_write);
@@ -146,8 +165,8 @@ protected:
 				xPrintf("WorkServer readable<%d>, writable<%d>\n", fd_read.fd_count, fd_write.fd_count);
 				_tTime.update();
 			}
-
 #endif
+			// 定时检测心跳，或发送数据
 			CheckTime();
 		} // while (IsRunning())
 
@@ -174,6 +193,7 @@ protected:
 			/**
 			*
 			*	regulary check to decide whether to send data to client
+			*
 			*/
 			// synchronization execute, need add lock, will reduce sending speed
 			//int ret = iterOld->second->timing_send(tNow);
@@ -218,7 +238,7 @@ protected:
 		std::vector<CRCChannelPtr> temp;
 		for (auto iter : _clients)
 		{
-			if (FD_ISSET(iter.first, &fd_write))
+			if (iter.second->is_need_write() && FD_ISSET(iter.first, &fd_write))
 			{
 				if (-1 == RecvData(iter.second))
 				{
