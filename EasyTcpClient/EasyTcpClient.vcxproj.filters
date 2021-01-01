@@ -47,5 +47,17 @@
     <ClInclude Include="crc_client.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="crc_logger.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="crc_logger_server.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="crc_thread.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="crc_semaphore.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

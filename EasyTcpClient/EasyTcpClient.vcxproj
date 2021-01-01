@@ -165,8 +165,12 @@
     <ClInclude Include="crc_channel.hpp" />
     <ClInclude Include="crc_client.hpp" />
     <ClInclude Include="crc_init.h" />
+    <ClInclude Include="crc_logger.hpp" />
+    <ClInclude Include="crc_logger_server.hpp" />
     <ClInclude Include="crc_net_environment.hpp" />
     <ClInclude Include="crc_object_pool.hpp" />
+    <ClInclude Include="crc_semaphore.hpp" />
+    <ClInclude Include="crc_thread.hpp" />
     <ClInclude Include="crc_timestamp.hpp" />
     <ClInclude Include="crc_work_client.hpp" />
     <ClInclude Include="crc_message_header.hpp" />
