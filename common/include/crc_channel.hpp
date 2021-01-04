@@ -1,7 +1,6 @@
 ﻿#ifndef _CRC_CHANNEL_HPP_
 #define _CRC_CHANNEL_HPP_
 
-#include "crc_init.h"
 #include "crc_object_pool.hpp"
 #include "crc_buffer.hpp"
 #include "crc_logger.hpp"

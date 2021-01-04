@@ -1,7 +1,7 @@
 ﻿#ifndef _CRC_MEMORY_POOL_HPP_
 #define _CRC_MEMORY_POOL_HPP_
 
-#include "crc_init.h"
+#include "crc_common.h"
 #include "crc_logger.hpp"
 
 #include <stdlib.h>

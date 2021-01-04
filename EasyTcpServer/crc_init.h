@@ -1,14 +1,7 @@
 ﻿#ifndef _CRC_INIT_H_
 #define _CRC_INIT_H_
 
-#include<assert.h>
-
-#ifdef _DEBUG
-#include<stdio.h>
-#define xPrintf(...) printf(__VA_ARGS__)
-#else
-#define xPrintf(...)
-#endif
+#include "../common/include/crc_common.h"
 
 #ifdef _WIN32
 #ifndef FD_SETSIZE
@@ -32,8 +25,6 @@
 #define SOCKET_ERROR			(-1)
 #endif
 
-#include <stdio.h>
-#include <memory>
 
 class CRCWorkServer;
 class WorkServerSend2ClientTask;
@@ -53,7 +44,7 @@ typedef CRCDataHeaderPtr& CRCDataHeaderPtrRef;
 typedef std::shared_ptr<LoginResponse> LoginResponsePtr;
 typedef LoginResponsePtr& LoginResponsePtrRef;
 
-#include "crc_timestamp.hpp"
+#include "../common/include/crc_timestamp.hpp"
 
 // minimum buffer size
 #ifndef RECV_BUFFER_SIZE

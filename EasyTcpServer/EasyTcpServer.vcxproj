@@ -158,25 +158,14 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="crc_allocator.cpp" />
     <ClCompile Include="server.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="crc_logger_server.hpp" />
-    <ClInclude Include="crc_allocator.h" />
     <ClInclude Include="crc_auto_ptr.hpp" />
-    <ClInclude Include="crc_buffer.hpp" />
-    <ClInclude Include="crc_channel.hpp" />
     <ClInclude Include="crc_inet_event.hpp" />
     <ClInclude Include="crc_init.h" />
-    <ClInclude Include="crc_logger.hpp" />
-    <ClInclude Include="crc_memory_pool.hpp" />
     <ClInclude Include="crc_net_environment.hpp" />
-    <ClInclude Include="crc_semaphore.hpp" />
-    <ClInclude Include="crc_thread.hpp" />
-    <ClInclude Include="crc_object_pool.hpp" />
     <ClInclude Include="crc_task_server.hpp" />
-    <ClInclude Include="crc_timestamp.hpp" />
     <ClInclude Include="crc_boss_server.hpp" />
     <ClInclude Include="crc_server.hpp" />
     <ClInclude Include="crc_work_server.hpp" />

@@ -15,17 +15,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="MessageHeader.hpp">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="Timestamp.hpp">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="WorkClient.hpp">
-      <Filter>头文件</Filter>
-    </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
     <ClCompile Include="client.cpp">
       <Filter>源文件</Filter>
     </ClCompile>

@@ -1,11 +1,12 @@
 ﻿#ifndef _CRC_WORK_SERVER_HPP_
 #define _CRC_WORK_SERVER_HPP_
 
+#include "../common/include/crc_channel.hpp"
+#include "../common/include/crc_thread.hpp"
 #include "crc_init.h"
-#include "crc_channel.hpp"
 #include "crc_inet_event.hpp"
-#include "crc_thread.hpp"
 #include "crc_task_server.hpp"
+
 
 #include <map>
 #include <vector>

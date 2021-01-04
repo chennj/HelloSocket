@@ -19,11 +19,6 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Timestamp.hpp" />
-    <ClInclude Include="WorkClient.hpp" />
-    <ClInclude Include="MessageHeader.hpp" />
-  </ItemGroup>
-  <ItemGroup>
     <ClCompile Include="client.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

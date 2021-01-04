@@ -2,7 +2,6 @@
 // g++ client.cpp -std=c++11 -pthread -o client
 // ----------------------------------
 #include "crc_client.hpp"
-#include "crc_timestamp.hpp"
 
 #include <thread>
 #include <chrono>

@@ -20,9 +20,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="crc_timestamp.hpp">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="crc_work_client.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
@@ -32,28 +29,7 @@
     <ClInclude Include="crc_net_environment.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="crc_buffer.hpp">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="crc_channel.hpp">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="crc_object_pool.hpp">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="crc_client.hpp">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="crc_logger.hpp">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="crc_logger_server.hpp">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="crc_thread.hpp">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="crc_semaphore.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

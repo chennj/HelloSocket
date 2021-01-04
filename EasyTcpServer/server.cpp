@@ -1,7 +1,7 @@
 // linux compile command
 // g++ server.cpp -std=c++11 -pthread -o server
 // ----------------------------------
-#include "crc_allocator.h"
+#include "../common/include/crc_allocator.h"
 #include "crc_server.hpp"
 
 #include <thread>

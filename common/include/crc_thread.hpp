@@ -78,6 +78,13 @@ public:
 		return _isRun;
 	}
 
+public:
+	void sleep()
+	{
+		std::chrono::microseconds t(1000);
+		std::this_thread::sleep_for(t);
+	}
+
 protected:
 	// work function while thread running
 	void OnWork()

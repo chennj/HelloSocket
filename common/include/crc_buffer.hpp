@@ -1,7 +1,6 @@
 #ifndef _CRC_BUFFER_HPP_
 #define _CRC_BUFFER_HPP_
 
-#include "crc_init.h"
 #include "crc_logger.hpp"
 
 class CRCBuffer
@@ -41,6 +40,7 @@ public:
 		int ret = 0;
 
 		// buffer is full
+		// 动态扩展，保留节目
 		//if (_lastPos + nLen > _nSize)
 		//{
 		//	int n = DEFAULT_BUFFER_SIZE;
@@ -69,7 +69,6 @@ public:
 		}
 		else
 		{
-			//printf("send buffer is full\n");
 			_fullCount++;
 		}
 

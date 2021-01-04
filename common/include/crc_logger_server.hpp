@@ -1,7 +1,6 @@
 #ifndef _CRC_LOGSERVER_HPP_
 #define _CRC_LOGSERVER_HPP_
 
-#include "crc_init.h"
 #include "crc_thread.hpp"
 
 #include<mutex>
