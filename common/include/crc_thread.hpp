@@ -79,9 +79,15 @@ public:
 	}
 
 public:
-	void sleep()
+	static void SleepForMicro(time_t ts)
 	{
-		std::chrono::microseconds t(1000);
+		std::chrono::microseconds t(ts);
+		std::this_thread::sleep_for(t);
+	}
+
+	static void SleepForMilli(time_t ts)
+	{
+		std::chrono::milliseconds t(ts);
 		std::this_thread::sleep_for(t);
 	}
 

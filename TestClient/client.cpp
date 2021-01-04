@@ -160,57 +160,77 @@ void sendThread(int id) //1~4
 
 int main()
 {
-	//CRCLogger::instance().set_log_path("/log/client.log", "w");
-	//CRCLogger::instance().start();
+	/*
+	CRCLogger::instance().set_log_path("/log/client.log", "w");
+	CRCLogger::instance().start();
 
-	//sendCount = 0;
-	//readyCount = 0;
-	//exitCount = 1;
+	sendCount = 0;
+	readyCount = 0;
+	exitCount = 1;
 
-	////start ui thread
-	//std::thread t1(cmdThread);
-	//t1.detach();
+	//start ui thread
+	std::thread t1(cmdThread);
+	t1.detach();
 
-	//// start send thread 
-	//for (int n = 0; n < tCount; n++)
-	//{
-	//	std::thread t(sendThread, n + 1);
-	//	t.detach();
-	//}
-
-	//CRCTimestamp tTime;
-
-	//while (g_run)
-	//{
-	//	auto t1 = tTime.getElapsedSecond();
-	//	if (t1 >= 1.0)
-	//	{
-	//		printf("threads<%d>,clients<%d>,time<%lf>,send<%d>\n", tCount, nCount, t1, (int)(sendCount / t1));
-	//		sendCount = 0;
-	//		tTime.update();
-	//	}
-	//	std::chrono::milliseconds t(1);
-	//	std::this_thread::sleep_for(t);
-	//}
-
-	//while (exitCount < nCount)
-	//{
-	//	std::chrono::milliseconds t(100);
-	//	std::this_thread::sleep_for(t);
-	//}
-
-	//printf("client shut down...\n");
-
-	//std::chrono::milliseconds t(2000);
-	//std::this_thread::sleep_for(t);
-	//return 0£»
-
-	CRCClient client;
-	client.Connect("127.0.0.1", 12345);
-	while (client.IsRunning())
+	// start send thread 
+	for (int n = 0; n < tCount; n++)
 	{
-		client.OnRun();
-		std::chrono::microseconds t(1000);
+		std::thread t(sendThread, n + 1);
+		t.detach();
+	}
+
+	CRCTimestamp tTime;
+
+	while (g_run)
+	{
+		auto t1 = tTime.getElapsedSecond();
+		if (t1 >= 1.0)
+		{
+			printf("threads<%d>,clients<%d>,time<%lf>,send<%d>\n", tCount, nCount, t1, (int)(sendCount / t1));
+			sendCount = 0;
+			tTime.update();
+		}
+		std::chrono::milliseconds t(1);
 		std::this_thread::sleep_for(t);
 	}
+
+	while (exitCount < nCount)
+	{
+		std::chrono::milliseconds t(100);
+		std::this_thread::sleep_for(t);
+	}
+
+	printf("client shut down...\n");
+
+	std::chrono::milliseconds t(2000);
+	std::this_thread::sleep_for(t);
+	return 0£»
+	*/
+
+	CRCSendStream s;
+	s.cmd(CMD_LOGIN);
+	s.write_int8(1);
+	s.write_int16(2);
+	s.write_int32(3);
+	s.write_float(4.1f);
+	s.write_double(5.2);
+	char* ss = "cnj";
+	s.write_array(ss, 4);
+	char* str = "hello,cnj";
+	s.write_array(str, strlen(str));
+	int a[] = { 1,2,3,4 };
+	s.write_array(a, 4);
+
+
+
+	//CRCClient client;
+	//client.Connect("127.0.0.1", 12345);
+	//client.SendData(CRCSendStream);
+	//while (client.IsRunning())
+	//{
+	//	client.OnRun();
+	//	CRCThread::SleepForMilli(10);
+	//}
+
+	system("PAUSE");
 }

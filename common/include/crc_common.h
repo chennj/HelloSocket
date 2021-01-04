@@ -13,4 +13,6 @@
 #include <stdio.h>
 #include <memory>
 
+#include "crc_stream_message.hpp"
+#include "crc_message_header.hpp"
 #endif

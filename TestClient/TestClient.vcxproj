@@ -21,6 +21,12 @@
   <ItemGroup>
     <ClCompile Include="client.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="crc_client.hpp" />
+    <ClInclude Include="crc_init.h" />
+    <ClInclude Include="crc_net_environment.hpp" />
+    <ClInclude Include="crc_work_client.hpp" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{B68FA50A-81FB-4502-860E-92C9CD510D62}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>

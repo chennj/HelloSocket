@@ -23,8 +23,19 @@ public:
 		{
 		case CMD_LOGIN_RESPONSE:
 		{
-			LoginResponse* ret = (LoginResponse*)header;
-			//printf("receive server msg: CMD_LOGIN_RESPONSE, data length: %d, result: %d\n", header->data_length, ret->result);
+			CRCRecvStream r(header);
+			printf("cmd %d\n", r.get_cmd());
+			printf("read %d\n", r.read_int8());
+			printf("read %d\n", r.read_int16());
+			printf("read %d\n", r.read_int32());
+			printf("read %lf\n", r.read_float());
+			printf("read %lf\n", r.read_double());
+			char a1[16] = {};
+			printf("read %d, %s\n", r.read_array(a1, 16),a1);
+			char a2[16] = {};
+			printf("read %d, %s\n", r.read_array(a2, 16),a2);
+			int a3[10] = {};
+			printf("read %d\n", r.read_array(a3, 10));
 		}
 		break;
 		case CMD_LOGOUT_RESPONSE:
