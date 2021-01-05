@@ -2,6 +2,7 @@
 #define CRC_STREAM_HPP
 
 #include <cstdint>
+#include <string>
 
 /**
 *
@@ -55,13 +56,13 @@ public:
 	// 
 	inline bool can_read(int n)
 	{
-		return _nSize - _lastReadPos > n;
+		return _nSize - _lastReadPos >= n;
 	}
 
 	// 
 	inline bool can_write(int n)
 	{
-		return _nSize - _lastWritePos > n;
+		return _nSize - _lastWritePos >= n;
 	}
 	//
 	inline void push(int n)
@@ -105,11 +106,12 @@ public:
 			if (isoffset)pop(nLen);
 			return true;
 		}
+		CRCLogger::info("error CRCStream::read failed.\n");
 		return false;
 	}
 
 	template<class T>
-	uint32_t read_array(T* pData, uint32_t len)
+	uint32_t read_array(T* pData, int len)
 	{
 		uint32_t n = 0;
 		// 读取数组元素个数，但不偏移读取位置(_lastReadPos),防止后面的动作不成功
@@ -123,7 +125,7 @@ public:
 			if (can_read(nLen + sizeof(uint32_t)))
 			{
 				// 更新_lastReadPos = 已读位置+数组长度所占空间
-				_lastReadPos += sizeof(uint32_t);
+				pop(sizeof(uint32_t));
 				// 将要读取的数据拷贝出来
 				memcpy(pData, _pBuf + _lastReadPos, nLen);
 				// 计算已读数据尾部位置
@@ -132,6 +134,7 @@ public:
 				return n;
 			}
 		}
+		CRCLogger::info("error CRCStream::read_array failed.\n");
 		return 0;
 	}
 
@@ -158,14 +161,14 @@ public:
 
 	float read_float(float default = 0)
 	{
-		float n = 0;
+		float n = 0.0f;
 		if (read(n))return n;
 		else return default;
 	}
 
 	double read_double(double default = 0)
 	{
-		double n = 0.f;
+		double n = 0.0f;
 		if (read(n))return n;
 		else return default;
 	}
@@ -178,7 +181,7 @@ public:
 	bool write(T n)
 	{
 		// 计算写入数据的大小
-		size_t nLen = sizeof(T);
+		int nLen = sizeof(T);
 		// 判断能否写入
 		if (can_write(nLen))
 		{
@@ -188,16 +191,17 @@ public:
 			push(nLen);
 			return true;
 		}
+		CRCLogger::info("error CRCStream::write failed.\n");
 		return false;
 	}
 
 	template<class T>
-	bool write_array(T* pData, uint32_t len)
+	bool write_array(T* pData, int len)
 	{
 		// 计算写入数组的数据字节长度
-		size_t n = sizeof(T) * len;
+		int n = sizeof(T) * len;
 		// 计算写入数组的总长度
-		size_t nLen = n + sizeof(uint32_t);
+		int nLen = n + sizeof(uint32_t);
 		// 判断能否写入
 		if (can_write(nLen))
 		{
@@ -209,6 +213,7 @@ public:
 			push(n);
 			return true;
 		}
+		CRCLogger::info("error CRCStream::write_array failed.\n");
 		return false;
 	}
 
@@ -236,6 +241,27 @@ public:
 	bool write_double(double n)
 	{
 		return write(n);
+	}
+
+public:
+	int ReadString(std::string& str, int nLen)
+	{
+		return read_array(const_cast<char*>(str.c_str()), nLen);
+	}
+
+	bool WriteString(const char* str, int nLen)
+	{
+		return write_array(str, nLen);
+	}
+
+	bool WriteString(const char* str)
+	{
+		return write_array(str, strlen(str));
+	}
+
+	bool WriteString(std::string& str)
+	{
+		return write_array(str.c_str(), str.length());
 	}
 
 public:

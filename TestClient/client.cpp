@@ -208,29 +208,41 @@ int main()
 	*/
 
 	CRCSendStream s;
-	s.cmd(CMD_LOGIN);
+	s.set_cmd(CMD_STREAM);
 	s.write_int8(1);
 	s.write_int16(2);
 	s.write_int32(3);
 	s.write_float(4.1f);
 	s.write_double(5.2);
 	char* ss = "cnj";
-	s.write_array(ss, 4);
-	char* str = "hello,cnj";
-	s.write_array(str, strlen(str));
+	s.write_array(ss, strlen(ss));
+	char* str = "i am client";
+	s.WriteString(str);
 	int a[] = { 1,2,3,4 };
 	s.write_array(a, 4);
+	s.finish();
 
+	//CRCRecvStream r((CRCDataHeader*)s.data());
+	//printf("read %d\n", r.read_int8());
+	//printf("read %d\n", r.read_int16());
+	//printf("read %d\n", r.read_int32());
+	//printf("read %lf\n", r.read_float());
+	//printf("read %lf\n", r.read_double());
+	//char a1[16] = {};
+	//printf("read %d, %s\n", r.read_array(a1, 16), a1);
+	//char a2[16] = {};
+	//printf("read %d, %s\n", r.read_array(a2, 16), a2);
+	//int a3[10] = {};
+	//printf("read %d\n", r.read_array(a3, 10));
 
-
-	//CRCClient client;
-	//client.Connect("127.0.0.1", 12345);
-	//client.SendData(CRCSendStream);
-	//while (client.IsRunning())
-	//{
-	//	client.OnRun();
-	//	CRCThread::SleepForMilli(10);
-	//}
+	CRCClient client;
+	client.Connect("127.0.0.1", 12345);
+	while (client.IsRunning())
+	{
+		client.OnRun();
+		client.SendData(s.data(), s.data_length());
+		CRCThread::SleepForMilli(1000);
+	}
 
 	system("PAUSE");
 }

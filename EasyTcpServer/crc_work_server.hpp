@@ -80,6 +80,9 @@ protected:
 				_clients_change = true;
 			}
 
+			// 定时检测心跳，或发送数据
+			CheckTime();
+
 			if (_clients.empty())
 			{
 				std::chrono::milliseconds t(1);
@@ -155,20 +158,19 @@ protected:
 
 			ReadData(fd_read);
 			WriteData(fd_write);
-			//WriteData(fd_exception);
-#ifdef _WIN32
-			if (_tTime.getElapsedSecond() >= 1.0)
-			{
-				//if (fd_exception.fd_count > 0)
-				//{
-				//	xPrintf("###>>>WorkServer exception<%d>\n", fd_exception.fd_count);
-				//}
-				xPrintf("WorkServer readable<%d>, writable<%d>\n", fd_read.fd_count, fd_write.fd_count);
-				_tTime.update();
-			}
-#endif
-			// 定时检测心跳，或发送数据
-			CheckTime();
+			
+//#ifdef _WIN32
+//			WriteData(fd_exception);
+//			if (_tTime.getElapsedSecond() >= 1.0)
+//			{
+//				//if (fd_exception.fd_count > 0)
+//				//{
+//				//	xPrintf("###>>>WorkServer exception<%d>\n", fd_exception.fd_count);
+//				//}
+//				xPrintf("WorkServer readable<%d>, writable<%d>\n", fd_read.fd_count, fd_write.fd_count);
+//				_tTime.update();
+//			}
+//#endif
 		} // while (IsRunning())
 
 		CRCLogger::info("WorkServer thread exit...\n");

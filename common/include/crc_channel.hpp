@@ -176,6 +176,16 @@ public:
 		return ret;
 	}
 
+	// used to send byte stream
+	int SendDataBuffer(const char* pData, int nLen)
+	{
+		int ret = SOCKET_ERROR;
+		if (!pData) {
+			return ret;
+		}
+		return _sendBuf.push(pData, nLen);
+	}
+
 	// reset timing heart beat
 	void reset_dt_heart()
 	{

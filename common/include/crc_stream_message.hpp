@@ -10,13 +10,20 @@
 */
 class CRCRecvStream : public CRCStream
 {
-private:
+public:
+	int _cmd;
+	uint16_t _streamLen;
 
 public:
 	CRCRecvStream(CRCDataHeader* pHeader):
 		CRCStream((char*)pHeader, pHeader->data_length)
 	{
 		push(pHeader->data_length);
+
+		// 预先读取消息流类型
+		_cmd = get_cmd();
+		// 预先读取消息流长度
+		read<uint16_t>(_streamLen);
 	}
 
 	~CRCRecvStream()
@@ -68,7 +75,7 @@ public:
 		set_write_pos(pos);
 	}
 	
-	void cmd(uint16_t cmd)
+	void set_cmd(uint16_t cmd)
 	{
 		write<uint16_t>(cmd);
 	}
