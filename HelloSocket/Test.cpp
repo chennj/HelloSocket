@@ -1,7 +1,3 @@
-#define WIN32_LEAN_AND_MEAN	//try import small def loog ago
-
-#include<Windows.h>
-#include<WinSock2.h>
 #include<stdio.h>
 #include<stdlib.h>
 
@@ -12,7 +8,7 @@ void func(char str[100])
 {
 	printf("str size=%d\n", sizeof(str));
 }
-int main()
+int test()
 {
 	//WORD ver = MAKEWORD(2, 2);
 	//WSADATA data;
