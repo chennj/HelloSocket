@@ -243,7 +243,7 @@ protected:
 		{
 			if (iter.second->is_need_write() && FD_ISSET(iter.first, &fd_write))
 			{
-				if (-1 == RecvData(iter.second))
+				if (-1 == iter.second->SendDataIM())
 				{
 					_clients_change = true;
 					temp.push_back(iter.second);

@@ -1,4 +1,4 @@
-// linux compile command
+ï»¿// linux compile command
 // g++ client.cpp -std=c++11 -pthread -o client
 // ----------------------------------
 #include "crc_client.hpp"
@@ -52,8 +52,8 @@ void recvThread(int begin, int end)
 		for (int n = begin; n < end; n++)
 		{
 			//if (t.getElapsedSecond() > 4.0 && n == begin) {
-			//	//Ä£ÄâÒ»¸ö¿Í»§¶Ë½ÓÊÕ±»¶ÂÈûµÄÇé¿ö£¬·şÎñÆ÷µÄÔËĞĞÇé¿ö
-			//	//ÆÚÍû£º¶ÔÓÚÃ»ÓĞ±»¶ÂÈûµÄ¿Í»§¶ËÔËĞĞÕı³£
+			//	//æ¨¡æ‹Ÿä¸€ä¸ªå®¢æˆ·ç«¯æ¥æ”¶è¢«å µå¡çš„æƒ…å†µï¼ŒæœåŠ¡å™¨çš„è¿è¡Œæƒ…å†µ
+			//	//æœŸæœ›ï¼šå¯¹äºæ²¡æœ‰è¢«å µå¡çš„å®¢æˆ·ç«¯è¿è¡Œæ­£å¸¸
 			//	continue;
 			//}
 
@@ -204,7 +204,7 @@ int main()
 
 	std::chrono::milliseconds t(2000);
 	std::this_thread::sleep_for(t);
-	return 0£»
+	return 0ï¼›
 	*/
 
 	CRCSendStream s;
@@ -235,6 +235,8 @@ int main()
 	//int a3[10] = {};
 	//printf("read %d\n", r.read_array(a3, 10));
 
+	// 192.168.137.129
+	// 127.0.0.1
 	CRCClient client;
 	client.Connect("192.168.137.129", 12345);
 	while (client.IsRunning())

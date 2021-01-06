@@ -1,4 +1,4 @@
-#ifndef _CRC_CLIENT_HPP_
+ï»¿#ifndef _CRC_CLIENT_HPP_
 #define _CRC_CLIENT_HPP_
 
 #include "crc_init.h"
@@ -38,7 +38,7 @@ public:
 			//printf("receive server msg: CMD_NEW_USER_JOIN, data length: %d, result: %d\n", header->data_length, ret->sock);
 		}
 		break;
-		case CMD_STREAM_RESPONSE:	// ×Ö½ÚÁ÷ÏûÏ¢
+		case CMD_STREAM_RESPONSE:	// å­—èŠ‚æµæ¶ˆæ¯
 		{
 			CRCRecvStream r(header);
 			printf("read %d\n", r.read_int8());
