@@ -1,6 +1,8 @@
-﻿#ifndef CRC_STREAM_HPP
-#define CRC_STREAM_HPP
+﻿#ifndef _CRC_STREAM_HPP_
+#define _CRC_STREAM_HPP_
 
+#include "crc_common.h"
+#include "crc_logger.hpp"
 #include <cstdint>
 #include <string>
 
@@ -138,39 +140,34 @@ public:
 		return 0;
 	}
 
-	int8_t read_int8(int8_t default = 0)
+	int8_t read_int8(int8_t n = 0)
 	{
-		int8_t n = 0;
-		if (read(n))return n;
-		else return default;
+		read(n);
+		return n;
 	}
 
-	int16_t read_int16(int16_t default = 0)
+	int16_t read_int16(int16_t  n = 0)
 	{
-		int16_t n = 0;
-		if (read(n))return n;
-		else return default;
+		read(n);
+		return n;
 	}
 
-	int32_t read_int32(int32_t default = 0)
+	int32_t read_int32(int32_t  n = 0)
 	{
-		int32_t n = 0;
-		if (read(n))return n;
-		else return default;
+		read(n);
+		return n;
 	}
 
-	float read_float(float default = 0)
+	float read_float(float  n = 0)
 	{
-		float n = 0.0f;
-		if (read(n))return n;
-		else return default;
+		read(n);
+		return n;
 	}
 
-	double read_double(double default = 0)
+	double read_double(double  n = 0)
 	{
-		double n = 0.0f;
-		if (read(n))return n;
-		else return default;
+		read(n);
+		return n;
 	}
 
 	/**

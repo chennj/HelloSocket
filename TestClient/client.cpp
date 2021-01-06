@@ -236,7 +236,7 @@ int main()
 	//printf("read %d\n", r.read_array(a3, 10));
 
 	CRCClient client;
-	client.Connect("127.0.0.1", 12345);
+	client.Connect("192.168.137.129", 12345);
 	while (client.IsRunning())
 	{
 		client.OnRun();

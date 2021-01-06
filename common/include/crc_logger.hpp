@@ -1,9 +1,9 @@
 #ifndef _CRC_LOGGER_HPP_
 #define _CRC_LOGGER_HPP_
 
-#include <ctime>
-#include "crc_logger.hpp"
 #include "crc_logger_server.hpp"
+#include <ctime>
+
 
 class CRCLogger
 {
@@ -62,8 +62,8 @@ public:
 		pLog->_pLogServer->addTask([pLog, str]() {
 			if (pLog->_logFile)
 			{
-				auto t = system_clock::now();
-				auto tt = system_clock::to_time_t(t);
+				auto t = std::chrono::system_clock::now();
+				auto tt = std::chrono::system_clock::to_time_t(t);
 				std::tm* ttt = std::gmtime(&tt);
 				fprintf(pLog->_logFile, "%s", "INFO ");
 				fprintf(pLog->_logFile, "%d-%d-%d %d:%d:%d\t%s",
@@ -84,8 +84,8 @@ public:
 		pLog->_pLogServer->addTask([pLog, format, args...]() {
 			if (pLog->_logFile)
 			{
-				auto t = system_clock::now();
-				auto tt = system_clock::to_time_t(t);
+				auto t = std::chrono::system_clock::now();
+				auto tt = std::chrono::system_clock::to_time_t(t);
 				std::tm* ttt = std::gmtime(&tt);
 				fprintf(pLog->_logFile, "%s", "INFO ");
 				fprintf(pLog->_logFile, "%d-%d-%d %d:%d:%d\t",
