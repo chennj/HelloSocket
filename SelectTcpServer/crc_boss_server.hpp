@@ -4,9 +4,9 @@
 #include "crc_init.h"
 #include "crc_inet_event.hpp"
 #include "crc_work_server.hpp"
-#include "crc_thread.hpp"
 #include "crc_net_environment.hpp"
-#include "crc_logger.hpp"
+#include "../common/include/crc_thread.hpp"
+#include "../common/include/crc_logger.hpp"
 
 #include <thread>
 #include <mutex>

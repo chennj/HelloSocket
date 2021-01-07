@@ -15,27 +15,10 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="crc_allocator.cpp">
-      <Filter>头文件</Filter>
-    </ClCompile>
-    <ClCompile Include="server.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="crc_allocator.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="crc_auto_ptr.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="crc_boss_server.hpp">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="crc_buffer.hpp">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="crc_channel.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="crc_inet_event.hpp">
@@ -44,25 +27,7 @@
     <ClInclude Include="crc_init.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="crc_logger.hpp">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="crc_logger_server.hpp">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="crc_memory_pool.hpp">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="crc_message_header.hpp">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="crc_net_environment.hpp">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="crc_object_pool.hpp">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="crc_semaphore.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="crc_server.hpp">
@@ -71,14 +36,13 @@
     <ClInclude Include="crc_task_server.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="crc_thread.hpp">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="crc_timestamp.hpp">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="crc_work_server.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="server.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

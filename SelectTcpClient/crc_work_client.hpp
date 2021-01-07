@@ -3,7 +3,7 @@
 
 #include "crc_init.h"
 #include "crc_net_environment.hpp"
-#include "crc_channel.hpp"
+#include "../common/include/crc_channel.hpp"
 
 class CRCWorkClient
 {
@@ -154,6 +154,9 @@ public:
 	*/
 	int RecvData()
 	{
+		if (!IsRunning())
+			return -1;
+
 		//receive client data
 		int nLen = _pChannel->RecvData();
 		if (nLen <= 0)
@@ -175,7 +178,16 @@ public:
 
 	int SendData(const CRCDataHeader* pHeader)
 	{
-		return _pChannel->SendDataBuffer(std::make_shared<CRCDataHeader>(*pHeader));
+		if (IsRunning())
+			return _pChannel->SendDataBuffer(std::make_shared<CRCDataHeader>(*pHeader));
+		return 0;
+	}
+
+	int SendData(const char* pData, int nLen)
+	{
+		if (IsRunning())
+			return _pChannel->SendDataBuffer(pData, nLen);
+		return 0;
 	}
 
 	virtual void OnNetMessage(CRCDataHeader* header) = 0;

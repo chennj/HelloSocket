@@ -2,8 +2,8 @@
 #define _CRC_TASK_SERVER_HPP_
 
 #include "crc_init.h"
-#include "crc_thread.hpp"
-#include "crc_logger.hpp"
+#include "../common/include/crc_thread.hpp"
+#include "../common/include/crc_logger.hpp"
 
 #include<thread>
 #include<mutex>

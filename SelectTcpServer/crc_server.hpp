@@ -3,6 +3,7 @@
 
 #include "crc_init.h"
 #include "crc_boss_server.hpp"
+#include <string>
 
 class CRCServer : public CRCBossServer
 {
@@ -48,6 +49,43 @@ public:
 			pChannel->reset_dt_heart();
 
 			pChannel->SendData(std::make_shared<HeartS2C>());
+		}
+		break;
+		case CMD_STREAM:	// 字节流消息
+		{
+			CRCRecvStream r(pheader);
+			printf("read %d\n", r.read_int8());
+			printf("read %d\n", r.read_int16());
+			printf("read %d\n", r.read_int32());
+			printf("read %lf\n", r.read_float());
+			printf("read %lf\n", r.read_double());
+			char a1[16] = {};
+			printf("read %d, %s\n", r.read_array(a1, 16), a1);
+			std::string a2;
+			printf("read %d, %s\n", r.ReadString(a2, 16), a2.c_str());
+			int a3[10] = {};
+			printf("read %d\n", r.read_array(a3, 10));
+
+			CRCSendStream s;
+			s.set_cmd(CMD_STREAM_RESPONSE);
+			s.write_int8(1);
+			s.write_int16(2);
+			s.write_int32(3);
+			s.write_float(4.1f);
+			s.write_double(5.2);
+			char* ss = "hello";
+			s.write_array(ss, strlen(ss));
+			char* str = "i am server";
+			s.write_array(str, strlen(str));
+			int a[] = { 1,2,3,4 };
+			s.write_array(a, 4);
+			s.finish();
+
+			if (SOCKET_ERROR == pChannel->SendDataBuffer(s.data(), s.data_length()))
+			{
+				if (_tTime.getElapsedSecond() >= 1.0)
+					CRCLogger::info("Socket<%d>, Send Buffer Is Full\n", pChannel->sockfd());
+			}
 		}
 		break;
 		default:

@@ -1,11 +1,12 @@
 ﻿#ifndef _CRC_WORK_SERVER_HPP_
 #define _CRC_WORK_SERVER_HPP_
 
+#include "../common/include/crc_channel.hpp"
+#include "../common/include/crc_thread.hpp"
 #include "crc_init.h"
-#include "crc_channel.hpp"
 #include "crc_inet_event.hpp"
-#include "crc_thread.hpp"
 #include "crc_task_server.hpp"
+
 
 #include <map>
 #include <vector>
@@ -78,6 +79,9 @@ protected:
 				_clientsBuf.clear();
 				_clients_change = true;
 			}
+
+			// 定时检测心跳，或发送数据
+			CheckTime();
 
 			if (_clients.empty())
 			{
@@ -154,20 +158,19 @@ protected:
 
 			ReadData(fd_read);
 			WriteData(fd_write);
-			//WriteData(fd_exception);
-#ifdef _WIN32
-			if (_tTime.getElapsedSecond() >= 1.0)
-			{
-				//if (fd_exception.fd_count > 0)
-				//{
-				//	xPrintf("###>>>WorkServer exception<%d>\n", fd_exception.fd_count);
-				//}
-				xPrintf("WorkServer readable<%d>, writable<%d>\n", fd_read.fd_count, fd_write.fd_count);
-				_tTime.update();
-			}
-#endif
-			// 定时检测心跳，或发送数据
-			CheckTime();
+			
+//#ifdef _WIN32
+//			WriteData(fd_exception);
+//			if (_tTime.getElapsedSecond() >= 1.0)
+//			{
+//				//if (fd_exception.fd_count > 0)
+//				//{
+//				//	xPrintf("###>>>WorkServer exception<%d>\n", fd_exception.fd_count);
+//				//}
+//				xPrintf("WorkServer readable<%d>, writable<%d>\n", fd_read.fd_count, fd_write.fd_count);
+//				_tTime.update();
+//			}
+//#endif
 		} // while (IsRunning())
 
 		CRCLogger::info("WorkServer thread exit...\n");
@@ -240,7 +243,7 @@ protected:
 		{
 			if (iter.second->is_need_write() && FD_ISSET(iter.first, &fd_write))
 			{
-				if (-1 == RecvData(iter.second))
+				if (-1 == iter.second->SendDataIM())
 				{
 					_clients_change = true;
 					temp.push_back(iter.second);
