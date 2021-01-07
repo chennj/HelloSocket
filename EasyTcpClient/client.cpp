@@ -10,9 +10,9 @@
 bool g_run = true;
 
 // sending thread amount
-const int tCount = 2;
+const int tCount = 1;
 // client amount
-const int nCount = 100;
+const int nCount = 2;
 
 // client object
 CRCClient* pclients[nCount];
@@ -80,7 +80,7 @@ void sendThread(int id) //1~4
 		if (!g_run)return;
 		// 192.168.137.129 ubuntu
 		// 127.0.0.1
-		pclients[n]->Connect("127.0.0.1", 12345);
+		pclients[n]->Connect("192.168.137.129", 12345);
 	}
 
 	readyCount++;
@@ -142,7 +142,7 @@ void sendThread(int id) //1~4
 		}
 
 		// to control speed to send
-		std::chrono::microseconds t(100);
+		std::chrono::milliseconds t(100);
 		std::this_thread::sleep_for(t);
 	}
 

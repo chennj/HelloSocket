@@ -39,6 +39,11 @@ public:
 			//printf("receive server msg: CMD_NEW_USER_JOIN, data length: %d, result: %d\n", header->data_length, ret->sock);
 		}
 		break;
+		case CMD_HEART_S2C:
+		{
+			HeartS2C* ret = (HeartS2C*)header;
+		}
+		break;
 		default:
 		{
 			printf("receive server msg: UNKNOWN, socket<%d>, data length: %d\n", (int)_pChannel->sockfd(), header->data_length);
