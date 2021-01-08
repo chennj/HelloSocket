@@ -4,6 +4,7 @@
 #include "../common/include/crc_common.h"
 
 class CRCWorkServer;
+class CRCWorkSelectServer;
 class WorkServerSend2ClientTask;
 class CRCChannel;
 
@@ -11,7 +12,10 @@ typedef std::shared_ptr<CRCChannel> CRCChannelPtr;
 typedef CRCChannelPtr& CRCChannelPtrRef;
 
 typedef std::shared_ptr<CRCWorkServer> CRCWorkServerPtr;
-typedef CRCWorkServerPtr& WorkServerPtrRef;
+typedef CRCWorkServerPtr& CRCWorkServerPtrRef;
+
+typedef std::shared_ptr<CRCWorkSelectServer> CRCWorkSelectServerPtr;
+typedef CRCWorkSelectServerPtr& CRCWorkServerSelectPtrRef;
 
 typedef std::shared_ptr<CRCDataHeader> CRCDataHeaderPtr;
 typedef CRCDataHeaderPtr& CRCDataHeaderPtrRef;

@@ -7,7 +7,6 @@
 #include "crc_inet_event.hpp"
 #include "crc_task_server.hpp"
 
-
 #include <map>
 #include <vector>
 #include <thread>
@@ -20,11 +19,6 @@
 class CRCWorkServer
 {
 private:
-	// local socket
-	SOCKET _sock;
-	// client sockets
-	//std::vector<Channel*> _clients;
-	std::map<SOCKET, CRCChannelPtr> _clients;
 	// client socket buffer
 	std::vector<CRCChannelPtr> _clientsBuf;
 	// lock
@@ -33,15 +27,19 @@ private:
 	CRCThread _crcThread;
 	// register event
 	CRCINetEvent* _pNetEvent;
-	// fd backup
-	fd_set _fd_read_bak;
-	bool _clients_change;
-	// max socket descriptor
-	SOCKET _max_socket;
 	// task 
 	CRCTaskServer _taskServer;
 	// timer
 	CRCTimestamp _tTime;
+
+protected:
+	// local socket
+	SOCKET _sock;
+	// client change such as offine.
+	bool _clients_change;
+	// client sockets
+	//std::vector<Channel*> _clients;
+	std::map<SOCKET, CRCChannelPtr> _clients;
 public:
 	CRCWorkServer(SOCKET sock = INVALID_SOCKET)
 	{
@@ -49,7 +47,7 @@ public:
 		_pNetEvent = nullptr;
 		_tTime.update();
 	}
-	~CRCWorkServer()
+	virtual ~CRCWorkServer()
 	{
 		CRCLogger::info("WorkServer destory.\n");
 		// release resource
@@ -57,6 +55,9 @@ public:
 	}
 
 protected:
+	// select mode
+	virtual int DoAction() = 0;
+
 	// process net message
 	int OnRun(CRCThread* pCrcThread)
 	{
@@ -90,87 +91,11 @@ protected:
 				continue;
 			}
 
-			fd_set fd_read;
-			fd_set fd_write;
-			//fd_set fd_exception;
-
-			FD_ZERO(&fd_read);
-			FD_ZERO(&fd_write);
-			//FD_ZERO(&fd_exception);
-
-			if (_clients_change)
+			if (DoAction() < 0)
 			{
-				_clients_change = false;
-
-				_max_socket = _clients.begin()->first;
-				for (auto iter : _clients)
-				{
-					_max_socket = iter.first > _max_socket ? iter.first : _max_socket;
-					// the following statement needs to be optimized,
-					// because it takes up a lot of CPU
-					FD_SET(iter.first, &fd_read);
-				}
-				memcpy(&_fd_read_bak, &fd_read, sizeof(fd_set));
-			}
-			else
-			{
-				memcpy(&fd_read, &_fd_read_bak, sizeof(fd_set));
-			}
-
-			//memcpy(&fd_write, &_fd_read_bak, sizeof(fd_set));
-			//memcpy(&fd_exception, &_fd_read_bak, sizeof(fd_set));
-			// 优化可写检查，不直接拷贝，只有有了需要写数据的客户端
-			// 才去加入到写监听集合里。避免cpu空转，产生大量的浪费。
-			bool haveDataToWrite = false;
-			for (auto iter : _clients)
-			{
-				if (iter.second->is_need_write())
-				{
-					haveDataToWrite = true;
-					FD_SET(iter.first, &fd_write);
-				}
-			}
-
-
-			//nfds is range of fd_set, not fd_set's count.
-			//nfds is also max value+1 of all the file descriptor(socket).
-			//nfds can be 0 in the windows.
-			//that timeval was setted null means blocking, not null means nonblocking.
-			timeval t = { 0,1 };
-			if (haveDataToWrite)
-			{
-				ret = select(_max_socket + 1/*nfds*/, &fd_read, &fd_write, nullptr, &t);
-			}
-			else
-			{
-				ret = select(_max_socket + 1/*nfds*/, &fd_read, nullptr, nullptr, &t);
-			}
-			if (ret < 0)
-			{
-				CRCLogger::info("WorkServer socket<%d> error occurs while select and mission finish.\n", (int)_sock);
 				pCrcThread->ExitInSelfThread();
 				break;
 			}
-			else if (0 == ret)
-			{
-				continue;
-			}
-
-			ReadData(fd_read);
-			WriteData(fd_write);
-			
-//#ifdef _WIN32
-//			WriteData(fd_exception);
-//			if (_tTime.getElapsedSecond() >= 1.0)
-//			{
-//				//if (fd_exception.fd_count > 0)
-//				//{
-//				//	xPrintf("###>>>WorkServer exception<%d>\n", fd_exception.fd_count);
-//				//}
-//				xPrintf("WorkServer readable<%d>, writable<%d>\n", fd_read.fd_count, fd_write.fd_count);
-//				_tTime.update();
-//			}
-//#endif
 		} // while (IsRunning())
 
 		CRCLogger::info("WorkServer thread exit...\n");
@@ -216,96 +141,6 @@ protected:
 			//	);
 			//}
 		}
-	}
-
-	void WriteData(fd_set& fd_write)
-	{
-#ifdef _WIN32
-		for (size_t n = 0; n < fd_write.fd_count; n++)
-		{
-			auto iter = _clients.find(fd_write.fd_array[n]);
-			if (iter != _clients.end())
-			{
-				if (-1 == iter->second->SendDataIM())
-				{
-					OnClientLeave(iter);
-				}
-			}
-			else
-			{
-				CRCLogger::info("incredible situation occurs while write data to client\n");
-			}
-
-		}
-#else
-		std::vector<CRCChannelPtr> temp;
-		for (auto iter : _clients)
-		{
-			if (iter.second->is_need_write() && FD_ISSET(iter.first, &fd_write))
-			{
-				if (-1 == iter.second->SendDataIM())
-				{
-					_clients_change = true;
-					temp.push_back(iter.second);
-
-					if (_pNetEvent)
-					{
-						_pNetEvent->OnLeave(iter.second);
-					}
-				}
-			}
-		}
-		for (auto pClient : temp)
-		{
-			_clients.erase(pClient->sockfd());
-		}
-#endif
-
-	}
-
-	void ReadData(fd_set& fd_read)
-	{
-#ifdef _WIN32
-		for (size_t n = 0; n < fd_read.fd_count; n++)
-		{
-			auto iter = _clients.find(fd_read.fd_array[n]);
-
-			if (iter != _clients.end())
-			{
-				if (-1 == RecvData(iter->second))
-				{
-					OnClientLeave(iter);
-				}
-			}
-			else
-			{
-				CRCLogger::info("incredible situation occurs while read data from client\n");
-			}
-
-		}
-#else
-		std::vector<CRCChannelPtr> temp;
-		for (auto iter : _clients)
-		{
-			if (FD_ISSET(iter.first, &fd_read))
-			{
-				if (-1 == RecvData(iter.second))
-				{
-					_clients_change = true;
-					temp.push_back(iter.second);
-
-					if (_pNetEvent)
-					{
-						_pNetEvent->OnLeave(iter.second);
-					}
-				}
-			}
-		}
-		for (auto pClient : temp)
-		{
-			_clients.erase(pClient->sockfd());
-		}
-#endif
 	}
 
 	void OnClientLeave(std::map<SOCKET, CRCChannelPtr>::iterator iter)

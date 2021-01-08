@@ -3,7 +3,7 @@
 // ----------------------------------
 #include "crc_init.h"
 #include "../common/include/crc_allocator.h"
-#include "crc_server.hpp"
+#include "crc_server_select.hpp"
 
 #include <thread>
 
@@ -13,7 +13,7 @@ int main()
 		CRCLogger::instance().set_log_path("/log/server.log","w");
 		CRCLogger::instance().start();
 
-		CRCServer server;
+		CRCServerSelect server;
 		server.InitSocket();
 		server.Bind(nullptr, 12345);
 		server.Listen(5);

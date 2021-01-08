@@ -20,9 +20,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="crc_server.hpp">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="crc_boss_server.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
@@ -42,6 +39,18 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="crc_net_environment.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\include\crc_fdset.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="crc_boss_select_server.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="crc_server_select.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="crc_work_select_server.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

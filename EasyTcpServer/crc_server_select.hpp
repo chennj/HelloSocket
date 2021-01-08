@@ -1,18 +1,18 @@
-﻿#ifndef _CRC_SERVER_HPP_
-#define _CRC_SERVER_HPP_
+﻿#ifndef _CRC_SERVER_SELECT_HPP_
+#define _CRC_SERVER_SELECT_HPP_
 
 #include "crc_init.h"
-#include "crc_boss_server.hpp"
+#include "crc_boss_select_server.hpp"
 #include <string>
 
-class CRCServer : public CRCBossServer
+class CRCServerSelect : public CRCBossSelectServer
 {
 	// overwrite parent function
 public:
 	// multiple thread triggering, nosafe
 	virtual void OnNetMessage(CRCWorkServer* pWorkServer, CRCChannelPtrRef pChannel, CRCDataHeader* pheader)
 	{
-		CRCBossServer::OnNetMessage(pWorkServer, pChannel, pheader);
+		CRCBossSelectServer::OnNetMessage(pWorkServer, pChannel, pheader);
 
 		switch (pheader->cmd)
 		{

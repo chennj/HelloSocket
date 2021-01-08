@@ -10,7 +10,9 @@
 #define xPrintf(...)
 #endif
 
+// 突破window/linux select模型的 64/1024 限制
 #ifdef _WIN32
+#define FD_SETSIZE	10240
 #define WIN32_LEAN_AND_MEAN
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
 #define _CRT_SECURE_NO_WARNINGS

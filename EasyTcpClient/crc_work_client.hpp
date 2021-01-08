@@ -4,6 +4,7 @@
 #include "crc_init.h"
 #include "crc_net_environment.hpp"
 #include "../common/include/crc_channel.hpp"
+#include "../common/include/crc_fdset.hpp"
 
 class CRCWorkClient
 {
@@ -12,6 +13,9 @@ protected:
 	bool _isConnected;
 	//
 	CRCChannel* _pChannel;
+	//
+	CRCFdSet _fdRead;
+	CRCFdSet _fdWrite;
 
 public:
 	CRCWorkClient()
@@ -94,22 +98,22 @@ public:
 
 		SOCKET sock = _pChannel->sockfd();
 
-		fd_set fdRead;
-		FD_ZERO(&fdRead);
-		FD_SET(sock, &fdRead);
 
-		fd_set fdWrite;
-		FD_ZERO(&fdWrite);
+		_fdRead.zero();
+		_fdRead.add(sock);
+
+
+		_fdWrite.zero();
 		timeval t = { 0,0 };
 		int ret;
 		if (_pChannel->is_need_write())
 		{
-			FD_SET(sock, &fdWrite);
-			ret = select(sock + 1, &fdRead, &fdWrite, nullptr, &t);
+			_fdWrite.add(sock);
+			ret = select(sock + 1, _fdRead.get_fd_set(), _fdWrite.get_fd_set(), nullptr, &t);
 		}
 		else
 		{
-			ret = select(sock + 1, &fdRead, nullptr, nullptr, &t);
+			ret = select(sock + 1, _fdRead.get_fd_set(), nullptr, nullptr, &t);
 		}
 		 
 		if (ret < 0)
@@ -119,7 +123,7 @@ public:
 			return ret;
 		}
 
-		if (FD_ISSET(sock, &fdRead))
+		if (_fdRead.has(sock))
 		{
 			int ret = RecvData();
 			if (-1 == ret)
@@ -129,7 +133,7 @@ public:
 			}
 		}
 
-		if (FD_ISSET(sock, &fdWrite))
+		if (_fdWrite.has(sock))
 		{
 			int ret = _pChannel->SendDataIM();
 			if (-1 == ret)

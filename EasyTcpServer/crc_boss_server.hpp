@@ -3,7 +3,7 @@
 
 #include "crc_init.h"
 #include "crc_inet_event.hpp"
-#include "crc_work_server.hpp"
+#include "crc_work_select_server.hpp"
 #include "crc_net_environment.hpp"
 #include "../common/include/crc_thread.hpp"
 #include "../common/include/crc_logger.hpp"
@@ -15,13 +15,14 @@
 /**
 *	main server which manage WorkServer
 */
+template<class T,class T_PTR>
 class CRCBossServer : public CRCINetEvent
 {
 private:
 	// thread
 	CRCThread _crcThread;
 	// WorkServers
-	std::vector<CRCWorkServerPtr> _workServers;
+	std::vector<T_PTR> _workServers;
 	// lock
 	std::mutex _mutex;
 
@@ -164,7 +165,7 @@ public:
 	{
 		for (int n = 0; n < nWorkServer; n++)
 		{
-			CRCWorkServerPtr pWorkServer = std::make_shared<CRCWorkServer>(_sock);
+			T_PTR pWorkServer = std::make_shared<T>(_sock);
 			_workServers.push_back(pWorkServer);
 			pWorkServer->RegisterNetEventListener(this);
 			pWorkServer->Start();
@@ -233,56 +234,7 @@ public:
 
 protected:
 	// only process accept request
-	void OnRun(CRCThread* pCrcThread)
-	{
-		CRCLogger::info("BossServer thread start...\n");
-
-		//while (pCrcThread->IsRun())
-		while(IsRunning())
-		{
-			time4Msg();
-
-			fd_set fd_read;
-			//fd_set fd_write;
-			//fd_set fd_exception;
-
-			FD_ZERO(&fd_read);
-			//FD_ZERO(&fd_write);
-			//FD_ZERO(&fd_exception);
-
-			// put server's socket in all the fd_set
-			FD_SET(_sock, &fd_read);
-			//FD_SET(_sock, &fd_write);
-			//FD_SET(_sock, &fd_exception);
-
-			//nfds is range of fd_set, not fd_set's count.
-			//nfds is also max value+1 of all the file descriptor(socket).
-			//nfds can be 0 in the windows.
-			//that timeval was setted null means blocking, not null means nonblocking.
-			timeval t = { 0,1 };
-			//int ret = select(_sock + 1/*nfds*/, &fd_read, &fd_write, &fd_exception, &t);
-			// only check readable
-			int ret = select(_sock + 1/*nfds*/, &fd_read, nullptr, nullptr, &t);
-			if (ret < 0)
-			{
-				CRCLogger::info("BossServer socket<%d> error occurs while select and mission finish.\n", (int)_sock);
-				//pCrcThread->ExitInSelfThread();
-				//Close();
-				break;
-			}
-
-			if (FD_ISSET(_sock, &fd_read))
-			{
-				FD_CLR(_sock, &fd_read);
-
-				Accept();
-			}
-		}
-
-		pCrcThread->ExitInSelfThread();
-
-		CRCLogger::info("BossServer thread exit...\n");
-	}
+	virtual void OnRun(CRCThread* pCrcThread) = 0;
 
 	// inherit INetEvent
 public:
