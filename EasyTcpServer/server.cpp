@@ -3,17 +3,29 @@
 // ----------------------------------
 #include "crc_init.h"
 #include "../common/include/crc_allocator.h"
+#ifdef __linux__
+#include "crc_server_epoll.hpp"
+#else
 #include "crc_server_select.hpp"
+#endif
 
 #include <thread>
 
 int main()
 {
 	{
-		CRCLogger::instance().set_log_path("/log/server.log","w");
+#ifdef __linux__
+		char path[] = { "server.log" };
+#else
+		char path[] = { "/log/server.log" };
+#endif
+		CRCLogger::instance().set_log_path(path,"w");
 		CRCLogger::instance().start();
-
+#ifdef __linux__
+		CRCServerEpoll server;
+#else
 		CRCServerSelect server;
+#endif
 		server.InitSocket();
 		server.Bind(nullptr, 12345);
 		server.Listen(5);

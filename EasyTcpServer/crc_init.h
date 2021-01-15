@@ -5,6 +5,7 @@
 
 class CRCWorkServer;
 class CRCWorkSelectServer;
+class CRCWorkEpollServer;
 class WorkServerSend2ClientTask;
 class CRCChannel;
 
@@ -16,6 +17,9 @@ typedef CRCWorkServerPtr& CRCWorkServerPtrRef;
 
 typedef std::shared_ptr<CRCWorkSelectServer> CRCWorkSelectServerPtr;
 typedef CRCWorkSelectServerPtr& CRCWorkServerSelectPtrRef;
+
+typedef std::shared_ptr<CRCWorkEpollServer> CRCWorkEpollServerPtr;
+typedef CRCWorkEpollServerPtr& CRCWorkEpollServerPtrRef;
 
 typedef std::shared_ptr<CRCDataHeader> CRCDataHeaderPtr;
 typedef CRCDataHeaderPtr& CRCDataHeaderPtrRef;

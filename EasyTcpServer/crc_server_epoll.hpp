@@ -1,18 +1,28 @@
-﻿#ifndef _CRC_SERVER_SELECT_HPP_
-#define _CRC_SERVER_SELECT_HPP_
+﻿#ifndef _CRC_SERVER_EPOLL_HPP_
+#define _CRC_SERVER_EPOLL_HPP_
 
+#ifdef __linux__
 #include "crc_init.h"
-#include "crc_boss_select_server.hpp"
+#include "crc_boss_epoll_server.hpp"
 #include <string>
 
-class CRCServerSelect : public CRCBossSelectServer
+class CRCServerEpoll : public CRCBossEpollServer
 {
+public:
+	CRCServerEpoll()
+	{
+
+	}
+	~CRCServerEpoll()
+	{
+	}
+
 	// overwrite parent function
 public:
 	// multiple thread triggering, nosafe
 	virtual void OnNetMessage(CRCWorkServer* pWorkServer, CRCChannel* pChannel, CRCDataHeader* pheader)
 	{
-		CRCBossSelectServer::OnNetMessage(pWorkServer, pChannel, pheader);
+		CRCBossEpollServer::OnNetMessage(pWorkServer, pChannel, pheader);
 
 		switch (pheader->cmd)
 		{
@@ -73,9 +83,9 @@ public:
 			s.write_int32(3);
 			s.write_float(4.1f);
 			s.write_double(5.2);
-			char* ss = "hello";
+			char ss[] = {"hello"};
 			s.write_array(ss, strlen(ss));
-			char* str = "i am server";
+			char str[] = {"i am server"};
 			s.write_array(str, strlen(str));
 			int a[] = { 1,2,3,4 };
 			s.write_array(a, 4);
@@ -116,5 +126,7 @@ public:
 		CRCBossServer::OnNetRecv(pChannel);
 	}
 };
+
+#endif
 
 #endif

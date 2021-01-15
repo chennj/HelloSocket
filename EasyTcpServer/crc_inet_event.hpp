@@ -12,22 +12,22 @@ public:
 	/**
 	*	event while client join
 	*/
-	virtual void OnJoin(CRCChannelPtrRef pChannel) = 0;
+	virtual void OnJoin(CRCChannel* pChannel) = 0;
 
 	/**
 	*	event while client leaves
 	*/
-	virtual void OnLeave(CRCChannelPtrRef pChannel) = 0;
+	virtual void OnLeave(CRCChannel* pChannel) = 0;
 
 	/**
 	*	event while client's message comes
 	*/
-	virtual void OnNetMessage(CRCWorkServer* pWorkServer, CRCChannelPtrRef pChannel, CRCDataHeader* pheader) = 0;
+	virtual void OnNetMessage(CRCWorkServer* pWorkServer, CRCChannel* pChannel, CRCDataHeader* pheader) = 0;
 
 	/**
 	*	event while client's receive message
 	*/
-	virtual void OnNetRecv(CRCChannelPtrRef pChannel) = 0;
+	virtual void OnNetRecv(CRCChannel* pChannel) = 0;
 };
 
 

@@ -54,7 +54,7 @@ public:
 #else
 			close(_sockfd);
 #endif
-			xPrintf("channel destory socket<%d>\n", _sockfd);
+			//CRCLogger::info("channel destory socket<%d>\n", _sockfd);
 			_sockfd = INVALID_SOCKET;
 		}
 	}
@@ -102,7 +102,7 @@ public:
 	}
 
 	// used to send data by synchronous block mode
-	int SendData(CRCDataHeaderPtr pheader)
+	int SendData(CRCDataHeader* pheader)
 	{
 		int ret = SOCKET_ERROR;
 		if (!pheader) {
@@ -159,7 +159,7 @@ public:
 	}
 
 	// used to send data by asynchronous not-block mode
-	int SendDataBuffer(CRCDataHeaderPtr pheader)
+	int SendDataBuffer(const CRCDataHeader* pheader)
 	{
 		int ret = SOCKET_ERROR;
 		if (!pheader) {
@@ -169,7 +169,7 @@ public:
 		// it's data length that would send
 		int nSendLen = pheader->data_length;
 		// it's data that would send
-		const char* pSendData = (const char*)pheader.get();
+		const char* pSendData = (const char*)pheader;
 
 		ret = _sendBuf.push(pSendData, nSendLen);
 

@@ -4,6 +4,7 @@
 #include "crc_init.h"
 #include "crc_inet_event.hpp"
 #include "crc_work_select_server.hpp"
+#include "crc_work_epoll_server.hpp"
 #include "crc_net_environment.hpp"
 #include "../common/include/crc_thread.hpp"
 #include "../common/include/crc_logger.hpp"
@@ -151,8 +152,7 @@ public:
 		}
 
 		// assign comed client to WorkServer with the least number of client
-		CRCChannelPtr cp(new CRCChannel(sock_client));
-		addClient2WorkServer(cp);
+		addClient2WorkServer(new CRCChannel(sock_client));
 		//addClient2WorkServer(std::make_shared<Channel>(sock_client));
 		//// get client ip address
 		//inet_ntoa(client_addr.sin_addr)
@@ -181,7 +181,7 @@ public:
 	}
 
 	// select WorkServer which queue is smallest add client message to it
-	void addClient2WorkServer(CRCChannelPtrRef pChannel)
+	void addClient2WorkServer(CRCChannel* pChannel)
 	{
 		auto pMinWorkServer = _workServers[0];
 		for (auto pWorkServer : _workServers)
@@ -239,25 +239,25 @@ protected:
 	// inherit INetEvent
 public:
 	// it would only be triggered by one thread, safe
-	virtual void OnLeave(CRCChannelPtrRef pChannel)
+	virtual void OnLeave(CRCChannel* pChannel)
 	{
 		_clientCount--;
 	}
 
 	// multiple thread triggering, not safe
-	virtual void OnNetMessage(CRCWorkServer* pWorkServer, CRCChannelPtrRef pChannel, CRCDataHeader* pheader)
+	virtual void OnNetMessage(CRCWorkServer* pWorkServer, CRCChannel* pChannel, CRCDataHeader* pheader)
 	{
 		_msgCount++;
 	}
 
 	// multiple thread triggering, not safe
-	virtual void OnJoin(CRCChannelPtrRef pChannel)
+	virtual void OnJoin(CRCChannel* pChannel)
 	{
 		_clientCount++;
 	}
 
 	// multiple thread triggering, not safe
-	virtual void OnNetRecv(CRCChannelPtrRef pChannel)
+	virtual void OnNetRecv(CRCChannel* pChannel)
 	{
 		_recvCount++;
 	}

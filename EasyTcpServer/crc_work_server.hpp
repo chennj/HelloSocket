@@ -20,7 +20,7 @@ class CRCWorkServer
 {
 private:
 	// client socket buffer
-	std::vector<CRCChannelPtr> _clientsBuf;
+	std::vector<CRCChannel*> _clientsBuf;
 	// lock
 	std::mutex _mutex;
 	// thread handle
@@ -39,7 +39,7 @@ protected:
 	bool _clients_change;
 	// client sockets
 	//std::vector<Channel*> _clients;
-	std::map<SOCKET, CRCChannelPtr> _clients;
+	std::map<SOCKET, CRCChannel*> _clients;
 public:
 	CRCWorkServer(SOCKET sock = INVALID_SOCKET)
 	{
@@ -76,6 +76,7 @@ protected:
 				{
 					//_clients.push_back(pClient);
 					_clients[pClient->sockfd()] = pClient;
+					OnClientJoin(pClient);
 				}
 				_clientsBuf.clear();
 				_clients_change = true;
@@ -143,18 +144,30 @@ protected:
 		}
 	}
 
-	void OnClientLeave(std::map<SOCKET, CRCChannelPtr>::iterator iter)
+	void OnClientLeave(std::map<SOCKET, CRCChannel*>::iterator iter)
 	{
 		_clients_change = true;
 		if (_pNetEvent)
 		{
 			_pNetEvent->OnLeave(iter->second);
 		}
+		delete iter->second;
 		_clients.erase(iter->first);
 	}
 
+	void OnClientLeave(CRCChannel* pChannel)
+	{
+		_clients_change = true;
+		if (_pNetEvent)
+		{
+			_pNetEvent->OnLeave(pChannel);
+		}
+		_clients.erase(pChannel->sockfd());
+		delete pChannel;
+	}
+
 public:
-	void addClient(CRCChannelPtrRef pChannel)
+	void addClient(CRCChannel* pChannel)
 	{
 		// self unlocking
 		std::lock_guard<std::mutex> lockGuard(_mutex);
@@ -191,7 +204,7 @@ public:
 	}
 
 	// receive data, deal sticking package and splitting package
-	int RecvData(CRCChannelPtrRef pClient)
+	int RecvData(CRCChannel* pClient)
 	{
 		//receive client data
 		int nLen = pClient->RecvData();
@@ -220,7 +233,7 @@ public:
 	}
 
 	// response net message
-	virtual void OnNetMessage(CRCChannelPtrRef pChannel, CRCDataHeader* pheader)
+	virtual void OnNetMessage(CRCChannel* pChannel, CRCDataHeader* pheader)
 	{
 		// statistics speed of server receiving client data packet
 		_pNetEvent->OnNetMessage(this, pChannel, pheader);
@@ -252,13 +265,18 @@ public:
 
 	// for task
 public:
-	void addSendTask(CRCChannelPtr pChannel, CRCDataHeaderPtr pDataHeader)
+	void addSendTask(CRCChannel* pChannel, CRCDataHeader* pDataHeader)
 	{
 		//std::shared_ptr<ITask> pTask = std::make_shared<WorkServerSend2ClientTask>(pChannel, pDataHeader);
 		_taskServer.addTask
 		(
 			[pChannel, pDataHeader]() {pChannel->SendData(pDataHeader); }
 		);
+	}
+
+protected:
+	virtual void OnClientJoin(CRCChannel* pClient)
+	{
 	}
 };
 
