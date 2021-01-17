@@ -18,6 +18,7 @@ public:
 	}
 	~CRCWorkEpollServer()
 	{
+		Close();
 		_epoll.destory();
 	}
 

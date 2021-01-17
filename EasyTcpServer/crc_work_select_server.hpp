@@ -21,7 +21,7 @@ public:
 	}
 	~CRCWorkSelectServer()
 	{
-
+		Close();
 	}
 
 public:
