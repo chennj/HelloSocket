@@ -82,6 +82,12 @@ public:
 		}
 		if (ret < 0)
 		{
+#ifdef __linux__
+			if (EINTR == errno)
+			{
+				return 0;
+			}
+#endif
 			CRCLogger::info("WorkServer socket<%d> error occurs while select and mission finish.\n", (int)_sock);
 			return ret;
 		}

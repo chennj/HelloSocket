@@ -48,6 +48,12 @@ protected:
 			int ret = select(_sock + 1/*nfds*/, _fd_read.get_fd_set(), nullptr, nullptr, &t);
 			if (ret < 0)
 			{
+#ifdef __linux__
+				if (EINTR == errno)
+				{
+					return 0;
+				}
+#endif
 				CRCLogger::info("BossServer socket<%d> error occurs while select and mission finish.\n", (int)_sock);
 				//pCrcThread->ExitInSelfThread();
 				//Close();

@@ -1,5 +1,6 @@
 // linux compile command
 // g++ server.cpp -std=c++11 -pthread -o server
+// g++ server.cpp -std=c++11 -pthread -pg -o server --带性能分析参数（有可能导致服务端运行不稳定）
 // ----------------------------------
 #include "crc_init.h"
 #include "../common/include/crc_allocator.h"

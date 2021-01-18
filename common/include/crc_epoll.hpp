@@ -89,6 +89,12 @@ public:
         // = 0，表示没有事件发生
         if (EPOLL_ERROR == ret_events)
         {
+			// 如果编译的时候使用了 -pg（性能分析）参数,或者添加了一些其他的三方库,可能会出现 
+			// Interrupted system call（EINTR）错误，需要忽略掉
+			if (EINTR == errno)
+			{
+				return 0;
+			}			
             CRCLogger::info("epoll_wait errorno<%d> errmsg<%s>.\n", errno, strerror(errno));
         }
 

@@ -38,7 +38,7 @@ protected:
 			time4Msg();
 
 			int ret_events = epoll.wait(1);
-			if (EPOLL_ERROR == ret_events)
+			if (ret_events < 0)
 			{
 				CRCLogger::info("BossServer socket<%d> error occurs while epoll and mission finish.\n", (int)_sock);
 				break;
