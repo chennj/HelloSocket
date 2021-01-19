@@ -20,40 +20,7 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="crc_boss_server.hpp">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="crc_inet_event.hpp">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="crc_task_server.hpp">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="crc_work_server.hpp">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="crc_init.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="crc_auto_ptr.hpp">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="crc_net_environment.hpp">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="crc_boss_select_server.hpp">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="crc_server_select.hpp">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="crc_work_select_server.hpp">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="crc_boss_epoll_server.hpp">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="crc_work_epoll_server.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="crc_server_epoll.hpp">

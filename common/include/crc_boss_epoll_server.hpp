@@ -2,7 +2,7 @@
 #define _CRC_BOSS_EPOLL_SERVER_HPP_
 
 #ifdef __linux__
-#include "../common/include/crc_epoll.hpp"
+#include "crc_epoll.hpp"
 #include "crc_boss_server.hpp"
 
 /**

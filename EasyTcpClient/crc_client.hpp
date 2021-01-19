@@ -1,8 +1,8 @@
 #ifndef _CRC_CLIENT_HPP_
 #define _CRC_CLIENT_HPP_
 
-#include "crc_init.h"
-#include "crc_work_client.hpp"
+#include "../common/include/crc_init.h"
+#include "../common/include/crc_work_client.hpp"
 
 class CRCClient : public CRCWorkClient
 {

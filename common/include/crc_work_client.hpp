@@ -3,8 +3,8 @@
 
 #include "crc_init.h"
 #include "crc_net_environment.hpp"
-#include "../common/include/crc_channel.hpp"
-#include "../common/include/crc_fdset.hpp"
+#include "crc_channel.hpp"
+#include "crc_fdset.hpp"
 
 class CRCWorkClient
 {

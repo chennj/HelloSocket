@@ -2,7 +2,7 @@
 // g++ server.cpp -std=c++11 -pthread -o server
 // g++ server.cpp -std=c++11 -pthread -pg -o server --带性能分析参数（有可能导致服务端运行不稳定）
 // ----------------------------------
-#include "crc_init.h"
+#include "../common/include/crc_init.h"
 #include "../common/include/crc_allocator.h"
 #ifdef __linux__
 #include "crc_server_epoll.hpp"

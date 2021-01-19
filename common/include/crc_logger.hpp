@@ -7,6 +7,11 @@
 
 class CRCLogger
 {
+
+#define CRCLogger_Info(...) CRCLogger::info(__VA_ARGS__)
+#define CRCLogger_Warn(...) CRCLogger::warn(__VA_ARGS__)
+#define CRCLogger_Error(...) CRCLogger::error(__VA_ARGS__)
+
 private:
 	std::shared_ptr<CRCLogServer> _pLogServer;
 	FILE* _logFile;
@@ -21,6 +26,8 @@ public:
 
 	~CRCLogger()
 	{
+		fclose(_logFile);
+		_logFile = nullptr;
 	}
 
 public:
@@ -57,46 +64,107 @@ public:
 
 	static void info(const char* str)
 	{
-		auto pLog = &CRCLogger::instance();
-
-		pLog->_pLogServer->addTask([pLog, str]() {
-			if (pLog->_logFile)
-			{
-				auto t = std::chrono::system_clock::now();
-				auto tt = std::chrono::system_clock::to_time_t(t);
-				std::tm* ttt = std::gmtime(&tt);
-				fprintf(pLog->_logFile, "%s", "INFO ");
-				fprintf(pLog->_logFile, "%d-%d-%d %d:%d:%d\t%s",
-					ttt->tm_year + 1900, ttt->tm_mon + 1, ttt->tm_mday,
-					ttt->tm_hour + 8, ttt->tm_min, ttt->tm_sec,
-					str);
-				fflush(pLog->_logFile);
-			}
-			printf("%s", str);
-		});
+		info("%s", str);
 	}
 
 	template<typename ...Args>
 	static void info(const char* format, Args... args)
 	{
+		echo("INFO", format, args...);
+	}
+
+	static void warn(const char* str)
+	{
+		warn("%s", str);
+	}
+
+	template<typename ...Args>
+	static void warn(const char* format, Args... args)
+	{
+		echo("WARN", format, args...);
+	}
+
+	static void error(const char* str)
+	{
+		error("%s", str);
+	}
+
+	template<typename ...Args>
+	static void error(const char* format, Args... args)
+	{
+#ifdef _WIN32
+		auto errCode = ::GetLastError();
+		//第一种用法：有点坑
+		//char* text = nullptr;
+		//FormatMessageA(
+		//	FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ALLOCATE_BUFFER,
+		//	NULL,
+		//	errCode,
+		//	MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+		//	(LPSTR)&text,
+		//	0,
+		//	NULL
+		//);
+		//echo("ERROR", format, args...);
+		//echo("ERROR", "errno<%d>,errmsg<%s>", errCode, text);
+		//instance()._pLogServer->addTask([=]() {
+		//	LocalFree(text);
+		//});
+		instance()._pLogServer->addTask([=]() {
+			char text[256] = {};
+			FormatMessageA(
+				FORMAT_MESSAGE_FROM_SYSTEM,
+				NULL,
+				errCode,
+				MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+				(LPSTR)&text,
+				256,
+				NULL
+			);
+			echo_real("ERROR", format, args...);
+			echo_real("ERROR", "errno<%d>,errmsg<%s>", errCode, text);
+		});
+#else
+		auto errCode = errno;
+		instance()._pLogServer->addTask([=]() {
+			echo_real("ERROR", format, args...);
+			echo_real("ERROR", "errno<%d>,errmsg<%s>", errCode, strerror(errCode));
+		});
+
+#endif
+	}
+
+	template<typename ...Args>
+	static void echo(const char* level_tag, const char* format, Args... args)
+	{
 		auto pLog = &CRCLogger::instance();
 
-		pLog->_pLogServer->addTask([pLog, format, args...]() {
-			if (pLog->_logFile)
-			{
-				auto t = std::chrono::system_clock::now();
-				auto tt = std::chrono::system_clock::to_time_t(t);
-				std::tm* ttt = std::gmtime(&tt);
-				fprintf(pLog->_logFile, "%s", "INFO ");
-				fprintf(pLog->_logFile, "%d-%d-%d %d:%d:%d\t",
-					ttt->tm_year + 1900, ttt->tm_mon + 1, ttt->tm_mday,
-					ttt->tm_hour + 8, ttt->tm_min, ttt->tm_sec);
-				fprintf(pLog->_logFile, format, args...);
-				fflush(pLog->_logFile);
-			}
-			printf(format, args...);
+		pLog->_pLogServer->addTask([=]() {
+			echo_real(level_tag, format, args...);
 		});
 	}
+
+	template<typename ...Args>
+	static void echo_real(const char* level_tag, const char* format, Args... args)
+	{
+		auto pLog = &CRCLogger::instance();
+
+		if (pLog->_logFile)
+		{
+			auto t = std::chrono::system_clock::now();
+			auto tt = std::chrono::system_clock::to_time_t(t);
+			std::tm* ttt = std::gmtime(&tt);
+			fprintf(pLog->_logFile, "%s ", level_tag);
+			fprintf(pLog->_logFile, "%d-%d-%d %d:%d:%d\t",
+				ttt->tm_year + 1900, ttt->tm_mon + 1, ttt->tm_mday,
+				ttt->tm_hour + 8, ttt->tm_min, ttt->tm_sec);
+			fprintf(pLog->_logFile, format, args...);
+			fflush(pLog->_logFile);
+		}
+		printf("%s ", level_tag);
+		printf(format, args...);
+	}
+
 };
 
 #endif

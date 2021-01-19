@@ -2,8 +2,8 @@
 #define _CRC_SERVER_EPOLL_HPP_
 
 #ifdef __linux__
-#include "crc_init.h"
-#include "crc_boss_epoll_server.hpp"
+#include "../common/include/crc_init.h"
+#include "../common/include/crc_boss_epoll_server.hpp"
 #include <string>
 
 class CRCServerEpoll : public CRCBossEpollServer

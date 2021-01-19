@@ -1,8 +1,8 @@
 ﻿#ifndef _CRC_SERVER_SELECT_HPP_
 #define _CRC_SERVER_SELECT_HPP_
 
-#include "crc_init.h"
-#include "crc_boss_select_server.hpp"
+#include "../common/include/crc_init.h"
+#include "../common/include/crc_boss_select_server.hpp"
 #include <string>
 
 class CRCServerSelect : public CRCBossSelectServer

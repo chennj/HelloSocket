@@ -1,7 +1,7 @@
 ﻿#ifndef _CRC_INIT_H_
 #define _CRC_INIT_H_
 
-#include "../common/include/crc_common.h"
+#include "crc_common.h"
 
 class CRCWorkServer;
 class CRCWorkSelectServer;
@@ -27,7 +27,7 @@ typedef CRCDataHeaderPtr& CRCDataHeaderPtrRef;
 typedef std::shared_ptr<LoginResponse> LoginResponsePtr;
 typedef LoginResponsePtr& LoginResponsePtrRef;
 
-#include "../common/include/crc_timestamp.hpp"
+#include "crc_timestamp.hpp"
 
 // minimum buffer size
 #ifndef RECV_BUFFER_SIZE

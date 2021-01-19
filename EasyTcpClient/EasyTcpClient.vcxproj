@@ -162,9 +162,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="crc_client.hpp" />
-    <ClInclude Include="crc_init.h" />
-    <ClInclude Include="crc_net_environment.hpp" />
-    <ClInclude Include="crc_work_client.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

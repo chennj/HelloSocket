@@ -3,7 +3,7 @@
 
 #ifdef __linux__
 #include "crc_work_server.hpp"
-#include "../common/include/crc_epoll.hpp"
+#include "crc_epoll.hpp"
 
 class CRCWorkEpollServer : public CRCWorkServer
 {

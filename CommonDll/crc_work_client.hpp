@@ -2,7 +2,7 @@
 #define _CRC_WORK_CLIENT_HPP_
 
 #include "crc_init.h"
-#include "crc_net_environment.hpp"
+#include "../common/include/crc_net_environment.hpp"
 #include "../common/include/crc_channel.hpp"
 
 class CRCWorkClient
