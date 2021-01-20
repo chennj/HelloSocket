@@ -1,5 +1,6 @@
 #include<stdio.h>
 #include<stdlib.h>
+#include<string>
 
 //可以配置再工程-属性-链接器-输入中
 //#pragma comment(lib, "ws2_32.lib")

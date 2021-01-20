@@ -14,8 +14,178 @@
 // 6 close socket
 
 #ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <Windows.h>
+#include <WinSock2.h>
+#pragma comment(lib, "ws2_32.lib")
+#include <MSWSock.h>
+#pragma comment(lib, "Mswsock.lib")
+#include <stdio.h>
+#include <stdlib.h>
+
+int port = 12345;
+#define BUF_SIZE 1024
+
+// -- IOCP基础流程
 int main()
 {
+	// 启动Sock 2.X环境
+	WORD ver = MAKEWORD(2, 2);
+	WSADATA data;
+	WSAStartup(ver, &data);
+
+	// -------------//
+	// 1. 建立一个Socket
+	// 当使用Socket API创建套接字的时候，会默认设置WSA_FLAG_OVERLAPPED标志
+	// 我们也可以使用WSASocket函数创建SOCKET
+	SOCKET sock_server = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+
+	// 2.1 设置对外IP和端口信息
+	sockaddr_in sin = {};
+	sin.sin_family = AF_INET;
+	sin.sin_port = htons(port);
+	sin.sin_addr.s_addr = INADDR_ANY;
+	// 2.2 绑定sockaddr与sock_server
+	if (SOCKET_ERROR == bind(sock_server, (sockaddr*)&sin, sizeof(sockaddr)))
+	{
+		printf("ERROR occur while binding local port<%d>\n", port);
+		return -1;
+	}
+
+	printf("SUCCESS for binding local port<%d>\n", port);
+
+	// 3. 监听sock_server
+	if (SOCKET_ERROR == listen(sock_server, 64))
+	{
+		printf("ERROR occur while listening local port<%d>\n", port);
+		return -1;
+	}
+
+	printf("listening port<%d>\n", port);
+
+	// ----- IOCP BEGIN -----//
+
+	// 4. 创建完成端口IOCP
+	HANDLE iocp_obj = CreateIoCompletionPort(
+		INVALID_HANDLE_VALUE,
+		NULL,
+		0,
+		0
+	);
+	if (NULL == iocp_obj)
+	{
+		printf("ERROR occur while create io completion port. errno=%d\n", GetLastError());
+		return -1;
+	}
+
+	// 5. 关联IOCP与SERVER SOCKET
+	HANDLE iocp_socket_relate_result = CreateIoCompletionPort(
+		(HANDLE)sock_server,
+		iocp_obj,
+		(ULONG_PTR)sock_server,	// 可以是自定义结构体、对象、数组、等的指针，
+								// 也可以是一个基础类型，这里简单传一个socket值
+		0
+	);
+	if (NULL == iocp_socket_relate_result)
+	{
+		printf("ERROR occur while server socket is associated with io completion port. errno=%d\n", GetLastError());
+		return -1;
+	}
+
+	// 6. 向IOCP投递接受客户端连接的任务
+	struct IO_DATA
+	{
+		// 重叠体
+		OVERLAPPED overlapped;
+		// 客户端socket
+		SOCKET sockfd;
+		// 数据缓冲区
+		char buf[BUF_SIZE];
+		// 实际缓冲区数据长度
+		int real_len;
+	};
+
+	IO_DATA io_data = {};
+	io_data.sockfd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+	BOOL ret = AcceptEx(
+		sock_server,
+		io_data.sockfd,
+		io_data.buf,
+		0,							// 如果不为0，则表示客户端连接到服务端之后，还必须再传送至少
+									// 一个字节大小的数据，服务端才会接受客户端的连接。
+									// 例如：设置此参数为 sizeof(buf) - ((sizeof (sockaddr_in) + 16) * 2)
+		sizeof(sockaddr_in) + 16,	// | 如果第三个参数不是0，这两个参数将从这个参数指定大小的位置开始存储，
+		sizeof(sockaddr_in) + 16,	// | 否则从buf的0位置开始存储
+		NULL,						// 接收到的字节数。不过只在同步（阻塞）模式下，这个参数才有意义，这里可以时0
+		&io_data.overlapped			// 重叠体，供IOCP模式内部使用，不能NULL
+	);
+	if (!ret)
+	{
+		if (ERROR_IO_PENDING != WSAGetLastError())
+		{
+			printf("ERROR occur while AcceptEx. errno=%d\n", GetLastError());
+			return -1;
+		}
+	}
+
+	while (true)
+	{
+		// 获取完成端口状态
+		DWORD bytes_trans = 0;
+		SOCKET sock = INVALID_SOCKET;
+		LPOVERLAPPED lpoverlapped;
+		BOOL ret = GetQueuedCompletionStatus(
+			iocp_obj,
+			&bytes_trans,
+			(PULONG_PTR)&sock,
+			&lpoverlapped,
+			1000
+		);
+		if (!ret)
+		{
+			int err = GetLastError();
+			if (WAIT_TIMEOUT == err)
+			{
+				continue;
+			}
+			if (ERROR_NETNAME_DELETED == err)
+			{
+				//printf("close client. socket=%d\n", sock_client);
+				//closesocket(sock_client);
+				continue;
+			}
+			printf("ERROR occur while GetQueuedCompletionStatus. errno=%d\n", GetLastError());
+			break;
+		}
+		if (sock == sock_server)
+		{
+			printf("new client enter. socket=%d\n", sock_accept);
+		}
+		else
+		{
+			printf("undefine action.\n");
+			break;
+		}
+
+		// 检查是否有事件发生，和select，epoll_wait类似
+		// 7.1 接受连接 完成
+		// 8.1 接收数据 完成 Completion
+		// 9.1 发送数据 完成
+		// 9.2 向IOCP投递接收数据任务
+	}
+
+	// ----- IOCP END -----//
+
+	// 10.1 关闭Client Socket
+	// 10.2 关闭Server Socket
+	closesocket(sock_server);
+	// 10.3 关闭完成端口
+	CloseHandle(iocp_obj);
+
+	// -------------------//
+	// 清除Windows Socket环境
+	WSACleanup();
+	system("PAUSE");
 	return 0;
 }
 #elif __linux__
