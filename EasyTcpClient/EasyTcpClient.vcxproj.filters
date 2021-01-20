@@ -20,7 +20,10 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="crc_client.hpp">
+    <ClInclude Include="crc_client_epoll.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="crc_client_select.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

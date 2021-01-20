@@ -1,7 +1,11 @@
 // linux compile command
 // g++ client.cpp -std=c++11 -pthread -o client
 // ----------------------------------
-#include "crc_client.hpp"
+#ifdef __linux__
+#include "crc_client_epoll.hpp"
+#else
+#include "crc_client_select.hpp"
+#endif
 
 #include <thread>
 #include <chrono>
@@ -10,12 +14,12 @@
 bool g_run = true;
 
 // sending thread amount
-const int tCount = 1;
+const int tCount = 2;
 // client amount
-const int nCount = 2;
+const int nCount = 100;
 
 // client object
-CRCClient* pclients[nCount];
+CRCWorkClient* pclients[nCount];
 
 // client send count
 std::atomic_int sendCount;
@@ -72,7 +76,11 @@ void sendThread(int id) //1~4
 	for (int n = begin; n < end; n++)
 	{
 		if (!g_run)return;
-		pclients[n] = new CRCClient;
+#ifdef __linux__
+		pclients[n] = new CRCClientEpoll;
+#else
+		pclients[n] = new CRCClientSelect;
+#endif
 	}
 
 	for (int n = begin; n < end; n++)
@@ -160,7 +168,12 @@ void sendThread(int id) //1~4
 
 int main()
 {
-	CRCLogger::instance().set_log_path("/log/client.log", "w");
+#ifdef __linux__
+	char path[] = { "client.log" };
+#else
+	char path[] = { "client.log" };
+#endif
+	CRCLogger::instance().set_log_path(path, "w");
 	CRCLogger::instance().start();
 
 	sendCount = 0;
@@ -201,7 +214,7 @@ int main()
 
 	printf("client shut down...\n");
 
-	std::chrono::milliseconds t(2000);
+	std::chrono::milliseconds t(1000);
 	std::this_thread::sleep_for(t);
 	return 0;
 

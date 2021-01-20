@@ -1,17 +1,17 @@
-#ifndef _CRC_CLIENT_HPP_
-#define _CRC_CLIENT_HPP_
+#ifndef _CRC_CLIENT_EPOLL_HPP_
+#define _CRC_CLIENT_EPOLL_HPP_
 
-#include "../common/include/crc_init.h"
-#include "../common/include/crc_work_client.hpp"
+#ifdef __linux__
+#include "../common/include/crc_work_epoll_client.hpp"
 
-class CRCClient : public CRCWorkClient
+class CRCClientEpoll : public CRCWorkEpollClient
 {
 public:
-	CRCClient()
+	CRCClientEpoll()
 	{
 
 	}
-	~CRCClient()
+	~CRCClientEpoll()
 	{
 
 	}
@@ -46,7 +46,7 @@ public:
 		break;
 		default:
 		{
-			printf("receive server msg: UNKNOWN, socket<%d>, data length: %d\n", (int)_pChannel->sockfd(), header->data_length);
+			CRCLogger_Info("receive server msg: UNKNOWN, socket<%d>, data length: %d\n", (int)_pChannel->sockfd(), header->data_length);
 		}
 		break;
 		}
@@ -56,3 +56,4 @@ public:
 
 #endif
 
+#endif

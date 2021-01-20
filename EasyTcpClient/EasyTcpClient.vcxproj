@@ -161,7 +161,8 @@
     <ClCompile Include="client.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="crc_client.hpp" />
+    <ClInclude Include="crc_client_epoll.hpp" />
+    <ClInclude Include="crc_client_select.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
