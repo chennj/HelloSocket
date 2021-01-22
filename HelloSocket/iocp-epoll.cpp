@@ -15,20 +15,195 @@
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
+#define _CRT_SECURE_NO_WARNINGS
 #include <Windows.h>
 #include <WinSock2.h>
 #pragma comment(lib, "ws2_32.lib")
 #include <MSWSock.h>
-#pragma comment(lib, "Mswsock.lib")
+//#pragma comment(lib, "Mswsock.lib")
 #include <stdio.h>
 #include <stdlib.h>
+#include <thread>
 
 int port = 12345;
-#define BUF_SIZE 1024
+#define IO_BUFFER_SIZE 1024
+// 允许连接进来的客户端数量
+const int permit_clients = 10;
+BOOL g_run = TRUE;
+
+enum IO_TYPE
+{
+	ACCEPT = 10,
+	RECV,
+	SEND
+};
+
+typedef struct _PER_IO_CONTEXT {
+	OVERLAPPED	_Overlapped;				// 每一个重叠I/O网络操作都要有一个               
+	SOCKET		_sockfd;					// 这个I/O操作所使用的Socket，每个连接的都是一样的 
+	WSABUF		_wsaBuf;					// 存储数据的缓冲区，用来给重叠操作传递参数的，关于WSABUF后面还会讲 
+	char		_szBuffer[IO_BUFFER_SIZE];	// 对应WSABUF里的缓冲区 
+	int			_length;					// _szBuffer的实际长度
+	IO_TYPE		_OpType;					// 标志这个重叠I/O操作是做什么的，例如Accept/Recv等 
+} PER_IO_CONTEXT, *PPER_IO_CONTEXT;
+
+//int delivery_accept(SOCKET sockServer, PPER_IO_CONTEXT pIoData = nullptr)
+//{
+//	if (!pIoData)
+//	{
+//		pIoData = new PER_IO_CONTEXT;
+//		memset(pIoData, 0, sizeof(PER_IO_CONTEXT));
+//	}
+//
+//	pIoData->_sockfd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+//	pIoData->_OpType = IO_TYPE::ACCEPT;
+//
+//	BOOL ret = AcceptEx(
+//		sockServer,
+//		pIoData->_sockfd,				// 用来接受连接的socket（Accept Socket）
+//		pIoData->_szBuffer,
+//		0,								// 如果不为0，则表示客户端连接到服务端之后，还必须再传送至少
+//										// 一个字节大小的数据，服务端才会接受客户端的连接。
+//										// 例如：设置此参数为 sizeof(buf) - ((sizeof (sockaddr_in) + 16) * 2)
+//		sizeof(sockaddr_in) + 16,		// | 如果第三个参数不是0，这两个参数将从这个参数指定大小的位置开始存储，
+//		sizeof(sockaddr_in) + 16,		// | 否则从buf的0位置开始存储
+//		NULL,							// 接收到的字节数。不过只在同步（阻塞）模式下，这个参数才有意义，这里可以时0
+//		&pIoData->_Overlapped			// 重叠体，供IOCP模式内部使用，不能NULL
+//	);
+//	if (FALSE == ret)
+//	{
+//		int err = WSAGetLastError();
+//		if (ERROR_IO_PENDING != err)
+//		{
+//			printf("ERROR occur while AcceptEx. errno=%d\n", GetLastError());
+//			return -1;
+//		}
+//	}
+//	return 0;
+//}
+
+// -----------------------------------------------------------
+// 使用预加载AcceptEx就不需要预先引用 Mswsock.lib 库了。
+// -----------------------------------------------------------
+LPFN_ACCEPTEX lpfnAcceptEx = NULL;
+int load_acceptex(SOCKET sockServer)
+{
+	GUID GuidAcceptEx = WSAID_ACCEPTEX;
+	DWORD dwBytes = 0;
+	int iResult = WSAIoctl(sockServer, SIO_GET_EXTENSION_FUNCTION_POINTER,
+		&GuidAcceptEx, sizeof(GuidAcceptEx),
+		&lpfnAcceptEx, sizeof(lpfnAcceptEx),
+		&dwBytes, NULL, NULL);
+	if (iResult == SOCKET_ERROR) {
+		printf("WSAIoctl failed with error: %u\n", WSAGetLastError());
+		closesocket(sockServer);
+		WSACleanup();
+		return -1;
+	}
+	return 0;
+}
+int delivery_accept_ex(SOCKET sockServer, PPER_IO_CONTEXT pIoData = nullptr)
+{
+	if (!pIoData)
+	{
+		pIoData = new PER_IO_CONTEXT;
+		memset(pIoData, 0, sizeof(PER_IO_CONTEXT));
+	}
+
+	pIoData->_sockfd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+	pIoData->_OpType = IO_TYPE::ACCEPT;
+
+	BOOL ret = lpfnAcceptEx(
+		sockServer,
+		pIoData->_sockfd,				// 用来接受连接的socket（Accept Socket）
+		pIoData->_szBuffer,
+		0,								// 如果不为0，则表示客户端连接到服务端之后，还必须再传送至少
+										// 一个字节大小的数据，服务端才会接受客户端的连接。
+										// 例如：设置此参数为 sizeof(buf) - ((sizeof (sockaddr_in) + 16) * 2)
+		sizeof(sockaddr_in) + 16,		// | 如果第三个参数不是0，这两个参数将从这个参数指定大小的位置开始存储，
+		sizeof(sockaddr_in) + 16,		// | 否则从buf的0位置开始存储
+		NULL,							// 接收到的字节数。不过只在同步（阻塞）模式下，这个参数才有意义，这里可以时0
+		&pIoData->_Overlapped			// 重叠体，供IOCP模式内部使用，不能NULL
+	);
+	if (FALSE == ret)
+	{
+		int err = WSAGetLastError();
+		if (ERROR_IO_PENDING != err)
+		{
+			printf("ERROR occur while AcceptEx. errno=%d\n", GetLastError());
+			return -1;
+		}
+	}
+	return 0;
+}
+// -----------------------------------------------------------
+
+int delivery_receive(PPER_IO_CONTEXT pIoData)
+{
+	pIoData->_OpType = IO_TYPE::RECV;
+	WSABUF wsabuf = {};
+	wsabuf.buf = pIoData->_szBuffer;
+	wsabuf.len = IO_BUFFER_SIZE;
+	DWORD flags = 0;
+	ZeroMemory(&pIoData->_Overlapped, sizeof(OVERLAPPED));
+
+	if (SOCKET_ERROR == WSARecv(pIoData->_sockfd, &wsabuf, 1, NULL, &flags, &pIoData->_Overlapped, NULL))
+	{
+		int err = WSAGetLastError();
+		if (WSA_IO_PENDING != err)
+		{
+			printf("ERROR occur while WSARecv. errno=%d\n", GetLastError());
+			return -1;
+		}
+	}
+	return 0;
+}
+
+int delivery_send(PPER_IO_CONTEXT pIoData)
+{
+	pIoData->_OpType = IO_TYPE::SEND;
+	WSABUF wsabuf = {};
+	wsabuf.buf = pIoData->_szBuffer;
+	wsabuf.len = pIoData->_length;
+	DWORD flags = 0;
+	if (SOCKET_ERROR == WSASend(pIoData->_sockfd, &wsabuf, 1, NULL, flags, &pIoData->_Overlapped, NULL))
+	{
+		int err = WSAGetLastError();
+		if (WSA_IO_PENDING != err)
+		{
+			printf("ERROR occur while WSASend. errno=%d\n", GetLastError());
+			return -1;
+		}
+	}
+	return 0;
+}
+
+void cmdThread()
+{
+	while (true)
+	{
+		char cmd_buf[128] = {};
+		scanf("%s", cmd_buf);
+		if (0 == strcmp(cmd_buf, "exit"))
+		{
+			printf("bye\n");
+			g_run = false;
+			break;
+		}
+		else
+		{
+			printf("this command was not supported.\n");
+		}
+	}
+}
 
 // -- IOCP基础流程
 int main()
 {
+	// 启动命令线程
+	std::thread t1(cmdThread);
+	t1.detach();
+
 	// 启动Sock 2.X环境
 	WORD ver = MAKEWORD(2, 2);
 	WSADATA data;
@@ -93,54 +268,37 @@ int main()
 	}
 
 	// 6. 向IOCP投递接受客户端连接的任务
-	struct IO_DATA
+	// 预加载AcceptEx
+	if (load_acceptex(sock_server) < 0)
 	{
-		// 重叠体
-		OVERLAPPED overlapped;
-		// 客户端socket
-		SOCKET sockfd;
-		// 数据缓冲区
-		char buf[BUF_SIZE];
-		// 实际缓冲区数据长度
-		int real_len;
-	};
-
-	IO_DATA io_data = {};
-	io_data.sockfd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-	BOOL ret = AcceptEx(
-		sock_server,
-		io_data.sockfd,
-		io_data.buf,
-		0,							// 如果不为0，则表示客户端连接到服务端之后，还必须再传送至少
-									// 一个字节大小的数据，服务端才会接受客户端的连接。
-									// 例如：设置此参数为 sizeof(buf) - ((sizeof (sockaddr_in) + 16) * 2)
-		sizeof(sockaddr_in) + 16,	// | 如果第三个参数不是0，这两个参数将从这个参数指定大小的位置开始存储，
-		sizeof(sockaddr_in) + 16,	// | 否则从buf的0位置开始存储
-		NULL,						// 接收到的字节数。不过只在同步（阻塞）模式下，这个参数才有意义，这里可以时0
-		&io_data.overlapped			// 重叠体，供IOCP模式内部使用，不能NULL
-	);
-	if (!ret)
+		return -1;
+	}
+	PER_IO_CONTEXT ioData[permit_clients] = {};
+	for (int i = 0; i < permit_clients; i++)
 	{
-		if (ERROR_IO_PENDING != WSAGetLastError())
-		{
-			printf("ERROR occur while AcceptEx. errno=%d\n", GetLastError());
+		//if (delivery_accept(sock_server, ioData+i) < 0) {
+		//	return -1;
+		//}
+		if (delivery_accept_ex(sock_server, ioData + i) < 0) {
 			return -1;
 		}
 	}
 
-	while (true)
+	int msg_count = 0;
+	while (g_run)
 	{
 		// 获取完成端口状态
 		DWORD bytes_trans = 0;
 		SOCKET sock = INVALID_SOCKET;
-		LPOVERLAPPED lpoverlapped;
+		PPER_IO_CONTEXT pIoData;
 		BOOL ret = GetQueuedCompletionStatus(
 			iocp_obj,
 			&bytes_trans,
 			(PULONG_PTR)&sock,
-			&lpoverlapped,
-			1000
+			(LPOVERLAPPED*)&pIoData,
+			1
 		);
+		// 检查是否有事件发生，和select，epoll_wait类似
 		if (!ret)
 		{
 			int err = GetLastError();
@@ -150,33 +308,108 @@ int main()
 			}
 			if (ERROR_NETNAME_DELETED == err)
 			{
-				//printf("close client. socket=%d\n", sock_client);
-				//closesocket(sock_client);
+				printf("close client. socket=%d\n", pIoData->_sockfd);
+				closesocket(pIoData->_sockfd);
 				continue;
 			}
 			printf("ERROR occur while GetQueuedCompletionStatus. errno=%d\n", GetLastError());
 			break;
 		}
-		if (sock == sock_server)
+		// 7.1 接受连接已经完成
+		if (IO_TYPE::ACCEPT == pIoData->_OpType)
 		{
-			printf("new client enter. socket=%d\n", sock_accept);
+			printf("new client enter. socket=%d\n", pIoData->_sockfd);
+			// 7.2 关联IOCP与Client Socket
+			HANDLE iocp_socket_relate_result = CreateIoCompletionPort(
+				(HANDLE)pIoData->_sockfd,
+				iocp_obj,
+				(ULONG_PTR)pIoData->_sockfd,
+				0
+			);
+			if (NULL == iocp_socket_relate_result)
+			{
+				printf("ERROR occur while client socket is associated with io completion port. errno=%d\n", GetLastError());
+				closesocket(pIoData->_sockfd);
+				continue;
+			}
+			// 7.3 向IOCP投递接收数据的任务
+			if (delivery_receive(pIoData) < 0)
+			{
+				printf("CLOSE socket=%d\n", pIoData->_sockfd);
+				closesocket(pIoData->_sockfd);
+			}
+			continue;
 		}
-		else
+		// 8.1 接收数据已经完成 Completion
+		if (IO_TYPE::RECV == pIoData->_OpType)
 		{
-			printf("undefine action.\n");
-			break;
+			// 客户端断开处理
+			if (bytes_trans <= 0)
+			{
+				printf("CLOSE socket=%d,bytes_trans=%d\n", pIoData->_sockfd, bytes_trans);
+				closesocket(pIoData->_sockfd);
+				continue;
+			}
+
+			printf("RECEIVE data socket=%d,bytes_trans=%d, msg_count=%d\n", pIoData->_sockfd, bytes_trans, ++msg_count);
+
+			//// 8.2 如果还需要接收数据，需要再投递接收数据任务
+			//if (delivery_receive(pIoData) < 0)
+			//{
+			//	printf("CLOSE socket=%d\n", pIoData->_sockfd);
+			//	closesocket(pIoData->_sockfd);
+			//}
+			// 8.2 向IOCP投递发送数据任务
+			pIoData->_length = bytes_trans;
+			if (delivery_send(pIoData) < 0)
+			{
+				printf("CLOSE socket=%d\n", pIoData->_sockfd);
+				closesocket(pIoData->_sockfd);
+			}
+			continue;
+		}
+		// 9.1 发送数据已经完成
+		if (IO_TYPE::SEND == pIoData->_OpType)
+		{
+			// 客户端断开处理
+			if (bytes_trans <= 0)
+			{
+				printf("CLOSE socket=%d,bytes_trans=%d\n", pIoData->_sockfd, bytes_trans);
+				closesocket(pIoData->_sockfd);
+				continue;
+			}
+
+			printf("SEND data socket=%d,bytes_trans=%d, msg_count=%d\n", pIoData->_sockfd, bytes_trans, msg_count);
+
+			//// 9.2 如果还需要发送数据，向IOCP投递发送数据任务
+			//pIoData->_length = bytes_trans;
+			//if (delivery_send(pIoData) < 0)
+			//{
+			//	printf("CLOSE socket=%d\n", pIoData->_sockfd);
+			//	closesocket(pIoData->_sockfd);
+			//}
+
+			// 9.2 向IOCP投递接收数据任务
+			if (delivery_receive(pIoData) < 0)
+			{
+				printf("CLOSE socket=%d\n", pIoData->_sockfd);
+				closesocket(pIoData->_sockfd);
+			}
+			continue;
 		}
 
-		// 检查是否有事件发生，和select，epoll_wait类似
-		// 7.1 接受连接 完成
-		// 8.1 接收数据 完成 Completion
-		// 9.1 发送数据 完成
-		// 9.2 向IOCP投递接收数据任务
+		printf("undefine action.\n");
+		break;
+	
 	}
 
 	// ----- IOCP END -----//
 
 	// 10.1 关闭Client Socket
+	for (PER_IO_CONTEXT client : ioData)
+	{
+		closesocket(client._sockfd);
+	}
 	// 10.2 关闭Server Socket
 	closesocket(sock_server);
 	// 10.3 关闭完成端口

@@ -238,7 +238,7 @@ int main()
 	// 192.168.137.129
 	// 127.0.0.1
 	CRCClient client;
-	client.Connect("192.168.137.129", 12345);
+	client.Connect("127.0.0.1", 12345);
 	while (client.IsRunning())
 	{
 		client.OnRun();

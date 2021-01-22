@@ -179,7 +179,7 @@ public:
 	int SendData(const CRCDataHeader* pHeader)
 	{
 		if (IsRunning())
-			return _pChannel->SendDataBuffer(std::make_shared<CRCDataHeader>(*pHeader));
+			return _pChannel->SendDataBuffer(pHeader);
 		return 0;
 	}
 

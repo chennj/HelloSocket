@@ -3,17 +3,6 @@
 
 #include "../common/include/crc_common.h"
 
-class CRCChannel;
-
-typedef std::shared_ptr<CRCChannel> CRCChannelPtr;
-typedef CRCChannelPtr& CRCChannelPtrRef;
-
-typedef std::shared_ptr<CRCDataHeader> CRCDataHeaderPtr;
-typedef CRCDataHeaderPtr& CRCDataHeaderPtrRef;
-
-typedef std::shared_ptr<LoginResponse> LoginResponsePtr;
-typedef LoginResponsePtr& LoginResponsePtrRef;
-
 #include "../common/include/crc_timestamp.hpp"
 
 // minimum buffer size
