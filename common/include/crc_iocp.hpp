@@ -7,6 +7,8 @@
 #include "crc_logger.hpp"
 #include <MSWSock.h>
 
+#define IO_BUFFER_SIZE 1024
+
 enum IO_TYPE
 {
 	ACCEPT = 10,
@@ -48,10 +50,11 @@ public:
 	~CRCIOCP()
 	{
 		CRCLogger::info("CRCIOCP destory...\n");
+		destory();
 	}
 
 public:
-	// preloading
+	// preloading accept
 	int load_acceptex(SOCKET listenSocket)
 	{
 		if (INVALID_SOCKET != _sockServer)
@@ -59,7 +62,7 @@ public:
 			CRCLogger_Warn("CRCIOCP::load_acceptex INVALID_SOCKET != _sockServer\n");
 			return 1;
 		}
-		if (!_lpfnAcceptEx)
+		if (_lpfnAcceptEx)
 		{
 			CRCLogger_Warn("CRCIOCP::load_acceptex _lpfnAcceptEx != NULL\n");
 			return 1;
@@ -80,7 +83,7 @@ public:
 		return 0;
 	}
 
-	// create io completion port
+	// create io completion port object
 	bool create()
 	{
 		// 创建完成端口IOCP
@@ -97,6 +100,16 @@ public:
 		}
 
 		return true;
+	}
+
+	// release resource
+	void destory()
+	{
+		if (_IoCompletionPort)
+		{
+			CloseHandle(_IoCompletionPort);
+			_IoCompletionPort = NULL;
+		}
 	}
 
 	// server socket is associated with io completion port
@@ -119,16 +132,23 @@ public:
 	}
 
 	// delivery accept to iocp
-	bool delivery_accept(PIO_CONTEXT pIoData == nullptr)
+	int delivery_accept(PIO_CONTEXT pIoData = nullptr)
 	{
 		if (INVALID_SOCKET == _sockServer)
 		{
 			CRCLogger_Error("CRCIOCP::load_acceptex INVALID_SOCKET == _sockServer\n");
-			return false;
+			return -1;
+		}
+
+		if (_lpfnAcceptEx == nullptr)
+		{
+			CRCLogger_Error("CRCIOCP::load_acceptex _lpfnAcceptEx == nullptr\n");
+			return -1;
 		}
 
 		if (!pIoData)
 		{
+			CRCLogger_Warn("CRCIOCP::load_acceptex pIoData == nullptr\n");
 			pIoData = new IO_CONTEXT;
 			memset(pIoData, 0, sizeof(IO_CONTEXT));
 		}
@@ -153,15 +173,74 @@ public:
 			int err = WSAGetLastError();
 			if (ERROR_IO_PENDING != err)
 			{
-				printf("ERROR occur while AcceptEx. errno=%d\n", GetLastError());
-				return false;
+				CRCLogger_Error("CRCIOCP::load_acceptex errno=%d\n", GetLastError());
+				return -1;
 			}
 		}
-		return true;
+		return 0;
 	}
 
+	// delivery receive to iocp
+	int delivery_receive(PIO_CONTEXT pIoData)
+	{
+		if (!pIoData)
+		{
+			CRCLogger_Error("CRCIOCP::delivery_receive pIoData == nullptr\n");
+			return -1;
+		}
+
+		pIoData->_OpType = IO_TYPE::RECV;
+		WSABUF wsabuf = {};
+		wsabuf.buf = pIoData->_szBuffer;
+		wsabuf.len = IO_BUFFER_SIZE;
+		DWORD flags = 0;
+		ZeroMemory(&pIoData->_Overlapped, sizeof(OVERLAPPED));
+
+		if (SOCKET_ERROR == WSARecv(pIoData->_sockfd, &wsabuf, 1, NULL, &flags, &pIoData->_Overlapped, NULL))
+		{
+			int err = WSAGetLastError();
+			if (WSA_IO_PENDING != err)
+			{
+				printf("ERROR occur while WSARecv. errno=%d\n", GetLastError());
+				return -1;
+			}
+		}
+		return 0;
+	}
+
+	// delivery send to iocp
+	int delivery_send(PIO_CONTEXT pIoData)
+	{
+		if (!pIoData)
+		{
+			CRCLogger_Error("CRCIOCP::delivery_send pIoData == nullptr\n");
+			return -1;
+		}
+
+		pIoData->_OpType = IO_TYPE::SEND;
+		WSABUF wsabuf = {};
+		wsabuf.buf = pIoData->_szBuffer;
+		wsabuf.len = pIoData->_length;
+		DWORD flags = 0;
+		if (SOCKET_ERROR == WSASend(pIoData->_sockfd, &wsabuf, 1, NULL, flags, &pIoData->_Overlapped, NULL))
+		{
+			int err = WSAGetLastError();
+			if (WSA_IO_PENDING != err)
+			{
+				printf("ERROR occur while WSASend. errno=%d\n", GetLastError());
+				return -1;
+			}
+		}
+		return 0;
+	}
+
+	// wait net event ocuur
 	int wait(IO_EVENT& ioEvent,int timeout)
 	{
+		ioEvent.bytesTrans = 0;
+		ioEvent.pIoData = nullptr;
+		ioEvent.sock = INVALID_SOCKET; 
+
 		// 获取完成端口状态
 		BOOL ret = GetQueuedCompletionStatus(
 			_IoCompletionPort,
@@ -180,9 +259,8 @@ public:
 			}
 			if (ERROR_NETNAME_DELETED == err)
 			{
-				CRCLogger_Warn("CRCIOCP::wait close client. socket=%d\n", ioEvent.pIoData->_sockfd);
-				closesocket(ioEvent.pIoData->_sockfd);
-				return 0;
+				CRCLogger_Warn("CRCIOCP::wait ERROR_NETNAME_DELETED. socket=%d\n", ioEvent.pIoData->_sockfd);
+				return 1;
 			}
 			CRCLogger_Error("CRCIOCP::wait errno=%d\n", GetLastError());
 			return -1;

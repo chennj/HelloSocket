@@ -330,6 +330,8 @@ int main()
 			{
 				printf("ERROR occur while client socket is associated with io completion port. errno=%d\n", GetLastError());
 				closesocket(pIoData->_sockfd);
+				// 关闭一个，再投递一个ACCEPT，等待新的客户连接，保持可以连接的总数不变
+				delivery_accept_ex(sock_server, pIoData);
 				continue;
 			}
 			// 7.3 向IOCP投递接收数据的任务
@@ -337,6 +339,8 @@ int main()
 			{
 				printf("CLOSE socket=%d\n", pIoData->_sockfd);
 				closesocket(pIoData->_sockfd);
+				// 关闭一个，再投递一个ACCEPT，等待新的客户连接，保持可以连接的总数不变
+				delivery_accept_ex(sock_server, pIoData);
 			}
 			continue;
 		}
@@ -348,6 +352,8 @@ int main()
 			{
 				printf("CLOSE socket=%d,bytes_trans=%d\n", pIoData->_sockfd, bytes_trans);
 				closesocket(pIoData->_sockfd);
+				// 关闭一个，复用一次PER_IO_CONTEXT，再投递一个ACCEPT，等待新的客户连接，保持可以连接的总数不变
+				delivery_accept_ex(sock_server, pIoData);
 				continue;
 			}
 
@@ -376,6 +382,8 @@ int main()
 			{
 				printf("CLOSE socket=%d,bytes_trans=%d\n", pIoData->_sockfd, bytes_trans);
 				closesocket(pIoData->_sockfd);
+				// 关闭一个，复用一次PER_IO_CONTEXT，再投递一个ACCEPT，等待新的客户连接，保持可以连接的总数不变
+				delivery_accept_ex(sock_server, pIoData);
 				continue;
 			}
 
@@ -394,6 +402,8 @@ int main()
 			{
 				printf("CLOSE socket=%d\n", pIoData->_sockfd);
 				closesocket(pIoData->_sockfd);
+				// 关闭一个，复用一次PER_IO_CONTEXT，再投递一个ACCEPT，等待新的客户连接，保持可以连接的总数不变
+				delivery_accept_ex(sock_server, pIoData);
 			}
 			continue;
 		}

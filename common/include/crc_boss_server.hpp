@@ -38,6 +38,8 @@ protected:
 	std::atomic_int _msgCount;
 	// count while client join or offline
 	std::atomic_int _clientCount;
+	// max acceptable client sum
+	int _maxClient;
 	// local socket
 	SOCKET _sock;
 
@@ -47,6 +49,7 @@ public:
 		_sock = INVALID_SOCKET;
 		_recvCount = 0;
 		_clientCount = 0;
+		_maxClient = 10001;
 		_msgCount = 0;
 	}
 
@@ -151,11 +154,20 @@ public:
 			return sock_client;
 		}
 
-		// assign comed client to WorkServer with the least number of client
-		addClient2WorkServer(new CRCChannel(sock_client));
-		//addClient2WorkServer(std::make_shared<Channel>(sock_client));
-		//// get client ip address
-		//inet_ntoa(client_addr.sin_addr)
+		if (_clientCount < _maxClient)
+		{
+			CRCWorkServer::make_reuseaddr(sock_client);
+
+			// assign comed client to WorkServer with the least number of client
+			addClient2WorkServer(new CRCChannel(sock_client));
+			//// get client ip address
+			//inet_ntoa(client_addr.sin_addr)
+		}
+		else
+		{
+			CRCWorkServer::destory_socket(sock_client);
+			CRCLogger_Warn("BossServer::IOCPAccept Accept to Max Client\n");
+		}
 
 		return sock_client;
 	}

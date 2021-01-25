@@ -14,9 +14,9 @@
 bool g_run = true;
 
 // sending thread amount
-const int tCount = 1;
+const int tCount = 4;
 // client amount
-const int nCount = 1;
+const int nCount = 40;
 
 // client object
 CRCWorkClient* pclients[nCount];

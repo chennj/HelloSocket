@@ -278,6 +278,31 @@ protected:
 	virtual void OnClientJoin(CRCChannel* pClient)
 	{
 	}
+
+public:
+	static void make_reuseaddr(SOCKET clientSock)
+	{
+#ifdef _WIN32
+		linger so_linger = { 1,2 };
+		int bOptLen	 = sizeof(linger);
+		int ret = setsockopt(clientSock, SOL_SOCKET, SO_LINGER, (char *)&so_linger, bOptLen);
+		if (ret == SOCKET_ERROR) {
+			CRCLogger_Error("WorkServer::make_reuseaddr SO_LINGER failed with error=%u\n", WSAGetLastError());
+		}
+#else
+		int reuse = 0;
+		int ret = setsockopt(clientSock, SOL_SOCKET, SO_REUSEADDR, (const char *)&reuse, sizeof(int));
+		if (ret == SOCKET_ERROR) {
+			CRCLogger_Error("WorkServer::make_reuseaddr SO_REUSEADDR failed with error=%u\n", WSAGetLastError());
+		}
+#endif
+	}
+
+	static void destory_socket(SOCKET clientSock)
+	{
+		make_reuseaddr(clientSock);
+		closesocket(clientSock);
+	}
 };
 
 

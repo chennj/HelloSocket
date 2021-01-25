@@ -6,26 +6,23 @@
 class CRCWorkServer;
 class CRCWorkSelectServer;
 class CRCWorkEpollServer;
+class CRCWorkIOCPServer;
 class WorkServerSend2ClientTask;
 class CRCChannel;
 
 typedef std::shared_ptr<CRCChannel> CRCChannelPtr;
-typedef CRCChannelPtr& CRCChannelPtrRef;
 
 typedef std::shared_ptr<CRCWorkServer> CRCWorkServerPtr;
-typedef CRCWorkServerPtr& CRCWorkServerPtrRef;
 
 typedef std::shared_ptr<CRCWorkSelectServer> CRCWorkSelectServerPtr;
-typedef CRCWorkSelectServerPtr& CRCWorkServerSelectPtrRef;
 
 typedef std::shared_ptr<CRCWorkEpollServer> CRCWorkEpollServerPtr;
-typedef CRCWorkEpollServerPtr& CRCWorkEpollServerPtrRef;
+
+typedef std::shared_ptr<CRCWorkIOCPServer> CRCWorkIOCPServerPtr;
 
 typedef std::shared_ptr<CRCDataHeader> CRCDataHeaderPtr;
-typedef CRCDataHeaderPtr& CRCDataHeaderPtrRef;
 
 typedef std::shared_ptr<LoginResponse> LoginResponsePtr;
-typedef LoginResponsePtr& LoginResponsePtrRef;
 
 #include "crc_timestamp.hpp"
 

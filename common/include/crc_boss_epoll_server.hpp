@@ -40,7 +40,7 @@ protected:
 			int ret_events = epoll.wait(1);
 			if (ret_events < 0)
 			{
-				CRCLogger::info("BossServer socket<%d> error occurs while epoll and mission finish.\n", (int)_sock);
+				CRCLogger_Error("BossServer socket<%d> error occurs while epoll and mission finish.\n", (int)_sock);
 				break;
 			}
 

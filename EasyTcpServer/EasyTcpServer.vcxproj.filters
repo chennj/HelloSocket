@@ -26,5 +26,8 @@
     <ClInclude Include="crc_server_epoll.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="crc_server_iocp.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
