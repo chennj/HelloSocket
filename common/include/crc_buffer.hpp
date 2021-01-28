@@ -123,7 +123,6 @@ public:
 
 		if (nLen <= 0)
 		{
-			//CRCLogger::info("server socket<%d> client socket <%d> offline\n", (int)_sock, (int)pclient->sockfd());
 			return nLen;
 		}
 
@@ -150,15 +149,39 @@ public:
 	}
 
 	// whether buffer has data
-	bool has_any_data()
+	inline bool has_any_data()
 	{
 		return _lastPos > 0;
 	}
 
 	// return buffer address
-	char* getBuf()
+	inline char* getBuf()
 	{
 		return _pBuf;
+	}
+
+	// buffer total length
+	inline int buf_total_len()
+	{
+		return _nSize;
+	}
+
+	// existing data length
+	inline int buf_data_len()
+	{
+		return _lastPos;
+	}
+
+	// ---------------- iocp ---------------------
+	// set buf last pos
+	inline bool recv4Iocp(int nLen)
+	{
+		if (_nSize - _lastPos >= nLen)
+		{
+			_lastPos += nLen;
+			return true;
+		}
+		return false;
 	}
 };
 

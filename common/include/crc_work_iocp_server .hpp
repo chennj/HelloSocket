@@ -4,12 +4,14 @@
 #ifdef _WIN32
 
 #include "crc_work_server.hpp"
+#include "crc_logger.hpp"
 #include "crc_iocp.hpp"
 
 class CRCWorkIOCPServer : public CRCWorkServer
 {
 private:
 	CRCIOCP _iocp;
+	IO_EVENT _ioEvent = {};
 
 public:
 	CRCWorkIOCPServer(SOCKET sock = INVALID_SOCKET) :
@@ -26,89 +28,92 @@ public:
 	// epoll mode
 	int DoAction()
 	{
+	
 		// 遍历是否有需要发送的数据
 		int err;
-		for (auto iter : _clients)
-		{
-			if (iter.second->is_need_write())
-			{
-				err = _epoll.ctl(iter.second, EPOLL_CTL_MOD, iter.second->sockfd(), EPOLLIN | EPOLLOUT);
-				if (err < 0)
-				{
-					CRCLogger::info("epoll.ctl socket<%d> errorno<%d> errmsg<%s>.\n", (int)_sock, errno, strerror(errno));
-					break;
-				}
-			}
-			else
-			{
-				err = _epoll.ctl(iter.second, EPOLL_CTL_MOD, iter.second->sockfd(), EPOLLIN);
-				if (err < 0)
-				{
-					CRCLogger::info("epoll.ctl socket<%d> errorno<%d> errmsg<%s>.\n", (int)_sock, errno, strerror(errno));
-					break;
-				}
-			}
+		//for (auto iter : _clients)
+		//{
+		//	if (iter.second->is_need_write())
+		//	{
+		//		err = _epoll.ctl(iter.second, EPOLL_CTL_MOD, iter.second->sockfd(), EPOLLIN | EPOLLOUT);
+		//		if (err < 0)
+		//		{
+		//			CRCLogger::info("epoll.ctl socket<%d> errorno<%d> errmsg<%s>.\n", (int)_sock, errno, strerror(errno));
+		//			break;
+		//		}
+		//	}
+		//	else
+		//	{
+		//		err = _epoll.ctl(iter.second, EPOLL_CTL_MOD, iter.second->sockfd(), EPOLLIN);
+		//		if (err < 0)
+		//		{
+		//			CRCLogger::info("epoll.ctl socket<%d> errorno<%d> errmsg<%s>.\n", (int)_sock, errno, strerror(errno));
+		//			break;
+		//		}
+		//	}
 
+		//}
+
+		//if (err < 0)
+		//{
+		//	return 0;
+		//}
+
+		int ret = _iocp.wait(_ioEvent,1);
+		if (ret < 0)
+		{
+			CRCLogger_Error("WorkIOCPServer socket<%d> errorno<%d> errmsg<%s>.", (int)_sock, errno, strerror(errno));
+			return ret;
+		}
+		else if (0 == ret)
+		{
+			return ret;
 		}
 
-		if (err < 0)
+		// 接收数据已经完成 Completion
+		if (IO_TYPE::RECV == _ioEvent.pIoData->_OpType)
 		{
-			return 0;
-		}
-
-		int ret_events = _epoll.wait(1);
-
-		if (ret_events < 0)
-		{
-			CRCLogger::info("WorkEpollServer socket<%d> errorno<%d> errmsg<%s>.\n", (int)_sock, errno, strerror(errno));
-			return ret_events;
-		}
-		if (0 == ret_events)
-		{
-			return ret_events;
-		}
-
-		epoll_event * events = _epoll.get_epoll_events();
-
-		for (int n = 0; n < ret_events; n++)
-		{
-			CRCChannel* pClient = (CRCChannel*)events[n].data.ptr;
-			if (!pClient)
+			// 客户端断开处理
+			if (_ioEvent.bytesTrans <= 0)
 			{
-				CRCLogger::info("WorkEpollServer error while DoAction,pClient is null.\n");
-				continue;
+				CRCLogger_Info("CLOSE socket=%d,bytes_trans=%d", _ioEvent.pIoData->_sockfd, _ioEvent.bytesTrans);
+				CRCWorkServer::destory_socket(_ioEvent.pIoData->_sockfd);
+				// 关闭一个，复用一次PER_IO_CONTEXT，再投递一个ACCEPT，等待新的客户连接，保持可以连接的总数不变
+				_iocp.delivery_accept(_ioEvent.pIoData);
+				return 1;
 			}
-			// 处理客户端socket事件
-			// -----------------------------------------
-			// 处理客户端可读事件，表示客户端socket有数据可读
-			if (events[n].events & EPOLLIN)
-			{
-				if (-1 == RecvData(pClient))
-				{
-					OnClientLeave(pClient);
-					continue;
-				}
-			}
-			// 处理客户端可写事件，表示客户端socket现在可以发送数据（没有因各种原因导致的堵塞）
-			if (events[n].events & EPOLLOUT)
-			{
-				int ret = pClient->SendDataIM();
-				if (-1 == ret)
-				{
-					OnClientLeave(pClient);
-				}
-			}
-			// -----------------------------------------
-
 		}
-
+		//// 发送数据已经完成
+		//else if (IO_TYPE::SEND == _ioEvent.pIoData->_OpType)
+		//{
+		//	// 客户端断开处理
+		//	if (_ioEvent.bytesTrans <= 0)
+		//	{
+		//		CRCLogger_Info("CLOSE socket=%d,bytes_trans=%d", _ioEvent.pIoData->_sockfd, _ioEvent.bytesTrans);
+		//		CRCWorkServer::destory_socket(_ioEvent.pIoData->_sockfd);
+		//		// 关闭一个，复用一次PER_IO_CONTEXT，再投递一个ACCEPT，等待新的客户连接，保持可以连接的总数不变
+		//		_iocp.delivery_accept(_ioEvent.pIoData);
+		//		return 1;
+		//	}
+		//}
+		else
+		{ 
+			CRCLogger_Error("undefine action.");
+		}
 		return 1;
 	}
 
 	// override from CRCWorkServer
 	void OnClientJoin(CRCChannel* pClient)
 	{
-		_iocp.register_sock(pClient->sockfd());
+		_iocp.register_sock(pClient, pClient->sockfd());
+		auto pIoCtx = pClient->get_recv_io_ctx();
+		if (!pIoCtx)
+		{
+			CRCLogger_Error("WorkIOCPServer::OnClientJoin pIoCtx == null,sock=%d",pClient->sockfd());
+			return;
+		}
+		_iocp.delivery_receive(pIoCtx);
 	}
 };
 

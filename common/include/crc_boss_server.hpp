@@ -5,6 +5,7 @@
 #include "crc_inet_event.hpp"
 #include "crc_work_select_server.hpp"
 #include "crc_work_epoll_server.hpp"
+#include "crc_work_iocp_server .hpp"
 #include "crc_net_environment.hpp"
 #include "crc_thread.hpp"
 #include "crc_logger.hpp"

@@ -25,14 +25,12 @@ private:
 	// sending buffer
 	CRCBuffer _sendBuf;
 
-
 	// timing heart beat check
 	time_t _dtHeart;
 	// timing send data to client
 	time_t _dtSend;
 	//
 	//std::mutex _mutex;
-
 
 public:
 	CRCChannel(SOCKET sockfd = INVALID_SOCKET):
@@ -240,6 +238,39 @@ public:
 	{
 		return _sendBuf.has_any_data();
 	}
+	// ---------- for iocp --------------------
+private:
+#ifdef CRC_USE_IOCP
+	IO_CONTEXT _IORecvCtx = {};
+	IO_CONTEXT _IOSendCtx = {};
+#endif
+public:
+#ifdef CRC_USE_IOCP
+	IO_CONTEXT * get_recv_io_ctx()
+	{
+		int len = _recvBuf.buf_total_len() - _recvBuf.buf_data_len();
+		if (len > 0)
+		{
+			_IORecvCtx._wsabuf.buf = _recvBuf.getBuf() + _recvBuf.buf_data_len();
+			_IORecvCtx._wsabuf.len = len;
+			return &_IORecvCtx;
+		}
+		return nullptr;
+	}
+
+	void recv4Iocp(int nLen)
+	{
+		if (!_recvBuf.recv4Iocp(nLen))
+		{
+			CRCLogger_Error("CRCBuffer::recv4Iocp socket=%d, nLen=%d", _sockfd, nLen);
+		}
+	}
+
+	IO_CONTEXT * get_send_io_ctx()
+	{
+		return nullptr;
+	}
+#endif
 };
 
 #endif

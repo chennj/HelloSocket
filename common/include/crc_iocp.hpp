@@ -7,30 +7,7 @@
 #include "crc_logger.hpp"
 #include <MSWSock.h>
 
-#define IO_BUFFER_SIZE 1024
-
-enum IO_TYPE
-{
-	ACCEPT = 10,
-	RECV,
-	SEND
-};
-
-typedef struct _IO_CONTEXT {
-	OVERLAPPED	_Overlapped;				// 每一个重叠I/O网络操作都要有一个               
-	SOCKET		_sockfd;					// 这个I/O操作所使用的Socket，每个连接的都是一样的 
-	WSABUF		_wsaBuf;					// 存储数据的缓冲区，用来给重叠操作传递参数的，关于WSABUF后面还会讲 
-	char		_szBuffer[IO_BUFFER_SIZE];	// 对应WSABUF里的缓冲区 
-	int			_length;					// _szBuffer的实际长度
-	IO_TYPE		_OpType;					// 标志这个重叠I/O操作是做什么的，例如Accept/Recv等 
-} IO_CONTEXT, *PIO_CONTEXT;
-
-typedef struct _IO_EVENT
-{
-	PIO_CONTEXT pIoData;
-	DWORD bytesTrans = 0;
-	SOCKET sock = INVALID_SOCKET;
-}IO_EVENT,*PIO_EVENT;
+//#define IO_BUFFER_SIZE 1024
 
 class CRCIOCP
 {
@@ -131,6 +108,25 @@ public:
 		return true;
 	}
 
+	// server socket is associated with io completion port
+	bool register_sock(void* pChannel, SOCKET socket)
+	{
+		// 关联IOCP与SERVER SOCKET
+		HANDLE ret = CreateIoCompletionPort(
+			(HANDLE)socket,
+			_IoCompletionPort,
+			(ULONG_PTR)pChannel,		// 可以是自定义结构体、对象、数组、等的指针，
+										// 也可以是一个基础类型，这里简单传一个socket值
+			0
+		);
+		if (NULL == ret)
+		{
+			CRCLogger_Error("CRCIOCP::register_sock errno=%d\n", GetLastError());
+			return false;
+		}
+		return true;
+	}
+
 	// delivery accept to iocp
 	int delivery_accept(PIO_CONTEXT pIoData = nullptr)
 	{
@@ -159,7 +155,7 @@ public:
 		BOOL ret = _lpfnAcceptEx(
 			_sockServer,
 			pIoData->_sockfd,				// 用来接受连接的socket（Accept Socket）
-			pIoData->_szBuffer,
+			pIoData->_wsabuf.buf,
 			0,								// 如果不为0，则表示客户端连接到服务端之后，还必须再传送至少
 											// 一个字节大小的数据，服务端才会接受客户端的连接。
 											// 例如：设置此参数为 sizeof(buf) - ((sizeof (sockaddr_in) + 16) * 2)
@@ -190,13 +186,10 @@ public:
 		}
 
 		pIoData->_OpType = IO_TYPE::RECV;
-		WSABUF wsabuf = {};
-		wsabuf.buf = pIoData->_szBuffer;
-		wsabuf.len = IO_BUFFER_SIZE;
 		DWORD flags = 0;
 		ZeroMemory(&pIoData->_Overlapped, sizeof(OVERLAPPED));
 
-		if (SOCKET_ERROR == WSARecv(pIoData->_sockfd, &wsabuf, 1, NULL, &flags, &pIoData->_Overlapped, NULL))
+		if (SOCKET_ERROR == WSARecv(pIoData->_sockfd, &pIoData->_wsabuf, 1, NULL, &flags, &pIoData->_Overlapped, NULL))
 		{
 			int err = WSAGetLastError();
 			if (WSA_IO_PENDING != err)
@@ -218,11 +211,8 @@ public:
 		}
 
 		pIoData->_OpType = IO_TYPE::SEND;
-		WSABUF wsabuf = {};
-		wsabuf.buf = pIoData->_szBuffer;
-		wsabuf.len = pIoData->_length;
 		DWORD flags = 0;
-		if (SOCKET_ERROR == WSASend(pIoData->_sockfd, &wsabuf, 1, NULL, flags, &pIoData->_Overlapped, NULL))
+		if (SOCKET_ERROR == WSASend(pIoData->_sockfd, &pIoData->_wsabuf, 1, NULL, flags, &pIoData->_Overlapped, NULL))
 		{
 			int err = WSAGetLastError();
 			if (WSA_IO_PENDING != err)

@@ -3,6 +3,10 @@
 
 #ifdef _WIN32
 
+#ifndef CRC_USE_IOCP
+#define CRC_USE_IOCP
+#endif
+
 #include "crc_iocp.hpp"
 #include "crc_boss_server.hpp"
 
@@ -31,8 +35,18 @@ protected:
 		iocp.register_sock(_sock);
 		iocp.load_acceptex(_sock);
 
-		// 向IOCP投递一个接受客户端连接的申请
+		/**
+		*
+		* 向IOCP投递一个接受客户端连接的申请
+		*/
+		// minLen 不需要客户端在连接后立即发送数据的情况下的最小长度
+		const int minLen = (sizeof(sockaddr_in) + 16) * 2;
+		char buffer[minLen * 2] = {};
+		// IO_CONTEXT 包含投递一个接受连接任务需要的所有类型数据
 		IO_CONTEXT ioData = {};
+		ioData._wsabuf.len = minLen;
+		ioData._wsabuf.buf = buffer;
+		// 投递一个接受连接任务
 		iocp.delivery_accept(&ioData);
 
 		IO_EVENT ioEvent = {};
