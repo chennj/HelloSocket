@@ -121,14 +121,14 @@ public:
 				256,
 				NULL
 			);
-			echo_real("ERROR", format, args...);
-			echo_real("ERROR", "errno<%d>,errmsg<%s>", errCode, text);
+			echo_real("\nERROR", format, args...);
+			echo_real("\nERROR", "errno<%d>,errmsg<%s>", errCode, text);
 		});
 #else
 		auto errCode = errno;
 		instance()._pLogServer->addTask([=]() {
-			echo_real("ERROR", format, args...);
-			echo_real("ERROR", "errno<%d>,errmsg<%s>", errCode, strerror(errCode));
+			echo_real("\nERROR", format, args...);
+			echo_real("\nERROR", "errno<%d>,errmsg<%s>", errCode, strerror(errCode));
 		});
 
 #endif

@@ -59,7 +59,7 @@ typedef struct _IO_EVENT
 		void*	ptr = nullptr;
 		SOCKET	sock;
 	}data;
-	PIO_CONTEXT pIoData;
+	PIO_CONTEXT pIoCtx;
 	DWORD		bytesTrans = 0;
 
 }IO_EVENT, *PIO_EVENT;

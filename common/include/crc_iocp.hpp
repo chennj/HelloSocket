@@ -128,7 +128,7 @@ public:
 	}
 
 	// delivery accept to iocp
-	int delivery_accept(PIO_CONTEXT pIoData = nullptr)
+	int delivery_accept(PIO_CONTEXT pIoCtx = nullptr)
 	{
 		if (INVALID_SOCKET == _sockServer)
 		{
@@ -142,27 +142,27 @@ public:
 			return -1;
 		}
 
-		if (!pIoData)
+		if (!pIoCtx)
 		{
 			CRCLogger_Warn("CRCIOCP::load_acceptex pIoData == nullptr\n");
-			pIoData = new IO_CONTEXT;
-			memset(pIoData, 0, sizeof(IO_CONTEXT));
+			pIoCtx = new IO_CONTEXT;
+			memset(pIoCtx, 0, sizeof(IO_CONTEXT));
 		}
 
-		pIoData->_sockfd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-		pIoData->_OpType = IO_TYPE::ACCEPT;
+		pIoCtx->_sockfd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+		pIoCtx->_OpType = IO_TYPE::ACCEPT;
 
 		BOOL ret = _lpfnAcceptEx(
 			_sockServer,
-			pIoData->_sockfd,				// 用来接受连接的socket（Accept Socket）
-			pIoData->_wsabuf.buf,
+			pIoCtx->_sockfd,				// 用来接受连接的socket（Accept Socket）
+			pIoCtx->_wsabuf.buf,
 			0,								// 如果不为0，则表示客户端连接到服务端之后，还必须再传送至少
 											// 一个字节大小的数据，服务端才会接受客户端的连接。
 											// 例如：设置此参数为 sizeof(buf) - ((sizeof (sockaddr_in) + 16) * 2)
 			sizeof(sockaddr_in) + 16,		// | 如果第三个参数不是0，这两个参数将从这个参数指定大小的位置开始存储，
 			sizeof(sockaddr_in) + 16,		// | 否则从buf的0位置开始存储
 			NULL,							// 接收到的字节数。不过只在同步（阻塞）模式下，这个参数才有意义，这里可以时0
-			&pIoData->_Overlapped			// 重叠体，供IOCP模式内部使用，不能NULL
+			&pIoCtx->_Overlapped			// 重叠体，供IOCP模式内部使用，不能NULL
 		);
 		if (FALSE == ret)
 		{
@@ -177,19 +177,19 @@ public:
 	}
 
 	// delivery receive to iocp
-	int delivery_receive(PIO_CONTEXT pIoData)
+	int delivery_receive(PIO_CONTEXT pIoCtx)
 	{
-		if (!pIoData)
+		if (!pIoCtx)
 		{
 			CRCLogger_Error("CRCIOCP::delivery_receive pIoData == nullptr\n");
 			return -1;
 		}
 
-		pIoData->_OpType = IO_TYPE::RECV;
+		pIoCtx->_OpType = IO_TYPE::RECV;
 		DWORD flags = 0;
-		ZeroMemory(&pIoData->_Overlapped, sizeof(OVERLAPPED));
+		ZeroMemory(&pIoCtx->_Overlapped, sizeof(OVERLAPPED));
 
-		if (SOCKET_ERROR == WSARecv(pIoData->_sockfd, &pIoData->_wsabuf, 1, NULL, &flags, &pIoData->_Overlapped, NULL))
+		if (SOCKET_ERROR == WSARecv(pIoCtx->_sockfd, &pIoCtx->_wsabuf, 1, NULL, &flags, &pIoCtx->_Overlapped, NULL))
 		{
 			int err = WSAGetLastError();
 			if (WSA_IO_PENDING != err)
@@ -202,17 +202,17 @@ public:
 	}
 
 	// delivery send to iocp
-	int delivery_send(PIO_CONTEXT pIoData)
+	int delivery_send(PIO_CONTEXT pIoCtx)
 	{
-		if (!pIoData)
+		if (!pIoCtx)
 		{
 			CRCLogger_Error("CRCIOCP::delivery_send pIoData == nullptr\n");
 			return -1;
 		}
 
-		pIoData->_OpType = IO_TYPE::SEND;
+		pIoCtx->_OpType = IO_TYPE::SEND;
 		DWORD flags = 0;
-		if (SOCKET_ERROR == WSASend(pIoData->_sockfd, &pIoData->_wsabuf, 1, NULL, flags, &pIoData->_Overlapped, NULL))
+		if (SOCKET_ERROR == WSASend(pIoCtx->_sockfd, &pIoCtx->_wsabuf, 1, NULL, flags, &pIoCtx->_Overlapped, NULL))
 		{
 			int err = WSAGetLastError();
 			if (WSA_IO_PENDING != err)
@@ -228,15 +228,15 @@ public:
 	int wait(IO_EVENT& ioEvent,int timeout)
 	{
 		ioEvent.bytesTrans = 0;
-		ioEvent.pIoData = nullptr;
-		ioEvent.sock = INVALID_SOCKET; 
+		ioEvent.pIoCtx = nullptr;
+		ioEvent.data.ptr = nullptr;
 
 		// 获取完成端口状态
 		BOOL ret = GetQueuedCompletionStatus(
 			_IoCompletionPort,
 			&ioEvent.bytesTrans,
-			(PULONG_PTR)&ioEvent.sock,
-			(LPOVERLAPPED*)&ioEvent.pIoData,
+			(PULONG_PTR)&ioEvent.data,
+			(LPOVERLAPPED*)&ioEvent.pIoCtx,
 			timeout
 		);
 		// 检查是否有事件发生，和select，epoll_wait类似
@@ -249,10 +249,10 @@ public:
 			}
 			if (ERROR_NETNAME_DELETED == err)
 			{
-				CRCLogger_Warn("CRCIOCP::wait ERROR_NETNAME_DELETED. socket=%d\n", ioEvent.pIoData->_sockfd);
+				CRCLogger_Warn("CRCIOCP::wait ERROR_NETNAME_DELETED. socket=%d;", ioEvent.pIoCtx->_sockfd);
 				return 1;
 			}
-			CRCLogger_Error("CRCIOCP::wait errno=%d\n", GetLastError());
+			CRCLogger_Error("CRCIOCP::wait");
 			return -1;
 		}
 

@@ -25,40 +25,43 @@ public:
 	}
 
 public:
-	// epoll mode
+	// 继承上级类
 	int DoAction()
 	{
-	
-		// 遍历是否有需要发送的数据
-		int err;
-		//for (auto iter : _clients)
-		//{
-		//	if (iter.second->is_need_write())
-		//	{
-		//		err = _epoll.ctl(iter.second, EPOLL_CTL_MOD, iter.second->sockfd(), EPOLLIN | EPOLLOUT);
-		//		if (err < 0)
-		//		{
-		//			CRCLogger::info("epoll.ctl socket<%d> errorno<%d> errmsg<%s>.\n", (int)_sock, errno, strerror(errno));
-		//			break;
-		//		}
-		//	}
-		//	else
-		//	{
-		//		err = _epoll.ctl(iter.second, EPOLL_CTL_MOD, iter.second->sockfd(), EPOLLIN);
-		//		if (err < 0)
-		//		{
-		//			CRCLogger::info("epoll.ctl socket<%d> errorno<%d> errmsg<%s>.\n", (int)_sock, errno, strerror(errno));
-		//			break;
-		//		}
-		//	}
+		for (auto iter : _clients)
+		{
+			if (iter.second->is_need_write())
+			{
+				auto pIoCtx = iter.second->get_recv_io_ctx();
+				if (!pIoCtx)
+				{
+					CRCLogger_Error("WorkIOCPServer::OnClientJoin pIoCtx == null,sock=%d", iter.second->sockfd());
+					continue;
+				}
+				_iocp.delivery_send(pIoCtx);
+			}
+			else
+			{
+				auto pIoCtx = iter.second->get_recv_io_ctx();
+				if (!pIoCtx)
+				{
+					CRCLogger_Error("WorkIOCPServer::OnClientJoin pIoCtx == null,sock=%d", iter.second->sockfd());
+					continue;
+				}
+				_iocp.delivery_receive(pIoCtx);
+			}
 
-		//}
+		}
 
-		//if (err < 0)
-		//{
-		//	return 0;
-		//}
+		return DoIOCPAction();
+	}
 
+	// 不同于epoll模式，iocp每次只处理一个网络事件
+	// return -1 iocp错误
+	// return 0 没有事件
+	// return 1 有事件发生
+	int DoIOCPAction()
+	{
 		int ret = _iocp.wait(_ioEvent,1);
 		if (ret < 0)
 		{
@@ -71,31 +74,43 @@ public:
 		}
 
 		// 接收数据已经完成 Completion
-		if (IO_TYPE::RECV == _ioEvent.pIoData->_OpType)
+		if (IO_TYPE::RECV == _ioEvent.pIoCtx->_OpType)
 		{
 			// 客户端断开处理
 			if (_ioEvent.bytesTrans <= 0)
 			{
-				CRCLogger_Info("CLOSE socket=%d,bytes_trans=%d", _ioEvent.pIoData->_sockfd, _ioEvent.bytesTrans);
-				CRCWorkServer::destory_socket(_ioEvent.pIoData->_sockfd);
+				CRCLogger_Info("CLOSE socket=%d,bytes_trans=%d\n", _ioEvent.pIoCtx->_sockfd, _ioEvent.bytesTrans);
+				CRCWorkServer::destory_socket(_ioEvent.pIoCtx->_sockfd);
 				// 关闭一个，复用一次PER_IO_CONTEXT，再投递一个ACCEPT，等待新的客户连接，保持可以连接的总数不变
-				_iocp.delivery_accept(_ioEvent.pIoData);
+				_iocp.delivery_accept(_ioEvent.pIoCtx);
 				return 1;
 			}
+
+			CRCChannel* pChannel = (CRCChannel*)_ioEvent.data.ptr;
+			if (pChannel)
+			{
+				pChannel->recv4Iocp(_ioEvent.bytesTrans);
+			}
 		}
-		//// 发送数据已经完成
-		//else if (IO_TYPE::SEND == _ioEvent.pIoData->_OpType)
-		//{
-		//	// 客户端断开处理
-		//	if (_ioEvent.bytesTrans <= 0)
-		//	{
-		//		CRCLogger_Info("CLOSE socket=%d,bytes_trans=%d", _ioEvent.pIoData->_sockfd, _ioEvent.bytesTrans);
-		//		CRCWorkServer::destory_socket(_ioEvent.pIoData->_sockfd);
-		//		// 关闭一个，复用一次PER_IO_CONTEXT，再投递一个ACCEPT，等待新的客户连接，保持可以连接的总数不变
-		//		_iocp.delivery_accept(_ioEvent.pIoData);
-		//		return 1;
-		//	}
-		//}
+		// 发送数据已经完成
+		else if (IO_TYPE::SEND == _ioEvent.pIoCtx->_OpType)
+		{
+			// 客户端断开处理
+			if (_ioEvent.bytesTrans <= 0)
+			{
+				CRCLogger_Info("CLOSE socket=%d,bytes_trans=%d\n", _ioEvent.pIoCtx->_sockfd, _ioEvent.bytesTrans);
+				CRCWorkServer::destory_socket(_ioEvent.pIoCtx->_sockfd);
+				// 关闭一个，复用一次PER_IO_CONTEXT，再投递一个ACCEPT，等待新的客户连接，保持可以连接的总数不变
+				_iocp.delivery_accept(_ioEvent.pIoCtx);
+				return 1;
+			}
+
+			CRCChannel* pChannel = (CRCChannel*)_ioEvent.data.ptr;
+			if (pChannel)
+			{
+				pChannel->send4Iocp(_ioEvent.bytesTrans);
+			}
+		}
 		else
 		{ 
 			CRCLogger_Error("undefine action.");

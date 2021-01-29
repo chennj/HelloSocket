@@ -57,18 +57,18 @@ protected:
 			int ret_events = iocp.wait(ioEvent, 1);
 			if (ret_events < 0)
 			{
-				CRCLogger_Error("BossServer::OnRun socket<%d> error occurs while epoll and mission finish.\n", (int)_sock);
+				CRCLogger_Error("BossServer::OnRun socket<%d> error occurs while iocp and mission finish.", (int)_sock);
 				break;
 			}
 
 			if (0 == ret_events)continue;
 
 			// 接受连接已经完成
-			if (IO_TYPE::ACCEPT == ioEvent.pIoData->_OpType)
+			if (IO_TYPE::ACCEPT == ioEvent.pIoCtx->_OpType)
 			{
-				CRCLogger_Info("BossServer::OnRun new client enter. socket=%d\n", ioEvent.pIoData->_sockfd);
+				CRCLogger_Info("BossServer::OnRun new client enter. socket=%d", ioEvent.pIoCtx->_sockfd);
 				// 添加一个channel到工作线程
-				IOCPAccept(ioEvent.pIoData);
+				IOCPAccept(ioEvent.pIoCtx);
 				// 继续向IOCP投递一个接受新的客户端连接的申请
 				iocp.delivery_accept(&ioData);
 			}
@@ -76,16 +76,16 @@ protected:
 
 		pCrcThread->ExitInSelfThread();
 
-		CRCLogger::info("BossServer thread exit...\n");
+		CRCLogger_Info("BossServer thread exit...\n");
 	}
 
 	// accept client's connectin
-	void IOCPAccept(PIO_CONTEXT pIoData)
+	void IOCPAccept(PIO_CONTEXT pIoCtx)
 	{
 		sockaddr_in client_addr = {};
 		int client_addr_len = sizeof(sockaddr_in);	// note: accept will fall without sizeof(sockaddr_in)
 
-		if (INVALID_SOCKET == pIoData->_sockfd)
+		if (INVALID_SOCKET == pIoCtx->_sockfd)
 		{
 			CRCLogger_Error("BossServer::IOCPAccept socket<%d> accept a invalid client request.\n", (int)_sock);
 			return;
@@ -93,14 +93,14 @@ protected:
 
 		if (_clientCount < _maxClient)
 		{
-			CRCWorkServer::make_reuseaddr(pIoData->_sockfd);
+			CRCWorkServer::make_reuseaddr(pIoCtx->_sockfd);
 
 			// assign comed client to WorkServer with the least number of client
-			addClient2WorkServer(new CRCChannel(pIoData->_sockfd));
+			addClient2WorkServer(new CRCChannel(pIoCtx->_sockfd));
 		}
 		else
 		{
-			CRCWorkServer::destory_socket(pIoData->_sockfd);
+			CRCWorkServer::destory_socket(pIoCtx->_sockfd);
 			CRCLogger_Warn("BossServer::IOCPAccept Accept to Max Client\n");
 		}
 	}

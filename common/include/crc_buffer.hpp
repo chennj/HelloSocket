@@ -78,6 +78,7 @@ public:
 	// remove data
 	int pop(int nLen)
 	{
+		if (nLen <= 0)return -1;
 		int n = _lastPos - nLen;
 		if (n < 0)return -1;
 		if (n > 0)
@@ -173,15 +174,18 @@ public:
 	}
 
 	// ---------------- iocp ---------------------
-	// set buf last pos
 	inline bool recv4Iocp(int nLen)
 	{
-		if (_nSize - _lastPos >= nLen)
+		if (nLen > 0 && _nSize - _lastPos >= nLen)
 		{
 			_lastPos += nLen;
 			return true;
 		}
 		return false;
+	}
+	inline int send4Iocp(int nLen)
+	{
+		return pop(nLen);
 	}
 };
 

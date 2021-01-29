@@ -253,6 +253,7 @@ public:
 		{
 			_IORecvCtx._wsabuf.buf = _recvBuf.getBuf() + _recvBuf.buf_data_len();
 			_IORecvCtx._wsabuf.len = len;
+			_IORecvCtx._sockfd = _sockfd;
 			return &_IORecvCtx;
 		}
 		return nullptr;
@@ -262,13 +263,30 @@ public:
 	{
 		if (!_recvBuf.recv4Iocp(nLen))
 		{
-			CRCLogger_Error("CRCBuffer::recv4Iocp socket=%d, nLen=%d", _sockfd, nLen);
+			CRCLogger_Error("CRCChannel::recv4Iocp socket=%d, nLen=%d", _sockfd, nLen);
 		}
 	}
 
 	IO_CONTEXT * get_send_io_ctx()
 	{
+		if (_sendBuf.buf_data_len() > 0 && INVALID_SOCKET != _sockfd)
+		{
+			_IOSendCtx._wsabuf.buf = _sendBuf.getBuf();
+			_IOSendCtx._wsabuf.len = _sendBuf.buf_data_len();
+			_IOSendCtx._sockfd = _sockfd;
+			return &_IOSendCtx;
+		}
 		return nullptr;
+	}
+
+	int send4Iocp(int nLen)
+	{
+		int nSend = _sendBuf.send4Iocp(nLen);
+		if (nSend < 0)
+		{
+			CRCLogger_Error("CRCChannel::send4Iocp socket=%d, nLen=%d", _sockfd, nLen);
+		}
+		return nSend;
 	}
 #endif
 };
