@@ -150,7 +150,7 @@ int delivery_receive(PPER_IO_CONTEXT pIoData)
 	if (SOCKET_ERROR == WSARecv(pIoData->_sockfd, &wsabuf, 1, NULL, &flags, &pIoData->_Overlapped, NULL))
 	{
 		int err = WSAGetLastError();
-		if (WSA_IO_PENDING != err)
+		if (ERROR_IO_PENDING != err)
 		{
 			printf("ERROR occur while WSARecv. errno=%d\n", GetLastError());
 			return -1;
@@ -169,7 +169,7 @@ int delivery_send(PPER_IO_CONTEXT pIoData)
 	if (SOCKET_ERROR == WSASend(pIoData->_sockfd, &wsabuf, 1, NULL, flags, &pIoData->_Overlapped, NULL))
 	{
 		int err = WSAGetLastError();
-		if (WSA_IO_PENDING != err)
+		if (ERROR_IO_PENDING != err)
 		{
 			printf("ERROR occur while WSASend. errno=%d\n", GetLastError());
 			return -1;

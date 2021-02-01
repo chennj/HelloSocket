@@ -66,7 +66,7 @@ protected:
 			// 接受连接已经完成
 			if (IO_TYPE::ACCEPT == ioEvent.pIoCtx->_OpType)
 			{
-				CRCLogger_Info("BossServer::OnRun new client enter. socket=%d", ioEvent.pIoCtx->_sockfd);
+				//CRCLogger_Info("BossServer::OnRun new client enter. socket=%d\n", ioEvent.pIoCtx->_sockfd);
 				// 添加一个channel到工作线程
 				IOCPAccept(ioEvent.pIoCtx);
 				// 继续向IOCP投递一个接受新的客户端连接的申请
@@ -87,7 +87,7 @@ protected:
 
 		if (INVALID_SOCKET == pIoCtx->_sockfd)
 		{
-			CRCLogger_Error("BossServer::IOCPAccept socket<%d> accept a invalid client request.\n", (int)_sock);
+			CRCLogger_Error("BossServer::IOCPAccept socket<%d> accept a invalid client request.", (int)_sock);
 			return;
 		}
 

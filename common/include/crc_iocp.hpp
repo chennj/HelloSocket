@@ -54,7 +54,7 @@ public:
 			&_lpfnAcceptEx, sizeof(_lpfnAcceptEx),
 			&dwBytes, NULL, NULL);
 		if (iResult == SOCKET_ERROR) {
-			printf("WSAIoctl failed with error: %u\n", WSAGetLastError());
+			CRCLogger_Error("WSAIoctl failed with error");
 			return -1;
 		}
 		return 0;
@@ -102,7 +102,7 @@ public:
 		);
 		if (NULL == ret)
 		{
-			CRCLogger_Error("CRCIOCP::register_sock errno=%d\n", GetLastError());
+			CRCLogger_Error("CRCIOCP::register_sock ");
 			return false;
 		}
 		return true;
@@ -121,7 +121,7 @@ public:
 		);
 		if (NULL == ret)
 		{
-			CRCLogger_Error("CRCIOCP::register_sock errno=%d\n", GetLastError());
+			CRCLogger_Error("CRCIOCP::register_sock");
 			return false;
 		}
 		return true;
@@ -169,7 +169,7 @@ public:
 			int err = WSAGetLastError();
 			if (ERROR_IO_PENDING != err)
 			{
-				CRCLogger_Error("CRCIOCP::load_acceptex errno=%d\n", GetLastError());
+				CRCLogger_Error("CRCIOCP::load_acceptex ");
 				return -1;
 			}
 		}
@@ -192,9 +192,14 @@ public:
 		if (SOCKET_ERROR == WSARecv(pIoCtx->_sockfd, &pIoCtx->_wsabuf, 1, NULL, &flags, &pIoCtx->_Overlapped, NULL))
 		{
 			int err = WSAGetLastError();
-			if (WSA_IO_PENDING != err)
+			if (ERROR_IO_PENDING != err)
 			{
-				printf("ERROR occur while WSARecv. errno=%d\n", GetLastError());
+				if (WSAECONNRESET == err)
+				{
+					CRCLogger_Warn("CRCIOCP::delivery_receive An existing connection was forcibly closed by the remote host.\n");
+					return -1;
+				}
+				CRCLogger_Error("CRCIOCP::delivery_receive");
 				return -1;
 			}
 		}
@@ -206,7 +211,7 @@ public:
 	{
 		if (!pIoCtx)
 		{
-			CRCLogger_Error("CRCIOCP::delivery_send pIoData == nullptr\n");
+			CRCLogger_Error("CRCIOCP::delivery_send pIoData == nullptr");
 			return -1;
 		}
 
@@ -215,9 +220,14 @@ public:
 		if (SOCKET_ERROR == WSASend(pIoCtx->_sockfd, &pIoCtx->_wsabuf, 1, NULL, flags, &pIoCtx->_Overlapped, NULL))
 		{
 			int err = WSAGetLastError();
-			if (WSA_IO_PENDING != err)
+			if (ERROR_IO_PENDING != err)
 			{
-				printf("ERROR occur while WSASend. errno=%d\n", GetLastError());
+				if (WSAECONNRESET == err)
+				{
+					CRCLogger_Warn("CRCIOCP::delivery_send An existing connection was forcibly closed by the remote host.\n");
+					return -1;
+				}
+				CRCLogger_Error("CRCIOCP::delivery_send ");
 				return -1;
 			}
 		}
@@ -249,7 +259,7 @@ public:
 			}
 			if (ERROR_NETNAME_DELETED == err)
 			{
-				CRCLogger_Warn("CRCIOCP::wait ERROR_NETNAME_DELETED. socket=%d;", ioEvent.pIoCtx->_sockfd);
+				CRCLogger_Warn("CRCIOCP::wait ERROR_NETNAME_DELETED. socket=%d;\n", ioEvent.pIoCtx->_sockfd);
 				return 1;
 			}
 			CRCLogger_Error("CRCIOCP::wait");

@@ -166,6 +166,19 @@ protected:
 		delete pChannel;
 	}
 
+	void OnClientLeave(IO_EVENT& ioEvent)
+	{
+		_clients_change = true;
+		CRCChannel* pChannel = (CRCChannel*)ioEvent.data.ptr;
+		if (!pChannel)return;
+		if (_pNetEvent)
+		{
+			_pNetEvent->OnLeave(pChannel);
+		}
+		_clients.erase(pChannel->sockfd());
+		delete pChannel;
+	}
+
 public:
 	void addClient(CRCChannel* pChannel)
 	{
@@ -232,11 +245,32 @@ public:
 		return 0;
 	}
 
+	void DoMessage()
+	{
+		CRCChannel* pChannel = nullptr;
+		for (auto iter : _clients)
+		{
+			pChannel = iter.second;
+			while (pChannel->HasMessage())
+			{
+				OnNetMessage(pChannel, pChannel->front_message());
+				pChannel->pop_front_message();
+			}
+		}
+	}
+
+	void OnNetRecevie(CRCChannel* pChannel)
+	{
+		if (_pNetEvent)
+			_pNetEvent->OnNetRecv(pChannel);
+	}
+
 	// response net message
 	virtual void OnNetMessage(CRCChannel* pChannel, CRCDataHeader* pheader)
 	{
 		// statistics speed of server receiving client data packet
-		_pNetEvent->OnNetMessage(this, pChannel, pheader);
+		if (_pNetEvent)
+			_pNetEvent->OnNetMessage(this, pChannel, pheader);
 	}
 
 	// close socket
@@ -300,7 +334,7 @@ public:
 
 	static void destory_socket(SOCKET clientSock)
 	{
-		make_reuseaddr(clientSock);
+		//make_reuseaddr(clientSock);
 		closesocket(clientSock);
 	}
 };

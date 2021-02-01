@@ -243,11 +243,16 @@ private:
 #ifdef CRC_USE_IOCP
 	IO_CONTEXT _IORecvCtx = {};
 	IO_CONTEXT _IOSendCtx = {};
+	bool _isDeliveryRecv = false;
+	bool _isDeliverySend = false;
 #endif
 public:
 #ifdef CRC_USE_IOCP
 	IO_CONTEXT * get_recv_io_ctx()
 	{
+		if (_isDeliveryRecv)return nullptr;
+		_isDeliveryRecv = true;
+
 		int len = _recvBuf.buf_total_len() - _recvBuf.buf_data_len();
 		if (len > 0)
 		{
@@ -261,6 +266,13 @@ public:
 
 	void recv4Iocp(int nLen)
 	{
+		if (!_isDeliveryRecv)
+		{
+			CRCLogger_Error("CRCChannel::recv4Iocp _isDeliveryRecv is false");
+		}
+
+		_isDeliveryRecv = false;
+
 		if (!_recvBuf.recv4Iocp(nLen))
 		{
 			CRCLogger_Error("CRCChannel::recv4Iocp socket=%d, nLen=%d", _sockfd, nLen);
@@ -269,6 +281,9 @@ public:
 
 	IO_CONTEXT * get_send_io_ctx()
 	{
+		if (_isDeliverySend)return nullptr;
+		_isDeliverySend = true;
+
 		if (_sendBuf.buf_data_len() > 0 && INVALID_SOCKET != _sockfd)
 		{
 			_IOSendCtx._wsabuf.buf = _sendBuf.getBuf();
@@ -281,6 +296,13 @@ public:
 
 	int send4Iocp(int nLen)
 	{
+		if (!_isDeliverySend)
+		{
+			CRCLogger_Error("CRCChannel::send4Iocp _isDeliverySend is false");
+		}
+
+		_isDeliverySend = false;
+
 		int nSend = _sendBuf.send4Iocp(nLen);
 		if (nSend < 0)
 		{
