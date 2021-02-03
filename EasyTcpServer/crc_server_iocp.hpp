@@ -6,7 +6,7 @@
 #include "../common/include/crc_boss_iocp_server.hpp"
 #include <string>
 
-class CrcServerIOCP : public CRCBossIOCPServer
+class CRCServerIOCP : public CRCBossIOCPServer
 {
 	// overwrite parent function
 public:
@@ -28,7 +28,7 @@ public:
 			if (SOCKET_ERROR == pChannel->SendDataBuffer(new LoginResponse))
 			{
 				if (_tTime.getElapsedSecond() >= 1.0)
-					CRCLogger::info("Socket<%d>, Send Buffer Is Full\n", pChannel->sockfd());
+					CRCLogger_Info("Socket<%d>, Send Buffer Is Full\n", pChannel->sockfd());
 			}
 
 			// Synchronous send mode with sending task pool which is not as the same thread as main thread

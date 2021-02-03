@@ -16,7 +16,7 @@ bool g_run = true;
 // sending thread amount
 const int tCount = 1;
 // client amount
-const int nCount = 1;
+const int nCount = 1000;
 
 // client object
 CRCWorkClient* pclients[nCount];
@@ -96,7 +96,7 @@ void sendThread(int id) //1~4
 	while (readyCount < tCount)
 	{
 		// waitting until other thread had readied
-		std::chrono::milliseconds t(10);
+		std::chrono::milliseconds t(100);
 		std::this_thread::sleep_for(t);
 	}
 
@@ -104,7 +104,7 @@ void sendThread(int id) //1~4
 	std::thread t(recvThread, begin, end);
 	t.detach();
 
-	const int msgcount = 1;
+	const int msgcount = 100;
 	Login login[msgcount];
 
 	for (int n = 0; n < msgcount; n++)
@@ -136,9 +136,13 @@ void sendThread(int id) //1~4
 
 			if (pclients[n]->IsRunning())
 			{
-				if (SOCKET_ERROR != pclients[n]->SendData(login))
+				if (SOCKET_ERROR != pclients[n]->SendData((char*)login,nLen))
 				{
 					sendCount++;
+				}
+				else
+				{
+					CRCLogger_Error("send failed");
 				}
 			}
 			else {
@@ -150,7 +154,7 @@ void sendThread(int id) //1~4
 		}
 
 		// to control speed to send
-		std::chrono::milliseconds t(100);
+		std::chrono::milliseconds t(1);
 		std::this_thread::sleep_for(t);
 	}
 

@@ -29,37 +29,31 @@ public:
 	int DoAction()
 	{
 		CRCChannel* pChannel = nullptr;
-
 		for (auto iter :_clients)
 		{
 			pChannel = iter.second;
 			if (pChannel->is_need_write())
 			{
-				auto pIoCtx = pChannel->get_recv_io_ctx();
-				if (!pIoCtx)
+				auto pIoCtx = pChannel->get_send_io_ctx();
+				if (pIoCtx)
 				{
-					//CRCLogger_Warn("WorkIOCPServer::OnClientJoin pIoCtx == null,sock=%d\n", pChannel->sockfd());
-					continue;
-				}
-				if (_iocp.delivery_send(pIoCtx) < 0)
-				{
-					OnClientLeave(pChannel);
+					if (_iocp.delivery_send(pIoCtx) < 0)
+					{
+						OnClientLeave(pChannel);
+					}
 				}
 			}
 			else
 			{
 				auto pIoCtx = pChannel->get_recv_io_ctx();
-				if (!pIoCtx)
+				if (pIoCtx)
 				{
-					//CRCLogger_Warn("WorkIOCPServer::OnClientJoin pIoCtx == null,sock=%d\n", pChannel->sockfd());
-					continue;
-				}
-				if (_iocp.delivery_receive(pIoCtx) < 0)
-				{
-					OnClientLeave(pChannel);
+					if (_iocp.delivery_receive(pIoCtx) < 0)
+					{
+						OnClientLeave(pChannel);
+					}
 				}
 			}
-
 		}
 
 		while (true)
@@ -74,6 +68,8 @@ public:
 				break;
 			}
 		}
+
+		DoMessage();
 
 		return 0;
 	}
@@ -103,14 +99,17 @@ public:
 			{
 				CRCLogger_Info("CLOSE socket=%d,bytes_trans=%d\n", _ioEvent.pIoCtx->_sockfd, _ioEvent.bytesTrans);
 				OnClientLeave(_ioEvent);
-				return 1;
+				return ret;
 			}
 
 			CRCChannel* pChannel = (CRCChannel*)_ioEvent.data.ptr;
 			if (pChannel)
 			{
 				pChannel->recv4Iocp(_ioEvent.bytesTrans);		
-				DoMessage(pChannel);
+			}
+			else
+			{
+				CRCLogger_Error("CRCWorkIOCPServer::DoIOCPAction RECV pChannel==nullptr");
 			}
 		}
 		// 发送数据已经完成
@@ -121,26 +120,35 @@ public:
 			{
 				CRCLogger_Info("CLOSE socket=%d,bytes_trans=%d\n", _ioEvent.pIoCtx->_sockfd, _ioEvent.bytesTrans);
 				OnClientLeave(_ioEvent);
-				return 1;
+				return ret;
 			}
 
 			CRCChannel* pChannel = (CRCChannel*)_ioEvent.data.ptr;
 			if (pChannel)
 			{
+				//int nSend = pChannel->send4Iocp(_ioEvent.bytesTrans);
+				//CRCLogger_Info("SEND socket=%d,bytes_trans=%d\n", _ioEvent.pIoCtx->_sockfd, nSend);
 				pChannel->send4Iocp(_ioEvent.bytesTrans);
+			}
+			else
+			{
+				CRCLogger_Error("CRCWorkIOCPServer::DoIOCPAction SEND pChannel==nullptr");
 			}
 		}
 		else
 		{ 
 			CRCLogger_Error("undefine action.");
 		}
-		return 1;
+		return ret;
 	}
 
 	// override from CRCWorkServer
 	void OnClientJoin(CRCChannel* pClient)
 	{
-		_iocp.register_sock(pClient, pClient->sockfd());
+		if (FALSE == _iocp.register_sock(pClient, pClient->sockfd()))
+		{
+			return;
+		}
 		auto pIoCtx = pClient->get_recv_io_ctx();
 		if (!pIoCtx)
 		{
@@ -150,15 +158,15 @@ public:
 		_iocp.delivery_receive(pIoCtx);
 	}
 
-	void DoMessage(CRCChannel* pChannel)
-	{
-		OnNetRecevie(pChannel);
-		while (pChannel->HasMessage())
-		{
-			OnNetMessage(pChannel, pChannel->front_message());
-			pChannel->pop_front_message();
-		}
-	}
+	//void DoMessage(CRCChannel* pChannel)
+	//{
+	//	OnNetRecevie(pChannel);
+	//	while (pChannel->HasMessage())
+	//	{
+	//		OnNetMessage(pChannel, pChannel->front_message());
+	//		pChannel->pop_front_message();
+	//	}
+	//}
 };
 
 #endif

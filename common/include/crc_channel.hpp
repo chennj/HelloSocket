@@ -6,7 +6,7 @@
 #include "crc_logger.hpp"
 
 // countdown to heart beat check
-#define CLIENT_HEART_DEAD_TIME 30 * 1000
+#define CLIENT_HEART_DEAD_TIME 60 * 1000
 // time interval in which server timing send data in sending buffer to client 
 #define CLIENT_TIMING_SEND_TIME 200
 
@@ -52,7 +52,7 @@ public:
 #else
 			close(_sockfd);
 #endif
-			//CRCLogger::info("channel destory socket<%d>\n", _sockfd);
+			CRCLogger_Info("~CRCChannel() socket<%d>\n", _sockfd);
 			_sockfd = INVALID_SOCKET;
 		}
 	}
@@ -269,8 +269,8 @@ public:
 		if (!_isDeliveryRecv)
 		{
 			CRCLogger_Error("CRCChannel::recv4Iocp _isDeliveryRecv is false");
+			return;
 		}
-
 		_isDeliveryRecv = false;
 
 		if (!_recvBuf.recv4Iocp(nLen))
@@ -299,8 +299,8 @@ public:
 		if (!_isDeliverySend)
 		{
 			CRCLogger_Error("CRCChannel::send4Iocp _isDeliverySend is false");
+			return 0;
 		}
-
 		_isDeliverySend = false;
 
 		int nSend = _sendBuf.send4Iocp(nLen);

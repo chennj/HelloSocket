@@ -168,7 +168,6 @@ protected:
 
 	void OnClientLeave(IO_EVENT& ioEvent)
 	{
-		_clients_change = true;
 		CRCChannel* pChannel = (CRCChannel*)ioEvent.data.ptr;
 		if (!pChannel)return;
 		if (_pNetEvent)
@@ -251,6 +250,7 @@ public:
 		for (auto iter : _clients)
 		{
 			pChannel = iter.second;
+			OnNetRecevie(pChannel);
 			while (pChannel->HasMessage())
 			{
 				OnNetMessage(pChannel, pChannel->front_message());

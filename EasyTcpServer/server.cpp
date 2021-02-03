@@ -9,6 +9,8 @@
 #else
 #include "crc_server_iocp.hpp"
 #include "../common/include/crc_iocp.hpp"
+#include "crc_server_select.hpp"
+#include "../common/include/crc_fdset.hpp"
 #endif
 
 #include <thread>
@@ -26,7 +28,8 @@ int main()
 #ifdef __linux__
 		CRCServerEpoll server;
 #else
-		CrcServerIOCP server;
+		CRCServerIOCP server;
+		//CRCServerSelect server;
 #endif
 		server.InitSocket();
 		server.Bind(nullptr, 12345);

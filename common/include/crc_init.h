@@ -56,10 +56,10 @@ typedef struct _IO_CONTEXT {
 typedef struct _IO_EVENT
 {
 	union {
-		void*	ptr = nullptr;
+		void*	ptr;
 		SOCKET	sock;
 	}data;
-	PIO_CONTEXT pIoCtx;
+	PIO_CONTEXT	pIoCtx;
 	DWORD		bytesTrans = 0;
 
 }IO_EVENT, *PIO_EVENT;

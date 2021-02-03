@@ -121,7 +121,7 @@ public:
 		);
 		if (NULL == ret)
 		{
-			CRCLogger_Error("CRCIOCP::register_sock");
+			CRCLogger_Error("CRCIOCP::register_sock failed");
 			return false;
 		}
 		return true;
@@ -144,9 +144,10 @@ public:
 
 		if (!pIoCtx)
 		{
-			CRCLogger_Warn("CRCIOCP::load_acceptex pIoData == nullptr\n");
-			pIoCtx = new IO_CONTEXT;
-			memset(pIoCtx, 0, sizeof(IO_CONTEXT));
+			CRCLogger_Error("CRCIOCP::load_acceptex pIoData == nullptr");
+			//pIoCtx = new IO_CONTEXT;
+			//memset(pIoCtx, 0, sizeof(IO_CONTEXT));
+			return -1;
 		}
 
 		pIoCtx->_sockfd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
@@ -169,7 +170,7 @@ public:
 			int err = WSAGetLastError();
 			if (ERROR_IO_PENDING != err)
 			{
-				CRCLogger_Error("CRCIOCP::load_acceptex ");
+				CRCLogger_Error("CRCIOCP::delivery_accept FAIL");
 				return -1;
 			}
 		}
@@ -238,8 +239,8 @@ public:
 	int wait(IO_EVENT& ioEvent,int timeout)
 	{
 		ioEvent.bytesTrans = 0;
-		ioEvent.pIoCtx = nullptr;
-		ioEvent.data.ptr = nullptr;
+		ioEvent.pIoCtx = NULL;
+		ioEvent.data.ptr = NULL;
 
 		// 获取完成端口状态
 		BOOL ret = GetQueuedCompletionStatus(
@@ -250,7 +251,7 @@ public:
 			timeout
 		);
 		// 检查是否有事件发生，和select，epoll_wait类似
-		if (!ret)
+		if (FALSE == ret)
 		{
 			int err = GetLastError();
 			if (WAIT_TIMEOUT == err)

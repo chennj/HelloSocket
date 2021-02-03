@@ -41,10 +41,11 @@ protected:
 		*/
 		// minLen 不需要客户端在连接后立即发送数据的情况下的最小长度
 		const int minLen = (sizeof(sockaddr_in) + 16) * 2;
-		char buffer[minLen * 2] = {};
+		const int len = minLen * 2;
+		char buffer[len] = {};
 		// IO_CONTEXT 包含投递一个接受连接任务需要的所有类型数据
 		IO_CONTEXT ioData = {};
-		ioData._wsabuf.len = minLen;
+		ioData._wsabuf.len = len;
 		ioData._wsabuf.buf = buffer;
 		// 投递一个接受连接任务
 		iocp.delivery_accept(&ioData);
@@ -82,8 +83,8 @@ protected:
 	// accept client's connectin
 	void IOCPAccept(PIO_CONTEXT pIoCtx)
 	{
-		sockaddr_in client_addr = {};
-		int client_addr_len = sizeof(sockaddr_in);	// note: accept will fall without sizeof(sockaddr_in)
+		//sockaddr_in client_addr = {};
+		//int client_addr_len = sizeof(sockaddr_in);	// note: accept will fall without sizeof(sockaddr_in)
 
 		if (INVALID_SOCKET == pIoCtx->_sockfd)
 		{
@@ -93,7 +94,7 @@ protected:
 
 		if (_clientCount < _maxClient)
 		{
-			CRCWorkServer::make_reuseaddr(pIoCtx->_sockfd);
+			//CRCWorkServer::make_reuseaddr(pIoCtx->_sockfd);
 
 			// assign comed client to WorkServer with the least number of client
 			addClient2WorkServer(new CRCChannel(pIoCtx->_sockfd));

@@ -13,6 +13,8 @@
 // 5 send message to client
 // 6 close socket
 
+#ifdef	_RUN_
+
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #define _CRT_SECURE_NO_WARNINGS
@@ -308,7 +310,7 @@ int main()
 			}
 			if (ERROR_NETNAME_DELETED == err)
 			{
-				printf("close client. socket=%d\n", pIoData->_sockfd);
+				printf("1. close client. socket=%d\n", pIoData->_sockfd);
 				closesocket(pIoData->_sockfd);
 				continue;
 			}
@@ -726,4 +728,6 @@ int main()
 	CRCLogger::info("server had shut down.\n");
 	return 0;
 }
+#endif
+
 #endif
