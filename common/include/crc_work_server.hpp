@@ -63,7 +63,7 @@ protected:
 	{
 		int ret = 1;
 
-		CRCLogger::info("WorkServer thread start...\n");
+		CRCLogger_Info("WorkServer thread start...\n");
 
 		_clients_change = true;
 
@@ -82,15 +82,15 @@ protected:
 				_clients_change = true;
 			}
 
-			// 定时检测心跳，或发送数据
-			CheckTime();
-
 			if (_clients.empty())
 			{
 				std::chrono::milliseconds t(1);
 				std::this_thread::sleep_for(t);
 				continue;
 			}
+
+			// 定时检测心跳，或发送数据
+			CheckTime();
 
 			if (DoAction() < 0)
 			{
@@ -111,11 +111,24 @@ protected:
 		{
 			// save current iterator;
 			auto iterOld = iter++;
+			CRCChannel* pChannel = iterOld->second;
 
 			// check heart beat
-			if (!iterOld->second->check_heart_beat(tNow))
+			if (!pChannel->check_heart_beat(tNow))
 			{
+#ifdef CRC_USE_IOCP
+				if (pChannel->hasDeliveryIoAction())
+				{
+					pChannel->destory();
+					_clients.erase(iterOld);
+				}
+				else
+				{
+					OnClientLeave(iterOld);
+				}
+#else
 				OnClientLeave(iterOld);
+#endif
 				continue;
 			}
 
@@ -151,8 +164,9 @@ protected:
 		{
 			_pNetEvent->OnLeave(iter->second);
 		}
+		if (INVALID_SOCKET != iter->first)
+			_clients.erase(iter->first);
 		delete iter->second;
-		_clients.erase(iter->first);
 	}
 
 	void OnClientLeave(CRCChannel* pChannel)
@@ -162,7 +176,8 @@ protected:
 		{
 			_pNetEvent->OnLeave(pChannel);
 		}
-		_clients.erase(pChannel->sockfd());
+		if (INVALID_SOCKET != pChannel->sockfd())
+			_clients.erase(pChannel->sockfd());
 		delete pChannel;
 	}
 
@@ -174,7 +189,8 @@ protected:
 		{
 			_pNetEvent->OnLeave(pChannel);
 		}
-		_clients.erase(pChannel->sockfd());
+		if (INVALID_SOCKET != pChannel->sockfd())
+			_clients.erase(pChannel->sockfd());
 		delete pChannel;
 	}
 

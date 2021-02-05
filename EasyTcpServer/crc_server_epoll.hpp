@@ -34,12 +34,13 @@ public:
 			//CRCLogger::info("socket<%d> receive client socket<%d> message: CMD_LOGIN , data length<%d>, user name<%s>, pwd<%s>\n", (int)_sock, (int)sock_client, pheader->data_length, login->username, login->password);
 			
 			// Asynchronous send mode with sending buffer which is as the same thread as main thread
-			if (SOCKET_ERROR == pChannel->SendDataBuffer(new LoginResponse))
+			LoginResponse* response = new LoginResponse;
+			if (SOCKET_ERROR == pChannel->SendDataBuffer(response))
 			{
 				if (_tTime.getElapsedSecond() >= 1.0)
 					CRCLogger::info("Socket<%d>, Send Buffer Is Full\n", pChannel->sockfd());
 			}
-			
+			delete response;
 			// Synchronous send mode with sending task pool which is not as the same thread as main thread
 			//CRCDataHeaderPtr ret = std::make_shared<LoginResponse>();
 			//pWorkServer->addSendTask(pChannel, ret);
@@ -57,8 +58,9 @@ public:
 		case CMD_HEART_C2S:
 		{
 			pChannel->reset_dt_heart();
-
-			pChannel->SendData(new HeartS2C);
+			HeartS2C* response = new HeartS2C();
+			pChannel->SendDataBuffer(response);
+			delete response;
 		}
 		break;
 		case CMD_STREAM:	// 字节流消息

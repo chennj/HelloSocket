@@ -29,9 +29,11 @@ public:
 	int DoAction()
 	{
 		CRCChannel* pChannel = nullptr;
-		for (auto iter :_clients)
+		for (auto iter = _clients.begin(); iter != _clients.end();)
 		{
-			pChannel = iter.second;
+			auto iter_old = iter;
+			iter_old++;
+			pChannel = iter->second;
 			if (pChannel->is_need_write())
 			{
 				auto pIoCtx = pChannel->get_send_io_ctx();
@@ -39,6 +41,7 @@ public:
 				{
 					if (_iocp.delivery_send(pIoCtx) < 0)
 					{
+						CRCLogger_Warn("CRCWorkIOCPServer::DoAction delivery_send failed\n");
 						OnClientLeave(pChannel);
 					}
 				}
@@ -50,10 +53,12 @@ public:
 				{
 					if (_iocp.delivery_receive(pIoCtx) < 0)
 					{
+						CRCLogger_Warn("CRCWorkIOCPServer::DoAction delivery_receive failed\n");
 						OnClientLeave(pChannel);
 					}
 				}
 			}
+			iter = iter_old;
 		}
 
 		while (true)
@@ -90,6 +95,11 @@ public:
 		{
 			return ret;
 		}
+		//有更优雅的处理方式，在CRCWorkServer::CheckTime()中
+		//else if (2 == ret)
+		//{
+		//	return 0;
+		//}
 
 		// 接收数据已经完成 Completion
 		if (IO_TYPE::RECV == _ioEvent.pIoCtx->_OpType)

@@ -6,14 +6,14 @@
 #include "crc_logger.hpp"
 
 // countdown to heart beat check
-#define CLIENT_HEART_DEAD_TIME 60 * 1000
+#define CLIENT_HEART_DEAD_TIME 15 * 1000
 // time interval in which server timing send data in sending buffer to client 
 #define CLIENT_TIMING_SEND_TIME 200
 
 /**
 *	client object with socket
 */
-class CRCChannel : public CRCObjectPoolBase<CRCChannel, 10000>
+class CRCChannel : public CRCObjectPoolBase<CRCChannel, 100000>
 {
 
 private:
@@ -45,6 +45,13 @@ public:
 
 	virtual ~CRCChannel()
 	{
+		CRCLogger_Info("~CRCChannel() socket<%d>\n", _sockfd);
+		destory();
+	}
+
+public:
+	void destory()
+	{
 		if (INVALID_SOCKET != _sockfd)
 		{
 #ifdef _WIN32
@@ -52,12 +59,10 @@ public:
 #else
 			close(_sockfd);
 #endif
-			CRCLogger_Info("~CRCChannel() socket<%d>\n", _sockfd);
 			_sockfd = INVALID_SOCKET;
+			CRCLogger_Info("CRCChannel::destory socket<%d>\n", _sockfd);
 		}
 	}
-
-public:
 	SOCKET sockfd()
 	{
 		return _sockfd;
@@ -248,6 +253,11 @@ private:
 #endif
 public:
 #ifdef CRC_USE_IOCP
+	bool hasDeliveryIoAction()
+	{
+		return _isDeliveryRecv || _isDeliverySend;
+	}
+
 	IO_CONTEXT * get_recv_io_ctx()
 	{
 		if (_isDeliveryRecv)return nullptr;

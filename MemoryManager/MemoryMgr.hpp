@@ -7,7 +7,7 @@
 #include<assert.h>
 
 #define ALLOC_MAX_MEM_SIZE 1024
-#define ALLOC_MAX_BLOCK_QUANTITY 200000
+#define ALLOC_MAX_BLOCK_QUANTITY 10000
 
 class MemoryAlloc;
 
@@ -249,9 +249,19 @@ private:
 		xPrintf("destory memory manager instance\n");
 	}
 
-	MemoryMgr(const MemoryMgr& signal) = delete;
-	const MemoryMgr& operator=(const MemoryMgr &signal) = delete;
+	//MemoryMgr(const MemoryMgr& signal) = delete;
+	//const MemoryMgr& operator=(const MemoryMgr &signal) = delete;
+	void* operator new(size_t size)
+	{
+		printf("self new\n");
+		return malloc(size);
+	}
 
+	void operator delete(void * pv)
+	{
+		printf("self delete\n");
+		free(pv);
+	}
 private:
 	// initialize buffer pool mapping array
 	void init_allocator(int nBegin, int nEnd, MemoryAlloc* pAlloc)
@@ -324,8 +334,10 @@ MemoryMgr& MemoryMgr::instance()
 		std::lock_guard<std::mutex> lock(_mutex);
 		if (nullptr == _instance)
 		{
-			static MemoryMgr mgr;
-			_instance = &mgr;
+			xPrintf("MemoryMgr\t::instance()\n");
+			//static MemoryMgr mgr;
+			//_instance = &mgr;
+			_instance = new MemoryMgr();
 		}
 	}
 	return *_instance;

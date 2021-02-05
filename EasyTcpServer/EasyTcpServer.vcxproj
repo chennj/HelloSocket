@@ -158,9 +158,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="crc_allocator.cpp" />
     <ClCompile Include="server.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="crc_allocator.h" />
     <ClInclude Include="crc_server_epoll.hpp" />
     <ClInclude Include="crc_server_iocp.hpp" />
     <ClInclude Include="crc_server_select.hpp" />

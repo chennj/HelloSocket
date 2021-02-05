@@ -96,7 +96,7 @@ void sendThread(int id) //1~4
 	while (readyCount < tCount)
 	{
 		// waitting until other thread had readied
-		std::chrono::milliseconds t(100);
+		std::chrono::milliseconds t(1);
 		std::this_thread::sleep_for(t);
 	}
 

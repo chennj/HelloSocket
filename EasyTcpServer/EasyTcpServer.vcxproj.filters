@@ -18,6 +18,9 @@
     <ClCompile Include="server.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="crc_allocator.cpp">
+      <Filter>头文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="crc_server_select.hpp">
@@ -27,6 +30,9 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="crc_server_iocp.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="crc_allocator.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

@@ -2,8 +2,8 @@
 // g++ server.cpp -std=c++11 -pthread -o server
 // g++ server.cpp -std=c++11 -pthread -pg -o server --带性能分析参数（有可能导致服务端运行不稳定）
 // ----------------------------------
+#include "crc_allocator.h"
 #include "../common/include/crc_init.h"
-#include "../common/include/crc_allocator.h"
 #ifdef __linux__
 #include "crc_server_epoll.hpp"
 #else
@@ -17,20 +17,22 @@
 
 int main()
 {
+#ifdef __linux__
+	char path[] = { "server.log" };
+#else
+	char path[] = { "/log/server.log" };
+#endif
+	CRCLogger::instance().set_log_path(path,"w");
+	CRCLogger::instance().start();
+#ifdef __linux__
+	CRCServerEpoll server;
+#elif defined _WIN32
+	CRCServerIOCP server;
+	//CRCServerSelect server;
+#else
+	CRCServerSelect server;
+#endif
 	{
-#ifdef __linux__
-		char path[] = { "server.log" };
-#else
-		char path[] = { "/log/server.log" };
-#endif
-		CRCLogger::instance().set_log_path(path,"w");
-		CRCLogger::instance().start();
-#ifdef __linux__
-		CRCServerEpoll server;
-#else
-		CRCServerIOCP server;
-		//CRCServerSelect server;
-#endif
 		server.InitSocket();
 		server.Bind(nullptr, 12345);
 		server.Listen(5);

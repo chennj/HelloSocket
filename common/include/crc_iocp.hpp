@@ -26,7 +26,7 @@ public:
 
 	~CRCIOCP()
 	{
-		CRCLogger::info("CRCIOCP destory...\n");
+		CRCLogger_Info("~CRCIOCP()\n");
 		destory();
 	}
 
@@ -199,8 +199,8 @@ public:
 				{
 					CRCLogger_Warn("CRCIOCP::delivery_receive An existing connection was forcibly closed by the remote host.\n");
 					return -1;
-				}
-				CRCLogger_Error("CRCIOCP::delivery_receive");
+				} 
+				CRCLogger_Error("CRCIOCP::delivery_receive error");
 				return -1;
 			}
 		}
@@ -228,7 +228,7 @@ public:
 					CRCLogger_Warn("CRCIOCP::delivery_send An existing connection was forcibly closed by the remote host.\n");
 					return -1;
 				}
-				CRCLogger_Error("CRCIOCP::delivery_send ");
+				CRCLogger_Error("CRCIOCP::delivery_send error");
 				return -1;
 			}
 		}
@@ -263,7 +263,12 @@ public:
 				CRCLogger_Warn("CRCIOCP::wait ERROR_NETNAME_DELETED. socket=%d;\n", ioEvent.pIoCtx->_sockfd);
 				return 1;
 			}
-			CRCLogger_Error("CRCIOCP::wait");
+			if (ERROR_CONNECTION_ABORTED == err)
+			{
+				CRCLogger_Warn("CRCIOCP::wait ERROR_CONNECTION_ABORTED. socket=%d;\n", ioEvent.pIoCtx->_sockfd);
+				return 2;
+			}
+			CRCLogger_Error("CRCIOCP::wait failed.");
 			return -1;
 		}
 

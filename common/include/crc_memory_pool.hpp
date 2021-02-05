@@ -2,13 +2,13 @@
 #define _CRC_MEMORY_POOL_HPP_
 
 #include "crc_common.h"
-#include "crc_logger.hpp"
 
 #include <stdlib.h>
 #include <mutex>
+#include <atomic>
 
-#define ALLOC_MAX_MEM_SIZE 128
-#define ALLOC_MAX_BLOCK_QUANTITY 100000
+#define ALLOC_MAX_MEM_SIZE 10240
+#define ALLOC_MAX_BLOCK_QUANTITY 10000
 
 class CRCMemoryAlloc;
 
@@ -67,7 +67,7 @@ protected:
 public:
 	CRCMemoryAlloc()
 	{
-		xPrintf("create memory allocator instance\n");
+		CRCLogger_Mem_Trace("create memory allocator instance\n");
 
 		_pBufPool		= nullptr;
 		_pHeader		= nullptr;
@@ -76,7 +76,7 @@ public:
 	}
 	~CRCMemoryAlloc()
 	{
-		xPrintf("release memory pool\n");
+		CRCLogger_Mem_Trace("release memory pool\n");
 		if (_pBufPool)
 			free(_pBufPool);
 	}
@@ -100,7 +100,7 @@ public:
 			pRet->_nRef = 1;
 			pRet->_pAlloc = this;
 			pRet->_pNext = nullptr;
-			CRCLogger::info("MemoryAlloc\t::alloc_mem:\t%llx, id=%d, size=%d\n", pRet, pRet->_nID, nSize);
+			CRCLogger_Mem_Trace("MemoryAlloc\t::alloc_mem:\t%llx, id=%d, size=%d\n", pRet, pRet->_nID, nSize);
 		}
 		else
 		{
@@ -110,7 +110,7 @@ public:
 			pRet->_nRef = 1;
 
 		}
-		xPrintf("MemoryAlloc\t::alloc_mem:\t%llx, id=%d, size=%d\n", pRet, pRet->_nID, nSize);
+		CRCLogger_Mem_Trace("MemoryAlloc\t::alloc_mem:\t%llx, id=%d, size=%d\n", pRet, pRet->_nID, nSize);
 		return ( (char*)pRet + sizeof(CRCMemoryBlock) );
 	}
 
@@ -121,7 +121,7 @@ public:
 
 		assert(1 <= pBlock->_nRef);
 
-		xPrintf("MemoryAlloc\t::free_mem:\t%llx, id=%d\n", pBlock, pBlock->_nID);
+		CRCLogger_Mem_Trace("MemoryAlloc\t::free_mem:\t%llx, id=%d\n", pBlock, pBlock->_nID);
 
 		if (pBlock->_bPool)
 		{
@@ -148,12 +148,12 @@ public:
 	// initialize 
 	void init_pool()
 	{
-		xPrintf("initialize memory pool,size of type=%d,unit quantity=%d\n", _nUnitSize - sizeof(CRCMemoryBlock), _nUnitQuantity);
-
 		// assert _pBufPool must be null
 		assert(nullptr == _pBufPool);
 		if (_pBufPool)
 			return;
+
+		CRCLogger_Mem_Trace("initialize memory pool,size of type=%d,unit quantity=%d\n", _nUnitSize - sizeof(CRCMemoryBlock), _nUnitQuantity);
 
 		/**
 		*	request memory of the pool from system
@@ -232,32 +232,44 @@ private:
 	static CRCMemoryPool* _instance;
 	static std::mutex _mutex;
 
-	CRCMemoryTplOfAlloc<64,	ALLOC_MAX_BLOCK_QUANTITY * 10> _mem64_allocator;
-	CRCMemoryTplOfAlloc<128,	ALLOC_MAX_BLOCK_QUANTITY * 50> _mem128_allocator;
-	//MemoryTplOfAlloc<256,	ALLOC_MAX_BLOCK_QUANTITY> _mem256_allocator;
-	//MemoryTplOfAlloc<512,	ALLOC_MAX_BLOCK_QUANTITY> _mem512_allocator;
-	//MemoryTplOfAlloc<1024,	ALLOC_MAX_BLOCK_QUANTITY> _mem1024_allocator;
-
+	CRCMemoryTplOfAlloc<64,		ALLOC_MAX_BLOCK_QUANTITY * 10> _mem64_allocator;
+	CRCMemoryTplOfAlloc<128,	ALLOC_MAX_BLOCK_QUANTITY * 10> _mem128_allocator;
+	CRCMemoryTplOfAlloc<256,	ALLOC_MAX_BLOCK_QUANTITY> _mem256_allocator;
+	CRCMemoryTplOfAlloc<512,	ALLOC_MAX_BLOCK_QUANTITY> _mem512_allocator;
+	CRCMemoryTplOfAlloc<1024,	ALLOC_MAX_BLOCK_QUANTITY> _mem1024_allocator;
+	CRCMemoryTplOfAlloc<10240,	ALLOC_MAX_BLOCK_QUANTITY> _mem10240_allocator;
 	CRCMemoryAlloc* _szAlloc[ALLOC_MAX_MEM_SIZE + 1];
 
 private:
 	CRCMemoryPool()
 	{
-		init_allocator(0,	64,		&_mem64_allocator);
-		init_allocator(65,	128,	&_mem128_allocator);
-		//init_allocator(129, 256,	&_mem256_allocator);
-		//init_allocator(257, 512,	&_mem512_allocator);
-		//init_allocator(513, 1024,	&_mem1024_allocator);
-		xPrintf("create memory manager instance\n");
+		init_allocator(0,		64,		&_mem64_allocator);
+		init_allocator(65,		128,	&_mem128_allocator);
+		init_allocator(129,		256,	&_mem256_allocator);
+		init_allocator(257,		512,	&_mem512_allocator);
+		init_allocator(513,		1024,	&_mem1024_allocator);
+		init_allocator(1025,	10240,	&_mem10240_allocator);
+		CRCLogger_Mem_Trace("CRCMemoryPool::CRCMemoryPool create memory manager instance\n");
 	}
 	~CRCMemoryPool()
 	{
-		xPrintf("destory memory manager instance\n");
+		CRCLogger_Mem_Trace("CRCMemoryPool::CRCMemoryPool destory memory manager instance\n");
 	}
 
 	CRCMemoryPool(const CRCMemoryPool& signal) = delete;
 	const CRCMemoryPool& operator=(const CRCMemoryPool &signal) = delete;
 
+	void* operator new(size_t size)
+	{
+		printf("CRCMemoryPool self new\n");
+		return malloc(size);
+	}
+
+	void operator delete(void * pv)
+	{
+		printf("CRCMemoryPool self delete\n");
+		free(pv);
+	}
 private:
 	// initialize buffer pool mapping array
 	void init_allocator(int nBegin, int nEnd, CRCMemoryAlloc* pAlloc)
@@ -284,7 +296,7 @@ public:
 			pRet->_nRef = 1;
 			pRet->_pAlloc = nullptr;
 			pRet->_pNext = nullptr;
-			xPrintf("MemoryMgr\t::alloc_mem:\t%llx, id=%d, size=%d\n", pRet, pRet->_nID, nSize);
+			CRCLogger_Mem_Trace("CRCMemoryPool\t::alloc_mem:\t%llx, id=%d, size=%d\n", pRet, pRet->_nID, nSize);
 			return ((char*)pRet + sizeof(CRCMemoryBlock));
 
 		}
@@ -302,7 +314,7 @@ public:
 		{
 			if (0 == --pBlock->_nRef)
 			{
-				xPrintf("MemoryMgr\t::free_mem:\t%llx, id=%d\n", pBlock, pBlock->_nID);
+				CRCLogger_Mem_Trace("CRCMemoryPool\t::free_mem:\t%llx, id=%d\n", pBlock, pBlock->_nID);
 				free(pBlock);
 			}
 		}
@@ -330,14 +342,13 @@ CRCMemoryPool& CRCMemoryPool::instance()
 		std::lock_guard<std::mutex> lock(_mutex);
 		if (nullptr == _instance)
 		{
-			static CRCMemoryPool mgr;
-			_instance = &mgr;
+			printf("CRCMemoryPool\t::instance()\n");
+			CRCMemoryPool* tmp = new CRCMemoryPool();
+			MemoryBarrier();
+			_instance = tmp;
 		}
 	}
 	return *_instance;
-	//std::lock_guard<std::mutex> lock(_mutex);
-	//static MemoryMgr mgr;
-	//return mgr;
 }
 
 #endif

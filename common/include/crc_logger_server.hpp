@@ -16,14 +16,16 @@ private:
 	std::mutex _mutex;
 	CRCThread _crcThread;
 public:
+	bool _isStart = false;
+public:
 	CRCLogServer()
 	{
 	}
 	~CRCLogServer()
 	{
+		print("~CRCLogServer()\n");
 		Close();
 	}
-
 public:
 	// add task
 	void addTask(FTask fTask)
@@ -57,6 +59,8 @@ public:
 	// work loop
 	void OnRun(CRCThread* threadPtr)
 	{
+		_isStart = true;
+
 		print("LogServer thread start ...\n");
 
 		while (threadPtr->IsRun())
@@ -98,6 +102,5 @@ private:
 		printf("%s", str);
 	}
 };
-
 
 #endif

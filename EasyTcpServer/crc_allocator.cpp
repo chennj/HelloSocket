@@ -1,5 +1,5 @@
 ﻿#include "crc_allocator.h"
-#include "crc_memory_pool.hpp"
+#include "../common/include/crc_memory_pool.hpp"
 
 void* operator new(size_t size)
 {

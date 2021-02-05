@@ -4,6 +4,8 @@
 #define WIN32_LEAN_AND_MEAN
 #define _CRT_SECURE_NO_WARNINGS
 
+#include "../common/include/crc_allocator.h"
+#include "../common/include/crc_memory_pool.hpp"
 #include "../common/include/crc_init.h"
 #include "../common/include/crc_iocp.hpp"
 
@@ -40,6 +42,9 @@ int main()
 	// 启动命令线程
 	std::thread t1(cmdThread);
 	t1.detach();
+
+	char * test = new char[123];
+	delete[] test;
 
 	// 启动Sock 2.X环境
 	WORD ver = MAKEWORD(2, 2);

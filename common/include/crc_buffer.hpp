@@ -28,6 +28,7 @@ public:
 	{
 		if (_pBuf)
 		{
+			CRCLogger_Info("~CRCBuffer()\n");
 			delete[] _pBuf;
 			_pBuf = nullptr;
 		}

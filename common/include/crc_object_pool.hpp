@@ -54,6 +54,8 @@ private:
 		size_t poolSize = nPoolQuantity * unitSize;
 		_pObjPool = new char[poolSize];
 
+		CRCLogger_Mem_Trace("ObjectAlloc\t::init_pool size=%dM\n", poolSize / (1024 * 1024));
+
 		/**
 		*	init object pool
 		*/
@@ -104,7 +106,7 @@ public:
 			pRet->_nRef = 1;
 
 		}
-		xPrintf("ObjectAlloc\t::alloc_obj:\t%llx, id=%d, size=%d\n", pRet, pRet->_nID, nSize);
+		CRCLogger_Mem_Trace("ObjectAlloc\t::alloc_obj:\t%llx, id=%d, size=%d\n", pRet, pRet->_nID, nSize);
 		return ((char*)pRet + sizeof(NodeHeader));
 	}
 
@@ -120,7 +122,7 @@ public:
 			return;
 		}
 
-		xPrintf("ObjectAlloc\t::free_obj:\t%llx, id=%d\n", pNode, pNode->_nID);
+		CRCLogger_Mem_Trace("ObjectAlloc\t::free_obj:\t%llx, id=%d\n", pNode, pNode->_nID);
 
 		if (pNode->_bPool)
 		{
@@ -153,23 +155,12 @@ public:
 
 	}
 
-	~CRCObjectPoolBase()
+	virtual ~CRCObjectPoolBase()
 	{
 
 	}
 
 public:
-	void* operator new(size_t nSize)
-	{
-		xPrintf("pool new\n");
-		return object_pool().alloc_obj(nSize);
-	}
-
-	void operator delete(void * pv)
-	{
-		xPrintf("pool delete\n");
-		object_pool().free_obj(pv);
-	}
 
 	template<typename ... Args>
 	static Type* create_object(Args ... args)

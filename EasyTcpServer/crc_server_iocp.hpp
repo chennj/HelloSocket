@@ -20,17 +20,29 @@ public:
 		case CMD_LOGIN:
 		{
 			//pChannel->reset_dt_heart();
-
 			Login* login = (Login*)pheader;
 			//CRCLogger::info("socket<%d> receive client socket<%d> message: CMD_LOGIN , data length<%d>, user name<%s>, pwd<%s>\n", (int)_sock, (int)sock_client, pheader->data_length, login->username, login->password);
 
 			// Asynchronous send mode with sending buffer which is as the same thread as main thread
-			if (SOCKET_ERROR == pChannel->SendDataBuffer(new LoginResponse))
+			CRCLogger_Mem_Trace("开始发送\n");
 			{
-				if (_tTime.getElapsedSecond() >= 1.0)
-					CRCLogger_Info("Socket<%d>, Send Buffer Is Full\n", pChannel->sockfd());
+				//巨坑的内存泄漏的写法
+				//if (SOCKET_ERROR == pChannel->SendDataBuffer(new LoginResponse))
+				//{
+				//	if (_tTime.getElapsedSecond() >= 1.0)
+				//		CRCLogger_Info("Socket<%d>, Send Buffer Is Full\n", pChannel->sockfd());
+				//}
+				//下面是正确的写法,下面有更详细的解释。
+				//CRCLogger_Mem_Trace真的很管用啊
+				LoginResponse* response = new LoginResponse;
+				if (SOCKET_ERROR == pChannel->SendDataBuffer(response))
+				{
+					if (_tTime.getElapsedSecond() >= 1.0)
+						CRCLogger_Info("Socket<%d>, Send Buffer Is Full\n", pChannel->sockfd());
+				}
+				delete response;
 			}
-
+			CRCLogger_Mem_Trace("发送结束\n");
 			// Synchronous send mode with sending task pool which is not as the same thread as main thread
 			//CRCDataHeaderPtr ret = std::make_shared<LoginResponse>();
 			//pWorkServer->addSendTask(pChannel, ret);
@@ -48,8 +60,19 @@ public:
 		case CMD_HEART_C2S:
 		{
 			pChannel->reset_dt_heart();
-
-			pChannel->SendData(new HeartS2C);
+			/**
+			*
+			*	内存泄漏的坑
+			*
+			*/
+			// 下面这种方式会产生内存泄漏，因为 SendDataBuffer 函数内部并没有对 new HeartS2C
+			// 所分配的内存进行释放
+			//pChannel->SendData(new HeartS2C);
+			// 下面时正确的写法
+			HeartS2C* response = new HeartS2C();
+			pChannel->SendDataBuffer(response);
+			delete response;
+			// ----------------------------------
 		}
 		break;
 		case CMD_STREAM:	// 字节流消息

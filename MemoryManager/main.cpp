@@ -1,7 +1,10 @@
+//#include "../common/include/crc_allocator.h"
+//#include "../common/include/crc_memory_pool.hpp"
+//#include "../common/include/crc_object_pool.hpp"
 #include"Allocator.h"
 #include"CellTimestamp.hpp"
-#include"AutoPtr.hpp"
 #include"ObjectPool.hpp"
+#include"AutoPtr.hpp"
 #include<iostream>
 #include<thread>
 #include<mutex>
@@ -29,18 +32,51 @@ void workFun(int index)
 	}
 }
 
+class ClassBOfA : public ObjectPoolBase<ClassBOfA, 10>
+{
+public:
+	ClassBOfA()
+	{
+		_num = 0;
+		_num1 = 0;
+		printf("ClassBOfA\n");
+	}
+	ClassBOfA(int num)
+	{
+		_num = num;
+		_num1 = 0;
+		printf("ClassBOfA\n");
+	}
+	ClassBOfA(int num, int num1)
+	{
+		_num = num;
+		_num1 = num1;
+		printf("ClassBOfA\n");
+	}
+	~ClassBOfA()
+	{
+		printf("~ClassBOfA\n");
+	}
+
+public:
+	int _num;
+	int _num1;
+};
+
 class ClassA
 {
 private:
-
+	ClassBOfA* pClassBOfA;
 public:
 	ClassA()
 	{
 		printf("ClassA\n");
+		pClassBOfA = new ClassBOfA();
 	}
 	~ClassA()
 	{
 		printf("~ClassA\n");
+		delete pClassBOfA;
 	}
 
 public:
@@ -203,6 +239,10 @@ void workFunC(int index)
 
 int main()
 {
+	//char path[] = { "/log/server.log" };
+	//CRCLogger::instance().set_log_path(path, "w");
+	//CRCLogger::instance().start();
+
 	/*
 	thread t[tCount];
 	for (int n = 0; n < tCount; n++)
@@ -221,20 +261,29 @@ int main()
 	printf("b=%d\n", *b);
 	*/
 
-	/*
+
 	{
+		printf("1.--------------------------------------\n");
 		shared_ptr<ClassA> cls_a = make_shared<ClassA>();
 		cls_a->num = 100;
 		fun(cls_a);
 	}
 
 	{
+		printf("2.--------------------------------------\n");
 		AutoPtr<ClassA> cls_a = new ClassA;
 		cls_a->num = 100;
 		//有缺陷，如果和内存池一起用会出现两次删除同一地址而崩溃
 		//fun(cls_a);
 	}
-	*/
+
+	{
+		printf("3.--------------------------------------\n");
+		ClassA* cls_a = new ClassA;
+		cls_a->num = 100;
+		delete cls_a;
+	}
+
 
 	/*
 	ClassA* pa1 = new ClassA();
@@ -279,6 +328,7 @@ int main()
 	cout << "消耗时间(毫秒)：\t" << tTime.getElapsedTimeInMilliSec() << endl;
 	*/
 
+	/*
 	// will skip object pool if creating shared pointer by this way,but only call new once and efficiency
 	{
 		shared_ptr<ClassD> s1 = make_shared<ClassD>(1, 2);
@@ -288,7 +338,7 @@ int main()
 	{
 		shared_ptr<ClassD> s1(new ClassD(1, 2));
 	}
-
+	*/
 	system("PAUSE");
 	return 0;
 
