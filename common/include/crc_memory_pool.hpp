@@ -347,7 +347,7 @@ CRCMemoryPool& CRCMemoryPool::instance()
 #ifdef _WIN32
 			MemoryBarrier();
 #else
-			barrier();
+			__asm__ __volatile__("": : : "memory");
 #endif
 			_instance = tmp;
 		}
