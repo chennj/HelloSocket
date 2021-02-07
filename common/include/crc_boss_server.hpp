@@ -157,7 +157,7 @@ public:
 
 		if (_clientCount < _maxClient)
 		{
-			CRCWorkServer::make_reuseaddr(sock_client);
+			//CRCWorkServer::make_reuseaddr(sock_client);
 
 			// assign comed client to WorkServer with the least number of client
 			addClient2WorkServer(new CRCChannel(sock_client));

@@ -180,7 +180,7 @@ protected:
 			_clients.erase(pChannel->sockfd());
 		delete pChannel;
 	}
-
+#ifdef CRC_USE_IOCP
 	void OnClientLeave(IO_EVENT& ioEvent)
 	{
 		CRCChannel* pChannel = (CRCChannel*)ioEvent.data.ptr;
@@ -193,6 +193,7 @@ protected:
 			_clients.erase(pChannel->sockfd());
 		delete pChannel;
 	}
+#endif
 
 public:
 	void addClient(CRCChannel* pChannel)
@@ -343,7 +344,7 @@ public:
 		int reuse = 0;
 		int ret = setsockopt(clientSock, SOL_SOCKET, SO_REUSEADDR, (const char *)&reuse, sizeof(int));
 		if (ret == SOCKET_ERROR) {
-			CRCLogger_Error("WorkServer::make_reuseaddr SO_REUSEADDR failed with error=%u\n", WSAGetLastError());
+			CRCLogger_Error("WorkServer::make_reuseaddr SO_REUSEADDR failed ");
 		}
 #endif
 	}
@@ -351,7 +352,11 @@ public:
 	static void destory_socket(SOCKET clientSock)
 	{
 		//make_reuseaddr(clientSock);
+#ifdef _WIN32
 		closesocket(clientSock);
+#else
+		close(clientSock);
+#endif
 	}
 };
 

@@ -1,6 +1,8 @@
 ﻿#ifndef _CRC_ALLOCATOR_H_
 #define _CRC_ALLOCATOR_H_
 
+#include <stdio.h>
+
 class CRCMemoryPool;
 extern CRCMemoryPool g_mem_mgr;
 

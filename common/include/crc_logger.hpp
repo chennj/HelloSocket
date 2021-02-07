@@ -106,7 +106,11 @@ public:
 			{
 				printf("CRCLogger\t::instance()\n");
 				CRCLogger* tmp = new CRCLogger();
+#ifdef _WIN32
 				MemoryBarrier();
+#else
+				__asm__ __volatile__("": : : "memory");
+#endif
 				_instance = tmp;
 			}
 		}

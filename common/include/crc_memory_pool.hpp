@@ -344,7 +344,11 @@ CRCMemoryPool& CRCMemoryPool::instance()
 		{
 			printf("CRCMemoryPool\t::instance()\n");
 			CRCMemoryPool* tmp = new CRCMemoryPool();
+#ifdef _WIN32
 			MemoryBarrier();
+#else
+			barrier();
+#endif
 			_instance = tmp;
 		}
 	}

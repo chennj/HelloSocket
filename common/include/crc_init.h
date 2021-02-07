@@ -39,6 +39,7 @@ typedef std::shared_ptr<LoginResponse> LoginResponsePtr;
 #define DEFAULT_BUFFER_SIZE 1024*4
 #endif
 
+#ifdef _WIN32
 enum IO_TYPE
 {
 	ACCEPT = 10,
@@ -63,5 +64,6 @@ typedef struct _IO_EVENT
 	DWORD		bytesTrans = 0;
 
 }IO_EVENT, *PIO_EVENT;
+#endif
 
 #endif

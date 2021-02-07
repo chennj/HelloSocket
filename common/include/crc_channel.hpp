@@ -6,7 +6,7 @@
 #include "crc_logger.hpp"
 
 // countdown to heart beat check
-#define CLIENT_HEART_DEAD_TIME 15 * 1000
+#define CLIENT_HEART_DEAD_TIME 60 * 1000
 // time interval in which server timing send data in sending buffer to client 
 #define CLIENT_TIMING_SEND_TIME 200
 
