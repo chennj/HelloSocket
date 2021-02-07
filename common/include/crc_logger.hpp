@@ -7,6 +7,8 @@
 #include <atomic>
 #include <stdio.h>
 
+#define _MEM_TRACE_
+
 class CRCLogger
 {
 

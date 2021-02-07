@@ -1,7 +1,11 @@
 // linux compile command
 // g++ server.cpp -std=c++11 -pthread -o server
 // g++ server.cpp -std=c++11 -pthread -pg -o server --带性能分析参数（有可能导致服务端运行不稳定）
-// ----------------------------------
+// ---------------------------------
+// if you want to use memory pool on linux system, please using makefile.mak file 
+// and setting "#define _MEM_TRACE_" in the crc_logger.hpp file.
+// command: make -f ./makefile.mak
+// ---------------------------------
 #include "crc_allocator.h"
 #include "../common/include/crc_init.h"
 #ifdef __linux__
