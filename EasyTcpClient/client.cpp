@@ -3,6 +3,8 @@
 // ----------------------------------
 #ifdef __linux__
 #include "crc_client_epoll.hpp"
+#elif _WIN32
+#include "crc_client_iocp.hpp"
 #else
 #include "crc_client_select.hpp"
 #endif
@@ -16,7 +18,7 @@ bool g_run = true;
 // sending thread amount
 const int tCount = 2;
 // client amount
-const int nCount = 1000;
+const int nCount = 10000;
 
 // client object
 CRCWorkClient* pclients[nCount];
@@ -78,6 +80,8 @@ void sendThread(int id) //1~4
 		if (!g_run)return;
 #ifdef __linux__
 		pclients[n] = new CRCClientEpoll;
+#elif _WIN32
+		pclients[n] = new CRCClientIOCP;
 #else
 		pclients[n] = new CRCClientSelect;
 #endif
@@ -154,7 +158,7 @@ void sendThread(int id) //1~4
 		}
 
 		// to control speed to send
-		std::chrono::milliseconds t(1);
+		std::chrono::milliseconds t(100);
 		std::this_thread::sleep_for(t);
 	}
 

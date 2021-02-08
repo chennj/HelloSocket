@@ -35,7 +35,7 @@ public:
 				err = _epoll.ctl(iter.second, EPOLL_CTL_MOD, iter.second->sockfd(), EPOLLIN|EPOLLOUT);
 				if (err < 0)
 				{
-					CRCLogger::info("epoll.ctl socket<%d> errorno<%d> errmsg<%s>.\n", (int)_sock, errno, strerror(errno));
+					//CRCLogger::info("epoll.ctl socket<%d> errorno<%d> errmsg<%s>.\n", (int)_sock, errno, strerror(errno));
 					break;
 				}
 			}
@@ -44,7 +44,7 @@ public:
 				err = _epoll.ctl(iter.second, EPOLL_CTL_MOD, iter.second->sockfd(), EPOLLIN);
 				if (err < 0)
 				{
-					CRCLogger::info("epoll.ctl socket<%d> errorno<%d> errmsg<%s>.\n", (int)_sock, errno, strerror(errno));
+					//CRCLogger::info("epoll.ctl socket<%d> errorno<%d> errmsg<%s>.\n", (int)_sock, errno, strerror(errno));
 					break;
 				}
 			}
@@ -60,7 +60,7 @@ public:
 
 		if (ret_events < 0)
 		{
-			CRCLogger::info("WorkEpollServer socket<%d> errorno<%d> errmsg<%s>.\n", (int)_sock, errno, strerror(errno));
+			//CRCLogger::info("WorkEpollServer socket<%d> errorno<%d> errmsg<%s>.\n", (int)_sock, errno, strerror(errno));
 			return ret_events;
 		}
 		if (0 == ret_events)
@@ -75,7 +75,7 @@ public:
 			CRCChannel* pClient = (CRCChannel*)events[n].data.ptr;
 			if (!pClient)
 			{
-				CRCLogger::info("WorkEpollServer error while DoAction,pClient is null.\n");
+				CRCLogger_Warn("WorkEpollServer error while DoAction,pClient is null.\n");
 				continue;
 			}
 			// 处理客户端socket事件

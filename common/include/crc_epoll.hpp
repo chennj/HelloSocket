@@ -25,7 +25,7 @@ public:
     }
     ~CRCEpoll()
     {
-        CRCLogger::info("CRCEpoll destory...\n");
+        CRCLogger_Info("~CRCEpoll()\n");
         destory();
     }
 
@@ -36,13 +36,13 @@ public:
         if (_pEvents)
         {
             destory();
-            CRCLogger::info("warning close old epoll\n");
+            CRCLogger_Warn("warning close old epoll\n");
         }
 
         _epfd = epoll_create(nMaxEvents/*已经没有意义，只是为了兼容更早的写法*/);
         if (EPOLL_ERROR == _epfd)
         {
-            CRCLogger::info("epoll_create errorno<%d> errmsg<%s>.\n", errno, strerror(errno));
+			CRCLogger_Error("epoll_create error");
             throw std::runtime_error("CRCEpoll::epoll_create failed");
             return _epfd;
         }
@@ -67,7 +67,7 @@ public:
         int ret = epoll_ctl(_epfd, operation, socket, &event);    
         if (EPOLL_ERROR == ret)
         {
-            CRCLogger::info("error epoll_ctl(%d,%d,%d,%d)\n", _epfd, operation, socket, events);
+            CRCLogger_Error("error epoll_ctl(%d,%d,%d,%d)\n", _epfd, operation, socket, events);
         }
         return ret;
     }
@@ -95,7 +95,7 @@ public:
 			{
 				return 0;
 			}			
-            CRCLogger::info("epoll_wait errorno<%d> errmsg<%s>.\n", errno, strerror(errno));
+			CRCLogger_Error("epoll_wait error");
         }
 
         return ret_events;
@@ -110,7 +110,7 @@ public:
     {
         if (_pEvents)
         {
-            //CRCLogger::info("epoll object destroy\n");
+            CRCLogger_Info("epoll object destroy\n");
             delete[] _pEvents;
             _pEvents = nullptr;
             close(_epfd);

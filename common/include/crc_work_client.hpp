@@ -168,14 +168,7 @@ public:
 			return -1;
 		}
 
-		// loop proccess message
-		while (_pChannel->HasMessage())
-		{
-			// process message
-			OnNetMessage(_pChannel->front_message());
-			// remove one message from buffer
-			_pChannel->pop_front_message();
-		}
+		DoMsg();
 
 		return nLen;
 	}
@@ -192,6 +185,18 @@ public:
 		if (IsRunning())
 			return _pChannel->SendDataBuffer(pData, nLen);
 		return 0;
+	}
+
+	void DoMsg()
+	{
+		// loop proccess message
+		while (_pChannel->HasMessage())
+		{
+			// process message
+			OnNetMessage(_pChannel->front_message());
+			// remove one message from buffer
+			_pChannel->pop_front_message();
+		}
 	}
 
 	virtual void OnNetMessage(CRCDataHeader* header) = 0;

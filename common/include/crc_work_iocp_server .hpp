@@ -36,12 +36,21 @@ public:
 			pChannel = iter->second;
 			if (pChannel->is_need_write())
 			{
-				auto pIoCtx = pChannel->get_send_io_ctx();
-				if (pIoCtx)
+				auto pIoCtxSend = pChannel->get_send_io_ctx();
+				if (pIoCtxSend)
 				{
-					if (_iocp.delivery_send(pIoCtx) < 0)
+					if (_iocp.delivery_send(pIoCtxSend) < 0)
 					{
-						CRCLogger_Warn("CRCWorkIOCPServer::DoAction delivery_send failed\n");
+						//CRCLogger_Warn("CRCWorkIOCPServer::DoAction delivery_send failed\n");
+						OnClientLeave(pChannel);
+					}
+				}
+				auto pIoCtxRecv = pChannel->get_recv_io_ctx();
+				if (pIoCtxRecv)
+				{
+					if (_iocp.delivery_receive(pIoCtxRecv) < 0)
+					{
+						//CRCLogger_Warn("CRCWorkIOCPServer::DoAction delivery_receive 1 failed\n");
 						OnClientLeave(pChannel);
 					}
 				}
@@ -53,7 +62,7 @@ public:
 				{
 					if (_iocp.delivery_receive(pIoCtx) < 0)
 					{
-						CRCLogger_Warn("CRCWorkIOCPServer::DoAction delivery_receive failed\n");
+						//CRCLogger_Warn("CRCWorkIOCPServer::DoAction delivery_receive 2 failed\n");
 						OnClientLeave(pChannel);
 					}
 				}
@@ -88,7 +97,7 @@ public:
 		int ret = _iocp.wait(_ioEvent,1);
 		if (ret < 0)
 		{
-			CRCLogger_Error("WorkIOCPServer socket<%d> errorno<%d> errmsg<%s>.", (int)_sock, errno, strerror(errno));
+			//CRCLogger_Error("WorkIOCPServer socket<%d> errorno<%d> errmsg<%s>.", (int)_sock, errno, strerror(errno));
 			return ret;
 		}
 		else if (0 == ret)
@@ -107,7 +116,7 @@ public:
 			// 客户端断开处理
 			if (_ioEvent.bytesTrans <= 0)
 			{
-				CRCLogger_Info("CLOSE socket=%d,bytes_trans=%d\n", _ioEvent.pIoCtx->_sockfd, _ioEvent.bytesTrans);
+				//CRCLogger_Info("CLOSE socket=%d,bytes_trans=%d\n", _ioEvent.pIoCtx->_sockfd, _ioEvent.bytesTrans);
 				OnClientLeave(_ioEvent);
 				return ret;
 			}
@@ -128,7 +137,7 @@ public:
 			// 客户端断开处理
 			if (_ioEvent.bytesTrans <= 0)
 			{
-				CRCLogger_Info("CLOSE socket=%d,bytes_trans=%d\n", _ioEvent.pIoCtx->_sockfd, _ioEvent.bytesTrans);
+				//CRCLogger_Info("CLOSE socket=%d,bytes_trans=%d\n", _ioEvent.pIoCtx->_sockfd, _ioEvent.bytesTrans);
 				OnClientLeave(_ioEvent);
 				return ret;
 			}
